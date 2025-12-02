@@ -9,8 +9,14 @@ import UIKit
 import Then
 import PinLayout
 import FlexLayout
+import RxSwift
+import RxCocoa
+
 
 class CoupleConnectViewController: UIViewController {
+    private let disposeBag = DisposeBag()
+    private let code: String?
+    
     private let background = UIImageView().then {
         $0.image = UIImage(resource: .connectBackground)
     }
@@ -28,19 +34,20 @@ class CoupleConnectViewController: UIViewController {
     
     private let titleLabel = UILabel().then {
         $0.text = "상대와 연결하기"
-        $0.font = .pretenSemiBold(24)
+        $0.font = .pretenSemiBold(28)
         $0.textColor = .grayScale900
     }
     
     private let descriptionLabel1 = UILabel().then {
-        $0.text = "내 코드를 복사해서 상대방에게 보내거나\n상대방의 코드를 입력하세요"
         $0.font = .pretenRegular(16)
         $0.textColor = .grayScale800
         $0.numberOfLines = 0
+        $0.text = "내 코드를 복사해서 상대방에게 보내거나\n상대방의 코드를 입력하세요"
+        $0.setTextWithLineHeight(text: "내 코드를 복사해서 상대방에게 보내거나\n상대방의 코드를 입력하세요", multiplier: 1.3)
     }
     
     private let descriptionLabel2 = UILabel().then {
-        $0.text = "둘 중 한 명만 상대의 코드를 입력하면 연결돼요"
+        $0.text = "둘 중 한 명만 상대의 코드를 입력하면 연결돼요 ☺️"
         $0.font = .pretenRegular(14)
         $0.textColor = .grayScale600
         $0.numberOfLines = 0
@@ -96,6 +103,7 @@ class CoupleConnectViewController: UIViewController {
     }
     
     init(code: [String]? = nil) {
+        self.code = code?.joined()
         myCodeTextField = CodeTextFieldView(code: code)
         
         super.init(nibName: nil, bundle: nil)
@@ -109,6 +117,7 @@ class CoupleConnectViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        bindActions()
         setupViews()
         setupFlexLayout()
         hideKeyboardwhenTappedAround()
@@ -134,10 +143,10 @@ class CoupleConnectViewController: UIViewController {
                 .marginTop(40)
             
             $0.addItem(descriptionLabel1)
-                .marginTop(10)
+                .marginTop(8)
             
             $0.addItem(descriptionLabel2)
-                .marginTop(10)
+                .marginTop(12)
             
             $0.addItem(codeInputView)
                 .marginTop(40)
@@ -196,5 +205,31 @@ class CoupleConnectViewController: UIViewController {
         codeInputView.flex.layout(mode: .adjustHeight)
         
         contentsView.flex.layout()
+    }
+    
+    private func bindActions() {
+        
+        copyButton.rx.tap
+            .subscribe(onNext: { [weak self] _ in
+                if let code = self?.code {
+                    UIPasteboard.general.string = code.uppercased()
+                    self?.showToast(message: "복사가 완료되었습니다")
+                }
+            })
+            .disposed(by: disposeBag)
+    }
+}
+extension NSMutableAttributedString {
+    /// target: 대상 문자열, Figma의 heightMultiple = lineHeightMultiple 값
+    func lineSapcing(_ target: String, heightMultiple: CGFloat) -> NSMutableAttributedString {
+        let style = NSMutableParagraphStyle()
+        style.lineHeightMultiple = heightMultiple
+        
+        let attributes: [NSAttributedString.Key: Any] = [
+            .paragraphStyle: style
+        ]
+        
+        self.append(NSAttributedString(string: target, attributes:attributes))
+        return self
     }
 }

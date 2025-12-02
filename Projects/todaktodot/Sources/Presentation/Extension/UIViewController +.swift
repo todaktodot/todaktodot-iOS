@@ -7,6 +7,8 @@
 
 
 import UIKit
+import FlexLayout
+import PinLayout
 
 extension UIViewController {
     func hideKeyboardwhenTappedAround() {
@@ -18,4 +20,40 @@ extension UIViewController {
     @objc func dismisskeyboard() {
         view.endEditing(true)
     }
+    
+    func showToast(message: String, duration: TimeInterval = 2.0) {
+        guard let windowScene = UIApplication.shared.connectedScenes
+               .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
+                 let window = windowScene.windows.first(where: { $0.isKeyWindow }) else { return }
+
+        let toastLabel = UILabel().then {
+            $0.text = message
+            $0.textColor = .white
+            $0.backgroundColor = .grayScale800
+            $0.textAlignment = .left
+            $0.font = .pretenRegular(14)
+            $0.layer.cornerRadius = 8
+            $0.clipsToBounds = true
+            $0.alpha = 0
+        }
+        
+        window.addSubview(toastLabel)
+        
+        toastLabel.pin
+            .left(16)
+            .right(16)
+            .bottom(window.safeAreaInsets.bottom + 16)
+            .height(48)
+
+        UIView.animate(withDuration: 0.3) {
+            toastLabel.alpha = 1
+        } completion: { _ in
+            UIView.animate(withDuration: 0.3, delay: duration, options: .curveEaseOut) {
+                toastLabel.alpha = 0
+            } completion: { _ in
+                toastLabel.removeFromSuperview()
+            }
+        }
+    }
+
 }
