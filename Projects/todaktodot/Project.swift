@@ -87,6 +87,7 @@ let project = Project(
                 .external(name: "FirebasePerformance"),
                 .external(name: "FirebaseRemoteConfig"),
                 .external(name: "FirebaseAnalytics"),
+                .external(name: "yoga"),
                 .external(name: "FlexLayout"),
                 .external(name: "PinLayout"),
                 .project(target: "NetworkKit", path: "../NetworkKit"),

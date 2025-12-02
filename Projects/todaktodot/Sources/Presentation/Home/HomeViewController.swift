@@ -1,0 +1,434 @@
+//
+//  HomeViewController.swift
+//  todaktodot
+//
+//  Created by daye on 11/25/25.
+//
+
+import UIKit
+import FlexLayout
+import PinLayout
+import ReactorKit
+import RxSwift
+import RxCocoa
+import UserNotifications
+
+final class HomeViewController: UIViewController, View {
+    
+    var disposeBag = DisposeBag()
+    
+    private let gradientLayer = CAGradientLayer()
+    private let rootFlexContainer = UIView()
+    private let scrollView = UIScrollView()
+    private let contentContainer = UIView()
+    
+    private let mainCard = UIView()
+    private let yearLabel = UILabel()
+    private let questionIcon = UIImageView()
+    private let titleLabel = UILabel()
+    private let chipContainer = UIView()
+    private let chip1 = ChipView(title: "🍰 디저트모드")
+    private let chip2 = ChipView(title: "💸 경제관")
+    private let arrowButton = UIButton()
+    private let pokeButton = UIButton()
+    private let descriptionCard = UIView()
+    private let descriptionTitle = UILabel()
+    private let descriptionLabel = UILabel()
+    
+    private let weekCardsContainer = UIView()
+    private let weekdays = ["토", "금", "목", "수", "화", "월"]
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupNavigationBar()
+        setupUI()
+        reactor = HomeReactor()
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        showNotificationAlert()
+    }
+    
+    func bind(reactor: HomeReactor) {
+        reactor.state.map { $0.answerStatus }
+            .distinctUntilChanged()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] status in
+                self?.updateMainCard(for: status)
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state.map { $0.isPoked }
+            .distinctUntilChanged()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] isPoked in
+                self?.updatePokeButton(isPoked: isPoked)
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state.map { $0.shouldShowNotificationAlert }
+            .distinctUntilChanged()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] show in
+                if show {
+                    self?.showNotificationAlert()
+                }
+            })
+            .disposed(by: disposeBag)
+        
+        pokeButton.rx.tap
+            .do(onNext: { [weak self] in
+                self?.showPokeAlert()
+            })
+            .map { Reactor.Action.tapPokeButton }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+    }
+    
+    private func setupNavigationBar() {
+        navigationController?.navigationBar.isHidden = false
+        
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        navigationController?.navigationBar.standardAppearance = appearance
+        navigationController?.navigationBar.scrollEdgeAppearance = appearance
+        
+        let logoImageView = UIImageView(image: UIImage(named: "Logo"))
+        logoImageView.contentMode = .scaleAspectFit
+        logoImageView.frame = CGRect(x: 0, y: 0, width: 92, height: 32)
+        let logoContainer = UIView(frame: CGRect(x: 0, y: 0, width: 92 + 20, height: 32))
+        logoContainer.addSubview(logoImageView)
+        logoImageView.frame.origin.x = 0
+        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: logoContainer)
+        
+        let personImageView = UIImageView(image: UIImage(named: "Person"))
+        personImageView.contentMode = .scaleAspectFit
+        personImageView.frame = CGRect(x: 0, y: 0, width: 18, height: 18)
+        let personContainer = UIView(frame: CGRect(x: 0, y: 0, width: 18 + 20, height: 18))
+        personContainer.addSubview(personImageView)
+        personImageView.frame.origin.x = 20
+        navigationItem.rightBarButtonItem = UIBarButtonItem(customView: personContainer)
+    }
+    
+    private func setupUI() {
+        // TODO: 그라데이션 정의?
+        gradientLayer.colors = [
+            UIColor(hex: "F9F2EE").cgColor,
+            UIColor(hex: "F1EBF5").cgColor,
+            UIColor(hex: "FCFAFE").cgColor
+        ]
+        gradientLayer.startPoint = CGPoint(x: 1.0, y: 0.0)
+        gradientLayer.endPoint = CGPoint(x: 0.0, y: 1.0)
+        view.layer.insertSublayer(gradientLayer, at: 0)
+        
+        view.addSubview(scrollView)
+        scrollView.addSubview(contentContainer)
+        
+        setupMainCard()
+        setupWeekCards()
+        
+        contentContainer.flex
+            .paddingHorizontal(20)
+            .paddingBottom(150)
+            .define { flex in
+                flex.addItem(mainCard).marginVertical(20)
+                flex.addItem(weekCardsContainer).marginTop(36)
+            }
+    }
+    
+    private func setupMainCard() {
+        mainCard.backgroundColor = .white
+        mainCard.layer.cornerRadius = 20
+        mainCard.layer.shadowColor = UIColor.black.cgColor
+        mainCard.layer.shadowOpacity = 0.05
+        mainCard.layer.shadowOffset = CGSize(width: 0, height: 2)
+        mainCard.layer.shadowRadius = 8
+        
+        yearLabel.text = "2025년 9월 14일 일요일"
+        yearLabel.font = .pretenMedium(14)
+        yearLabel.textColor = .grayScale600
+        
+        questionIcon.image = UIImage(systemName: "questionmark.circle")
+        questionIcon.tintColor = .grayScale600
+        questionIcon.contentMode = .scaleAspectFit
+        questionIcon.isUserInteractionEnabled = true
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(showInfoPopup))
+        questionIcon.addGestureRecognizer(tapGesture)
+        
+        arrowButton.backgroundColor = TodotColors.Button.purpleButton1
+        arrowButton.layer.cornerRadius = 24
+        let arrowConfig = UIImage.SymbolConfiguration(weight: .semibold)
+        arrowButton.setImage(UIImage(systemName: "arrow.right", withConfiguration: arrowConfig), for: .normal)
+        arrowButton.tintColor = .white
+        
+        pokeButton.setTitle("콕 찌르기", for: .normal)
+        pokeButton.setTitleColor(.white, for: .normal)
+        pokeButton.titleLabel?.font = .pretenSemiBold(14)
+        pokeButton.backgroundColor = TodotColors.Button.purpleButton1
+        pokeButton.layer.cornerRadius = 6
+        pokeButton.isHidden = true
+        
+        titleLabel.font = .pretenSemiBold(24)
+        titleLabel.numberOfLines = 0
+        titleLabel.textColor = .grayScale900
+        
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.lineHeightMultiple = 1.5
+        titleLabel.attributedText = NSAttributedString(
+            string: "오늘의 질문이 도착했어요\n먼저 답해볼까요?",
+            attributes: [.paragraphStyle: paragraphStyle]
+        )
+        
+        descriptionCard.backgroundColor = .grayScale100
+        descriptionCard.layer.cornerRadius = 12
+        
+        descriptionTitle.text = "하루에 딱 1개의 질문만 주어져요!"
+        descriptionTitle.font = .pretenMedium(14)
+        descriptionTitle.textColor = .grayScale800
+        descriptionTitle.numberOfLines = 0
+        
+        descriptionLabel.font = .pretenRegular(14)
+        descriptionLabel.textColor = .grayScale600
+        descriptionLabel.numberOfLines = 0
+        
+        let descParagraphStyle = NSMutableParagraphStyle()
+        descParagraphStyle.lineHeightMultiple = 1.5
+        descriptionLabel.attributedText = NSAttributedString(
+            string: "오전 8시 기준으로 질문이 바뀌니 8시가 지나기\n 전에 답해보세요.",
+            attributes: [.paragraphStyle: descParagraphStyle]
+        )
+        
+        mainCard.addSubview(yearLabel)
+        mainCard.addSubview(questionIcon)
+        mainCard.addSubview(titleLabel)
+        mainCard.addSubview(chip1)
+        mainCard.addSubview(chip2)
+        mainCard.addSubview(arrowButton)
+        mainCard.addSubview(descriptionCard)
+        descriptionCard.addSubview(descriptionTitle)
+        descriptionCard.addSubview(descriptionLabel)
+        mainCard.addSubview(pokeButton)
+        
+        mainCard.flex
+            .padding(24)
+            .define { flex in
+                flex.addItem(questionIcon).position(.absolute).top(20).right(20).size(24)
+                flex.addItem(yearLabel)
+                flex.addItem(titleLabel).marginTop(8)
+                flex.addItem().direction(.row).justifyContent(.spaceBetween).alignItems(.end).marginTop(16).marginRight(22).define { rowFlex in
+                    rowFlex.addItem().direction(.row).define { chipFlex in
+                        chipFlex.addItem(chip1).height(37)
+                        chipFlex.addItem(chip2).height(37).marginLeft(4)
+                    }
+                    rowFlex.addItem(arrowButton).marginLeft(47).size(48)
+                }
+                flex.addItem(descriptionCard).direction(.column).marginTop(20).define { descFlex in
+                    descFlex.addItem(descriptionTitle).marginTop(16).marginLeft(16)
+                    descFlex.addItem(descriptionLabel).marginTop(4).marginLeft(16).marginBottom(16)
+                }
+                flex.addItem(pokeButton).height(48).marginTop(16).isIncludedInLayout(false)
+            }
+    }
+    
+    private func updateMainCard(for status: AnswerStatus) {
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.lineHeightMultiple = 1.5
+        
+        pokeButton.flex.isIncludedInLayout(false)
+        
+        switch status {
+        case .bothUnanswered:
+            titleLabel.attributedText = NSAttributedString(
+                string: "오늘의 질문이 도착했어요\n먼저 답해볼까요?",
+                attributes: [.paragraphStyle: paragraphStyle]
+            )
+            pokeButton.isHidden = true
+            
+        case .partnerAnswered:
+            titleLabel.attributedText = NSAttributedString(
+                string: "연인이 벌써 답했어요! 내가 답하면 바로\n확인할 수 있어요",
+                attributes: [.paragraphStyle: paragraphStyle]
+            )
+            pokeButton.isHidden = true
+            
+        case .myAnswered:
+            titleLabel.attributedText = NSAttributedString(
+                string: "답변 완료!\n연인이 답하기 전까지\n확인할 수 없어요",
+                attributes: [.paragraphStyle: paragraphStyle]
+            )
+            // pokeButton 추가
+            pokeButton.isHidden = false
+            pokeButton.flex.isIncludedInLayout(true).height(48).marginTop(16)
+            
+        case .bothAnswered:
+            titleLabel.attributedText = NSAttributedString(
+                string: "두 사람 모두 답변 완료!\n아래 카드에서 내용을\n확인해보세요",
+                attributes: [.paragraphStyle: paragraphStyle]
+            )
+            pokeButton.isHidden = true
+        }
+        
+        mainCard.flex.layout(mode: .adjustHeight)
+        contentContainer.flex.layout(mode: .adjustHeight)
+        scrollView.contentSize = contentContainer.frame.size
+    }
+    
+    private func setupWeekCards() {
+        weekCardsContainer.flex.define { flex in
+            weekdays.enumerated().forEach { index, day in
+                let card = createWeekCard(day: day, date: "\(27-index)", index: index)
+                let isLast = index == weekdays.count - 1
+                flex.addItem(card)
+                    .height(isLast ? 83 : 83 + 60)
+                    .marginTop(index == 0 ? 0 : -60)
+            }
+        }
+    }
+    
+    private func createWeekCard(day: String, date: String, index: Int) -> UIView {
+        let card = UIView()
+        
+        if index % 2 == 0 {
+            card.backgroundColor = UIColor.lightCardPurple
+        } else {
+            card.backgroundColor = UIColor.cardPurple
+        }
+        
+        card.layer.cornerRadius = 20
+        card.layer.shadowColor = UIColor(hex: "774F92").cgColor
+        card.layer.shadowOpacity = 0.08
+        card.layer.shadowOffset = CGSize(width: 0, height: -8)
+        card.layer.shadowRadius = 15
+        
+        let dayLabel = UILabel()
+        dayLabel.text = "\(day) 9/\(date)"
+        dayLabel.font = .pretenSemiBold(16)
+        dayLabel.textColor = .grayScale900
+        
+        let topicLabel = UILabel()
+        topicLabel.text = "모드 · 대주제 ·소주제"
+        topicLabel.font = .pretenRegular(14)
+        topicLabel.textColor = .grayScale800
+        
+        let arrowIcon = UIImageView()
+        arrowIcon.image = UIImage(systemName: "chevron.right")
+        arrowIcon.tintColor = .grayScale800
+        arrowIcon.contentMode = .scaleAspectFit
+        
+        card.addSubview(dayLabel)
+        card.addSubview(topicLabel)
+        card.addSubview(arrowIcon)
+        
+        card.flex
+            .padding(20)
+            .define { flex in
+                flex.addItem(arrowIcon).position(.absolute).right(20).top(33.5).size(16)
+                flex.addItem(dayLabel)
+                flex.addItem(topicLabel).marginTop(8)
+            }
+        
+        return card
+    }
+    
+    private func showPokeAlert() {
+        showAlert(
+            icon: UIImage(resource: .poke),
+            title: "콕! 상대방에게 알림을 보냈어요\n곧 답변할 거예요",
+            primaryButtonTitle: "확인",
+            primaryButtonAction: {}
+        )
+    }
+    
+    private func showNotificationAlert() {
+        showAlert(
+            icon:  UIImage(resource: .bell),
+            title: "알림을 켜고 우리만의 대화를 시작해요!",
+            description: "• 상대방이 답변하면 바로 알 수 있어요\n• 서로의 답변이 공개되면 알림을 받아요\n• 상대방의 쿡 찌르기를 받을 수 있어요",
+            primaryButtonTitle: "알림켜기",
+            primaryButtonAction: { [weak self] in
+                self?.requestNotificationPermission()
+            },
+            secondaryButtonTitle: "나중에 할게요",
+            secondaryButtonAction: { [weak self] in
+                self?.reactor?.action.onNext(.dismissNotificationAlert)
+            }
+        )
+    }
+    
+    private func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            DispatchQueue.main.async { [weak self] in
+                self?.reactor?.action.onNext(.dismissNotificationAlert)
+            }
+        }
+    }
+    
+    @objc private func showInfoPopup() {
+        let popupView = InfoPopupView()
+        popupView.show(in: view, alignedWith: mainCard)
+    }
+    
+    private func updatePokeButton(isPoked: Bool) {
+        if isPoked {
+            pokeButton.backgroundColor = .grayScale300
+            pokeButton.isEnabled = false
+        } else {
+            pokeButton.backgroundColor = TodotColors.Button.purpleButton1
+            pokeButton.isEnabled = true
+        }
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        
+        gradientLayer.frame = view.bounds
+        
+        scrollView.pin.all(view.pin.safeArea)
+        contentContainer.pin.top().left().right()
+        
+        contentContainer.flex.layout(mode: .adjustHeight)
+        scrollView.contentSize = contentContainer.frame.size
+    }
+}
+
+private final class ChipView: UIView {
+    
+    private let label = UILabel()
+    private var calculatedWidth: CGFloat = 0
+    
+    init(title: String) {
+        super.init(frame: .zero)
+        
+        backgroundColor = .white
+        layer.borderWidth = 1
+        layer.borderColor = UIColor.grayScale200.cgColor
+        layer.cornerRadius = 20
+        
+        label.text = title
+        label.font = .pretenMedium(14)
+        label.textColor = .grayScale800
+        label.sizeToFit()
+        
+        calculatedWidth = label.frame.width + 28
+        
+        addSubview(label)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        label.pin.center()
+    }
+    
+    override var intrinsicContentSize: CGSize {
+        return CGSize(width: calculatedWidth, height: 37)
+    }
+    
+    override func sizeThatFits(_ size: CGSize) -> CGSize {
+        return CGSize(width: calculatedWidth, height: 37)
+    }
+}
