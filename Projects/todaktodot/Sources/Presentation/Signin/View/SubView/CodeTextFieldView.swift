@@ -9,8 +9,11 @@ import UIKit
 import Then
 import FlexLayout
 import PinLayout
+import RxRelay
 
 class CodeTextFieldView: UIView {
+    let isCodeFull = PublishRelay<Bool>()
+    
     private var codeTextFields: [UITextField]
     
     init(frame: CGRect = .zero, code: [String]? = nil) {
@@ -78,6 +81,12 @@ extension CodeTextFieldView: UITextFieldDelegate {
             } else {
                 (textField as? CodeTextField)?.nextTextField?.becomeFirstResponder()
             }
+        }
+        
+        if codeTextFields.filter({ $0.text != "" }).count >= 6 {
+            isCodeFull.accept(true)
+        } else {
+            isCodeFull.accept(false)
         }
         
         return false

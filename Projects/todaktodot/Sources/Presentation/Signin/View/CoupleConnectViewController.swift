@@ -42,7 +42,6 @@ class CoupleConnectViewController: UIViewController {
         $0.font = .pretenRegular(16)
         $0.textColor = .grayScale800
         $0.numberOfLines = 0
-        $0.text = "내 코드를 복사해서 상대방에게 보내거나\n상대방의 코드를 입력하세요"
         $0.setTextWithLineHeight(text: "내 코드를 복사해서 상대방에게 보내거나\n상대방의 코드를 입력하세요", multiplier: 1.3)
     }
     
@@ -208,7 +207,6 @@ class CoupleConnectViewController: UIViewController {
     }
     
     private func bindActions() {
-        
         copyButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
                 if let code = self?.code {
@@ -217,19 +215,13 @@ class CoupleConnectViewController: UIViewController {
                 }
             })
             .disposed(by: disposeBag)
-    }
-}
-extension NSMutableAttributedString {
-    /// target: 대상 문자열, Figma의 heightMultiple = lineHeightMultiple 값
-    func lineSapcing(_ target: String, heightMultiple: CGFloat) -> NSMutableAttributedString {
-        let style = NSMutableParagraphStyle()
-        style.lineHeightMultiple = heightMultiple
         
-        let attributes: [NSAttributedString.Key: Any] = [
-            .paragraphStyle: style
-        ]
-        
-        self.append(NSAttributedString(string: target, attributes:attributes))
-        return self
+        partnerCodeTextField.isCodeFull
+            .subscribe(onNext: { [weak self] in
+                guard let self else { return }
+                connectButton.backgroundColor = $0 ? .mainPurple : .grayScale400
+            })
+            .disposed(by: disposeBag)
+            
     }
 }
