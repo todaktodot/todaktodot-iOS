@@ -29,7 +29,7 @@ class CoupleConnectViewController: UIViewController {
     }
     
     private let dividerView = UIView().then {
-        $0.backgroundColor = .grayScale200
+        $0.backgroundColor = .grayScale800.withAlphaComponent(0.95)
     }
     
     private let titleLabel = UILabel().then {
@@ -89,10 +89,13 @@ class CoupleConnectViewController: UIViewController {
     
     private let connectButton = UIButton(type: .system).then {
         $0.setTitle("연결하기", for: .normal)
+        $0.setTitleColor(.white, for: .disabled)
+
         $0.titleLabel?.font = .pretenSemiBold(16)
         $0.tintColor = .white
         $0.backgroundColor = .grayScale400
         $0.layer.cornerRadius = 6
+        $0.isEnabled = false
     }
     
     private let lookAroundButton = UIButton(type: .system).then {
@@ -216,10 +219,19 @@ class CoupleConnectViewController: UIViewController {
             })
             .disposed(by: disposeBag)
         
+        connectButton.rx.tap
+            .subscribe(onNext: { [weak self] _ in
+                self?.showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
+                    let vc = NicknameViewController()
+                    self?.navigationController?.pushViewController(vc, animated: true)
+                })
+            })
+            .disposed(by: disposeBag)
+        
         partnerCodeTextField.isCodeFull
             .subscribe(onNext: { [weak self] in
-                guard let self else { return }
-                connectButton.backgroundColor = $0 ? .mainPurple : .grayScale400
+                self?.connectButton.backgroundColor = $0 ? .mainPurple : .grayScale400
+                self?.connectButton.isEnabled = $0
             })
             .disposed(by: disposeBag)
             

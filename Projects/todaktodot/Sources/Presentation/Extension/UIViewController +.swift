@@ -25,33 +25,43 @@ extension UIViewController {
         guard let windowScene = UIApplication.shared.connectedScenes
                .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
                  let window = windowScene.windows.first(where: { $0.isKeyWindow }) else { return }
-
-        let toastLabel = UILabel().then {
-            $0.text = message
-            $0.textColor = .white
-            $0.backgroundColor = .grayScale800
-            $0.textAlignment = .left
-            $0.font = .pretenRegular(14)
+        
+        let backgroundView = UIView().then {
+            $0.backgroundColor = .grayScale800.withAlphaComponent(0.95)
             $0.layer.cornerRadius = 8
             $0.clipsToBounds = true
             $0.alpha = 0
         }
+
+        let toastLabel = UILabel().then {
+            $0.text = message
+            $0.textColor = .white
+            $0.textAlignment = .left
+            $0.font = .pretenRegular(14)
+        }
         
-        window.addSubview(toastLabel)
+        window.addSubview(backgroundView)
         
-        toastLabel.pin
+        backgroundView.pin
             .left(16)
             .right(16)
             .bottom(window.safeAreaInsets.bottom + 16)
             .height(48)
+        
+        backgroundView.flex.direction(.row).alignItems(.center).define {
+            $0.addItem(toastLabel)
+                .marginLeft(20)
+        }
+        
+        backgroundView.flex.layout()
 
         UIView.animate(withDuration: 0.3) {
-            toastLabel.alpha = 1
+            backgroundView.alpha = 1
         } completion: { _ in
             UIView.animate(withDuration: 0.3, delay: duration, options: .curveEaseOut) {
-                toastLabel.alpha = 0
+                backgroundView.alpha = 0
             } completion: { _ in
-                toastLabel.removeFromSuperview()
+                backgroundView.removeFromSuperview()
             }
         }
     }
