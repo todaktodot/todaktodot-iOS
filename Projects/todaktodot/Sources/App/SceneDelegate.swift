@@ -18,12 +18,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         
 //        let tabBarController = TabBarController()
-        let viewController = UIViewController()
-        let ccVC = CoupleConnectViewController(code: ["a","b","d","4","5","8"])
-        let navigationController = UINavigationController(rootViewController: viewController)
+        let vc = SigninViewController()
+        let navigationController = UINavigationController(rootViewController: vc)
+        navigationController.navigationBar.isHidden = true
         window = UIWindow(windowScene: windowScene)
 //        window?.rootViewController = UserdefaultKey.isSiginedIn ? tabBarController : navigationController
-        window?.rootViewController = ccVC
+        window?.rootViewController = navigationController
         window?.makeKeyAndVisible()
         
     }

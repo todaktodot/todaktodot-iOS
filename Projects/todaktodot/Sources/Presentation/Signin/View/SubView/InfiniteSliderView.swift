@@ -52,6 +52,7 @@ final class InfiniteSliderView: UIView {
     private func setupScrollView() {
         scrollView.isPagingEnabled = true
         scrollView.showsHorizontalScrollIndicator = false
+        scrollView.showsVerticalScrollIndicator = false
         scrollView.delegate = self
         
         loopImages.forEach { img in
@@ -113,6 +114,10 @@ extension InfiniteSliderView: UIScrollViewDelegate {
     // 사용자가 손으로 드래그 시작, 자동 슬라이드 정지
     func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
         stopTimer()
+    }
+    
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        scrollView.contentOffset.y = 0
     }
 
     // 스크롤 종료 후, 인덱스 맞추기 + 무한 루프 처리 + 다시 자동슬라이드 시작

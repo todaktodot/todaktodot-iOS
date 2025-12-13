@@ -109,8 +109,8 @@ class CoupleInfoViewController: UIViewController {
     private func bindActions() {
         startButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
-                let vc = NicknameViewController()
-                self?.navigationController?.pushViewController(vc, animated: true)
+                let tabBarController = ViewController()
+                (UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate)?.changeRootView(tabBarController, animated: true)
             })
             .disposed(by: disposeBag)
     }

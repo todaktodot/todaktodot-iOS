@@ -64,6 +64,7 @@ final class SigninViewController: UIViewController {
         
         setupViews()
         setupFlexLayout()
+        bindActions()
     }
     
     override func viewDidLayoutSubviews() {
@@ -131,4 +132,26 @@ final class SigninViewController: UIViewController {
         buttonContainerView.flex.layout()
     }
     
+    private func bindActions() {
+        kakaoButton.rx.tap
+            .subscribe(onNext: { [weak self] _ in
+                let vc = CoupleConnectViewController(code: ["a","b","d","4","5","8"])
+                self?.navigationController?.pushViewController(vc, animated: true)
+            })
+            .disposed(by: disposeBag)
+        
+        googleButton.rx.tap
+            .subscribe(onNext: { [weak self] _ in
+                let vc = CoupleConnectViewController(code: ["a","b","d","4","5","8"])
+                self?.navigationController?.pushViewController(vc, animated: true)
+            })
+            .disposed(by: disposeBag)
+        
+        appleButton.rx.tap
+            .subscribe(onNext: { [weak self] _ in
+                let vc = CoupleConnectViewController(code: ["a","b","d","4","5","8"])
+                self?.navigationController?.pushViewController(vc, animated: true)
+            })
+            .disposed(by: disposeBag)
+    }
 }

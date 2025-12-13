@@ -123,6 +123,7 @@ class CoupleConnectViewController: UIViewController {
         setupViews()
         setupFlexLayout()
         hideKeyboardwhenTappedAround()
+        presentModal()
     }
     
     override func viewDidLayoutSubviews() {
@@ -235,5 +236,12 @@ class CoupleConnectViewController: UIViewController {
             })
             .disposed(by: disposeBag)
             
+    }
+    
+    private func presentModal() {
+        let modalVC = TermsModalViewController()
+        modalVC.modalPresentationStyle = .overFullScreen
+        modalVC.modalTransitionStyle = .crossDissolve
+        self.present(modalVC, animated: true, completion: nil)
     }
 }
