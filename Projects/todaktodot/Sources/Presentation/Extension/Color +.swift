@@ -27,10 +27,10 @@ struct TodotColors {
     
     // MARK: - Brand Colors
     struct Brand {
-        static let mainPurple = UIColor(hex: "6C5CE7")       // Main Purple
-        static let subPurple = UIColor(hex: "A29BFE")        // Sub Purple
-        static let darkPurple = UIColor(hex: "5A4FCF")       // Dark Purple
-        static let lightPurple = UIColor(hex: "DDD6FE")      // Light Purple
+        static let mainPurple = UIColor(hex: "7740AE")       // Main Purple
+        static let subPurple = UIColor(hex: "E0D3F1")        // Sub Purple
+        static let darkPurple = UIColor(hex: "4E3772")       // Dark Purple
+        static let lightPurple = UIColor(hex: "F5F2F8")      // Light Purple
         static let cardPurple = UIColor(hex: "E0D3F1")
         static let lightCardPurple = UIColor(hex: "F5F2F8")
     }

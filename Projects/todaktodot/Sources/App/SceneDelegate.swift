@@ -7,7 +7,7 @@ import GoogleSignIn
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
-    private let serverService = ServerJoinService.shared
+//    private let serverService = ServerJoinService.shared
     static let kakaoCodeRelay = PublishRelay<String>()
     static let googleCodeRelay = PublishRelay<String>()
     
@@ -17,13 +17,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         guard let windowScene = (scene as? UIWindowScene) else { return }
         
-        let tabBarController = TabBarController()
-        let viewController = UIViewController()
-        viewController.view.backgroundColor = .white
-
-        let navigationController = UINavigationController(rootViewController: viewController)
+//        let tabBarController = TabBarController()
+        let vc = SigninViewController()
+        let navigationController = UINavigationController(rootViewController: vc)
+        navigationController.navigationBar.isHidden = true
         window = UIWindow(windowScene: windowScene)
-        window?.rootViewController = UserdefaultKey.isSiginedIn ? tabBarController : navigationController
+//        window?.rootViewController = UserdefaultKey.isSiginedIn ? tabBarController : navigationController
+        window?.rootViewController = navigationController
         window?.makeKeyAndVisible()
         
     }
@@ -42,16 +42,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             return
         }
         
-        if let code = url.queryParameters?["code"] {
-            SceneDelegate.kakaoCodeRelay.accept(code)
-        } else if let error = url.queryParameters?["error"] {
-            print("Error: \(error)")
-        }
+//        if let code = url.queryParameters?["code"] {
+//            SceneDelegate.kakaoCodeRelay.accept(code)
+//        } else if let error = url.queryParameters?["error"] {
+//            print("Error: \(error)")
+//        }
     }
     
     func sceneWillEnterForeground(_ scene: UIScene) {
-        serverService.checkTokenExpired(splash: true)
-        AnalyticsService().screenEvent(ScreenName: .splash)
+//        AnalyticsService().screenEvent(ScreenName: .splash)
     }
 
     // 사용법 :

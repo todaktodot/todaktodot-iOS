@@ -3,7 +3,6 @@ import RxKakaoSDKCommon
 import FirebaseCore
 import GoogleSignIn
 import FirebaseMessaging
-import NMapsMap
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -26,10 +25,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         if let APIKey = Bundle.main.object(forInfoDictionaryKey: "KAKAO_APP_KEY") as? String {
             RxKakaoSDK.initSDK(appKey: APIKey)
-        }
-        
-        if let APIKey = Bundle.main.object(forInfoDictionaryKey: "NAVER_APP_KEY_ID") as? String {
-            NMFAuthManager.shared().clientId = APIKey
         }
         
         if let clientID = FirebaseApp.app()?.options.clientID {
