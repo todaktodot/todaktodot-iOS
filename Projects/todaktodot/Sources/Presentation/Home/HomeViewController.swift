@@ -23,17 +23,17 @@ final class HomeViewController: UIViewController, View {
     private let contentContainer = UIView()
     
     private let mainCard = UIView()
-    private let yearLabel = UILabel()
+    private let yearLabel = TDLabel()
     private let questionIcon = UIImageView()
-    private let titleLabel = UILabel()
+    private let titleLabel = TDLabel()
     private let chipContainer = UIView()
     private let chip1 = ChipView(title: "🍰 디저트모드")
     private let chip2 = ChipView(title: "💸 경제관")
     private let arrowButton = UIButton()
     private let pokeButton = UIButton()
     private let descriptionCard = UIView()
-    private let descriptionTitle = UILabel()
-    private let descriptionLabel = UILabel()
+    private let descriptionTitle = TDLabel()
+    private let descriptionLabel = TDLabel()
     
     private let weekCardsContainer = UIView()
     private let weekdays = ["토", "금", "목", "수", "화", "월"]
@@ -301,12 +301,12 @@ final class HomeViewController: UIViewController, View {
         card.layer.shadowOffset = CGSize(width: 0, height: -8)
         card.layer.shadowRadius = 15
         
-        let dayLabel = UILabel()
+        let dayLabel = TDLabel()
         dayLabel.text = "\(day) 9/\(date)"
         dayLabel.font = .pretenSemiBold(16)
         dayLabel.textColor = .grayScale900
         
-        let topicLabel = UILabel()
+        let topicLabel = TDLabel()
         topicLabel.text = "모드 · 대주제 ·소주제"
         topicLabel.font = .pretenRegular(14)
         topicLabel.textColor = .grayScale800
@@ -394,7 +394,7 @@ final class HomeViewController: UIViewController, View {
 
 private final class ChipView: UIView {
     
-    private let label = UILabel()
+    private let label = TDLabel()
     private var calculatedWidth: CGFloat = 0
     
     init(title: String) {

@@ -10,7 +10,7 @@ import FlexLayout
 import PinLayout
 
 final class PaddingButton: UIButton {
-    let textLabel = UILabel()
+    let textLabel = TDLabel()
     let padding: CGFloat
 
     init(frame: CGRect = .zero, padding: CGFloat = 16, text: String) {

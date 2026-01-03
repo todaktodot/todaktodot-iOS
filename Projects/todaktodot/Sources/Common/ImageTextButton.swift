@@ -12,7 +12,7 @@ import PinLayout
 
 class ImageTextButton: UIButton {
     let customImage = UIImageView()
-    let customText = UILabel()
+    let customText = TDLabel()
     
     private let spacing: CGFloat
     private let imageSize: CGFloat
