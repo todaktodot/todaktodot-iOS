@@ -8,12 +8,31 @@
 import UIKit
 import FlexLayout
 import PinLayout
+import Then
 
 final class InfoPopupView: UIView {
     
-    private let popupContainer = UIView()
-    private let closeButtonContainer = UIView()
-    private let closeButton = UIButton()
+    private let popupContainer = UIView().then {
+        $0.backgroundColor = .white
+        $0.layer.cornerRadius = 20
+        $0.layer.shadowColor = UIColor.black.cgColor
+        $0.layer.shadowOpacity = 0.1
+        $0.layer.shadowOffset = CGSize(width: 0, height: 2)
+        $0.layer.shadowRadius = 8
+    }
+    
+    private lazy var closeButtonContainer = UIView().then {
+        $0.backgroundColor = .clear
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismiss))
+        $0.addGestureRecognizer(tapGesture)
+    }
+    
+    private let closeButton = UIButton().then {
+        $0.setImage(UIImage(systemName: "xmark"), for: .normal)
+        $0.tintColor = .grayScale600
+        $0.isUserInteractionEnabled = false
+    }
+    
     private let contentContainer = UIView()
     
     override init(frame: CGRect) {
@@ -27,29 +46,8 @@ final class InfoPopupView: UIView {
     
     private func setupUI() {
         backgroundColor = .clear
-        
-        popupContainer.backgroundColor = .white
-        popupContainer.layer.cornerRadius = 20
-        popupContainer.layer.shadowColor = UIColor.black.cgColor
-        popupContainer.layer.shadowOpacity = 0.1
-        popupContainer.layer.shadowOffset = CGSize(width: 0, height: 2)
-        popupContainer.layer.shadowRadius = 8
-        addSubview(popupContainer)
-        
-        closeButtonContainer.backgroundColor = .clear
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismiss))
-        closeButtonContainer.addGestureRecognizer(tapGesture)
-        
-        closeButton.setImage(UIImage(systemName: "xmark"), for: .normal)
-        closeButton.tintColor = .grayScale600
-        closeButton.isUserInteractionEnabled = false
-        
-        popupContainer.addSubview(closeButtonContainer)
-        closeButtonContainer.addSubview(closeButton)
-        popupContainer.addSubview(contentContainer)
-        
+        setSubView()
         setupContent()
-        
         popupContainer.flex
             .width(332)
             .padding(24)
@@ -60,6 +58,13 @@ final class InfoPopupView: UIView {
                 flex.addItem(contentContainer).marginTop(4)
                     .marginBottom(24)
             }
+    }
+    
+    private func setSubView() {
+        addSubview(popupContainer)
+        popupContainer.addSubview(closeButtonContainer)
+        closeButtonContainer.addSubview(closeButton)
+        popupContainer.addSubview(contentContainer)
     }
     
     private func setupContent() {
@@ -93,7 +98,42 @@ final class InfoPopupView: UIView {
             flex.addItem(section3Item2).marginTop(8)
         }
     }
+}
+
+// MARK: - FUNC
+extension InfoPopupView {
+    @objc private func dismiss() {
+        let currentY = popupContainer.frame.minY
+        
+        UIView.animate(withDuration: 0.2, animations: {
+            self.popupContainer.alpha = 0
+            self.popupContainer.pin.top(currentY - 20)
+        }) { _ in
+            self.removeFromSuperview()
+        }
+    }
     
+    func show(in view: UIView, alignedWith cardView: UIView) {
+        frame = view.bounds
+        view.addSubview(self)
+        
+        popupContainer.flex.layout(mode: .adjustHeight)
+        
+        let cardFrameInView = cardView.convert(cardView.bounds, to: view)
+        let finalY = cardFrameInView.minY
+        
+        popupContainer.pin.top(finalY - 20).right(view.bounds.width - cardFrameInView.maxX)
+        popupContainer.alpha = 0
+        
+        UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseOut) {
+            self.popupContainer.alpha = 1
+            self.popupContainer.pin.top(finalY)
+        }
+    }
+}
+
+// MARK: - SUB UI
+extension InfoPopupView {
     private func createTitleLabel(text: String) -> UILabel {
         let label = TDLabel()
         label.font = .pretenSemiBold(16)
@@ -123,34 +163,5 @@ final class InfoPopupView: UIView {
         super.layoutSubviews()
         
         popupContainer.flex.layout(mode: .adjustHeight)
-    }
-    
-    @objc private func dismiss() {
-        let currentY = popupContainer.frame.minY
-        
-        UIView.animate(withDuration: 0.2, animations: {
-            self.popupContainer.alpha = 0
-            self.popupContainer.pin.top(currentY - 20)
-        }) { _ in
-            self.removeFromSuperview()
-        }
-    }
-    
-    func show(in view: UIView, alignedWith cardView: UIView) {
-        frame = view.bounds
-        view.addSubview(self)
-        
-        popupContainer.flex.layout(mode: .adjustHeight)
-        
-        let cardFrameInView = cardView.convert(cardView.bounds, to: view)
-        let finalY = cardFrameInView.minY
-        
-        popupContainer.pin.top(finalY - 20).right(view.bounds.width - cardFrameInView.maxX)
-        popupContainer.alpha = 0
-        
-        UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseOut) {
-            self.popupContainer.alpha = 1
-            self.popupContainer.pin.top(finalY)
-        }
     }
 }

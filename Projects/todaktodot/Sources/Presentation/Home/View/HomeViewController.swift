@@ -12,37 +12,101 @@ import ReactorKit
 import RxSwift
 import RxCocoa
 import UserNotifications
+import Then
 
 final class HomeViewController: UIViewController, View {
     
     var disposeBag = DisposeBag()
+    weak var coordinator: HomeCoordinator?
     
     private let gradientLayer = CAGradientLayer()
     private let rootFlexContainer = UIView()
     private let scrollView = UIScrollView()
     private let contentContainer = UIView()
-    
-    private let mainCard = UIView()
-    private let yearLabel = TDLabel()
-    private let questionIcon = UIImageView()
-    private let titleLabel = TDLabel()
-    private let chipContainer = UIView()
+
+    private let mainCard = UIView().then {
+        $0.backgroundColor = .white
+        $0.layer.cornerRadius = 20
+        $0.layer.shadowColor = UIColor.black.cgColor
+        $0.layer.shadowOpacity = 0.05
+        $0.layer.shadowOffset = CGSize(width: 0, height: 2)
+        $0.layer.shadowRadius = 8
+    }
+    private let yearLabel = TDLabel().then {
+        $0.text = "2025년 9월 14일 일요일"
+        $0.font = .pretenMedium(14)
+        $0.textColor = .grayScale600
+    }
+    private let questionIcon = UIImageView().then {
+        $0.image = UIImage(systemName: "questionmark.circle")
+        $0.tintColor = .grayScale600
+        $0.contentMode = .scaleAspectFit
+        $0.isUserInteractionEnabled = true
+    }
+    private let titleLabel = TDLabel().then {
+        $0.font = .pretenSemiBold(24)
+        $0.numberOfLines = 0
+        $0.textColor = .grayScale900
+        
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.lineHeightMultiple = 1.5
+        $0.attributedText = NSAttributedString(
+            string: "오늘의 질문이 도착했어요\n먼저 답해볼까요?",
+            attributes: [.paragraphStyle: paragraphStyle]
+        )
+    }
+//    private let chipContainer = UIView()
     private let chip1 = ChipView(title: "🍰 디저트모드")
     private let chip2 = ChipView(title: "💸 경제관")
-    private let arrowButton = UIButton()
-    private let pokeButton = UIButton()
-    private let descriptionCard = UIView()
-    private let descriptionTitle = TDLabel()
-    private let descriptionLabel = TDLabel()
+    private let arrowButton = UIButton().then {
+        $0.backgroundColor = TodotColors.Button.purpleButton1
+        $0.layer.cornerRadius = 24
+        let arrowConfig = UIImage.SymbolConfiguration(weight: .semibold)
+        $0.setImage(UIImage(systemName: "arrow.right", withConfiguration: arrowConfig), for: .normal)
+        $0.tintColor = .white
+    }
+    private let pokeButton = UIButton().then {
+        $0.setTitle("콕 찌르기", for: .normal)
+        $0.setTitleColor(.white, for: .normal)
+        $0.titleLabel?.font = .pretenSemiBold(14)
+        $0.backgroundColor = TodotColors.Button.purpleButton1
+        $0.layer.cornerRadius = 6
+        $0.isHidden = true
+    }
+    private let descriptionCard = TDLabel().then {
+        $0.backgroundColor = .grayScale100
+        $0.layer.cornerRadius = 12
+    }
+    
+    private let descriptionTitle = TDLabel().then {
+        $0.text = "하루에 딱 1개의 질문만 주어져요!"
+        $0.font = .pretenMedium(14)
+        $0.textColor = .grayScale800
+        $0.numberOfLines = 0
+    }
+    
+    private let descriptionLabel = TDLabel().then {
+        $0.font = .pretenRegular(14)
+        $0.textColor = .grayScale600
+        $0.numberOfLines = 0
+    }
     
     private let weekCardsContainer = UIView()
     private let weekdays = ["토", "금", "목", "수", "화", "월"]
+    
+    init(reactor: HomeReactor) {
+        super.init(nibName: nil, bundle: nil)
+        self.reactor = reactor
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setupNavigationBar()
         setupUI()
-        reactor = HomeReactor()
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -83,6 +147,12 @@ final class HomeViewController: UIViewController, View {
             })
             .map { Reactor.Action.tapPokeButton }
             .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        arrowButton.rx.tap
+            .subscribe(onNext: { [weak self] in
+                self?.coordinator?.showDailyCard()
+            })
             .disposed(by: disposeBag)
     }
     
@@ -138,59 +208,8 @@ final class HomeViewController: UIViewController, View {
     }
     
     private func setupMainCard() {
-        mainCard.backgroundColor = .white
-        mainCard.layer.cornerRadius = 20
-        mainCard.layer.shadowColor = UIColor.black.cgColor
-        mainCard.layer.shadowOpacity = 0.05
-        mainCard.layer.shadowOffset = CGSize(width: 0, height: 2)
-        mainCard.layer.shadowRadius = 8
-        
-        yearLabel.text = "2025년 9월 14일 일요일"
-        yearLabel.font = .pretenMedium(14)
-        yearLabel.textColor = .grayScale600
-        
-        questionIcon.image = UIImage(systemName: "questionmark.circle")
-        questionIcon.tintColor = .grayScale600
-        questionIcon.contentMode = .scaleAspectFit
-        questionIcon.isUserInteractionEnabled = true
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(showInfoPopup))
         questionIcon.addGestureRecognizer(tapGesture)
-        
-        arrowButton.backgroundColor = TodotColors.Button.purpleButton1
-        arrowButton.layer.cornerRadius = 24
-        let arrowConfig = UIImage.SymbolConfiguration(weight: .semibold)
-        arrowButton.setImage(UIImage(systemName: "arrow.right", withConfiguration: arrowConfig), for: .normal)
-        arrowButton.tintColor = .white
-        
-        pokeButton.setTitle("콕 찌르기", for: .normal)
-        pokeButton.setTitleColor(.white, for: .normal)
-        pokeButton.titleLabel?.font = .pretenSemiBold(14)
-        pokeButton.backgroundColor = TodotColors.Button.purpleButton1
-        pokeButton.layer.cornerRadius = 6
-        pokeButton.isHidden = true
-        
-        titleLabel.font = .pretenSemiBold(24)
-        titleLabel.numberOfLines = 0
-        titleLabel.textColor = .grayScale900
-        
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.lineHeightMultiple = 1.5
-        titleLabel.attributedText = NSAttributedString(
-            string: "오늘의 질문이 도착했어요\n먼저 답해볼까요?",
-            attributes: [.paragraphStyle: paragraphStyle]
-        )
-        
-        descriptionCard.backgroundColor = .grayScale100
-        descriptionCard.layer.cornerRadius = 12
-        
-        descriptionTitle.text = "하루에 딱 1개의 질문만 주어져요!"
-        descriptionTitle.font = .pretenMedium(14)
-        descriptionTitle.textColor = .grayScale800
-        descriptionTitle.numberOfLines = 0
-        
-        descriptionLabel.font = .pretenRegular(14)
-        descriptionLabel.textColor = .grayScale600
-        descriptionLabel.numberOfLines = 0
         
         let descParagraphStyle = NSMutableParagraphStyle()
         descParagraphStyle.lineHeightMultiple = 1.5
@@ -199,16 +218,9 @@ final class HomeViewController: UIViewController, View {
             attributes: [.paragraphStyle: descParagraphStyle]
         )
         
-        mainCard.addSubview(yearLabel)
-        mainCard.addSubview(questionIcon)
-        mainCard.addSubview(titleLabel)
-        mainCard.addSubview(chip1)
-        mainCard.addSubview(chip2)
-        mainCard.addSubview(arrowButton)
-        mainCard.addSubview(descriptionCard)
-        descriptionCard.addSubview(descriptionTitle)
-        descriptionCard.addSubview(descriptionLabel)
-        mainCard.addSubview(pokeButton)
+        [yearLabel, questionIcon, titleLabel, chip1, chip2, arrowButton, descriptionCard, pokeButton]
+            .forEach {mainCard.addSubview($0)}
+        [descriptionTitle, descriptionLabel].forEach {descriptionCard.addSubview($0)}
         
         mainCard.flex
             .padding(24)
@@ -328,13 +340,21 @@ final class HomeViewController: UIViewController, View {
                 flex.addItem(topicLabel).marginTop(8)
             }
         
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(weekCardTapped))
+        card.addGestureRecognizer(tapGesture)
+        
         return card
+    }
+    
+    @objc private func weekCardTapped() {
+        coordinator?.showHistoryCardDetail()
     }
     
     private func showPokeAlert() {
         showAlert(
             icon: UIImage(resource: .poke),
             title: "콕! 상대방에게 알림을 보냈어요\n곧 답변할 거예요",
+            description: nil,
             primaryButtonTitle: "확인",
             primaryButtonAction: {}
         )
@@ -432,3 +452,5 @@ private final class ChipView: UIView {
         return CGSize(width: calculatedWidth, height: 37)
     }
 }
+
+
