@@ -22,7 +22,7 @@ let project = Project(
             name: "todaktodot",
             destinations: .iOS,
             product: .app,
-            bundleId: "io.tuist.todaktodot",
+            bundleId: "com.todaktodot.dev",
             deploymentTargets: .iOS("15.0"),
             infoPlist: .extendingDefault(
                 with: [
@@ -61,8 +61,8 @@ let project = Project(
                     "CFBundleDisplayName" : "투닥투닷",
                     "KAKAO_URL_KEY": "$(KAKAO_URL_KEY)",
                     "KAKAO_APP_KEY": "$(KAKAO_APP_KEY)",
-                    "IMDANG_API": "$(TODAKTODOT_API)",
-                    "IMDANG_DEV_API": "$(TODAKTODOT_DEV_API)",
+                    "TODAKTODOT_API": "$(TODAKTODOT_API)",
+                    "TODAKTODOT_DEV_API": "$(TODAKTODOT_DEV_API)",
                     "NSAppTransportSecurity": [
                         "NSAllowsArbitraryLoads": true
                     ],
@@ -104,7 +104,7 @@ let project = Project(
             name: "todaktodotTests",
             destinations: .iOS,
             product: .unitTests,
-            bundleId: "io.tuist.todaktodotTests",
+            bundleId: "com.tuist.todaktodotTests",
             deploymentTargets: .iOS("15.0"),
             infoPlist: .default,
             sources: ["Tests/**"],
@@ -115,7 +115,7 @@ let project = Project(
             name: "SharedLibraries",
             destinations: .iOS,
             product: .staticFramework,
-            bundleId: "io.todaktodot.SharedLibraries",
+            bundleId: "com.todaktodot.SharedLibraries",
             deploymentTargets: .iOS("15.0"),
             infoPlist: .default,
             sources: [],
