@@ -8,7 +8,7 @@
 import UIKit
 import RxSwift
 
-final class MainTabBarCoordinator: Coordinator {
+final class TabBarCoordinator: Coordinator {
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
     
@@ -56,10 +56,49 @@ final class HomeCoordinator: Coordinator {
     }
     
     func start() {
-        let homeViewController = HomeViewController()
+        let reactor = HomeReactor()
+        let homeViewController = HomeViewController(reactor: reactor)
+        homeViewController.coordinator = self
         homeViewController.view.backgroundColor = TodotColors.Background.primary
         navigationController.navigationBar.isHidden = false
         navigationController.setViewControllers([homeViewController], animated: false)
+    }
+    
+    func showDailyCard() {
+        let reactor = DailyCardReactor()
+        let dailyCardViewController = DailyCardViewController(reactor: reactor)
+        dailyCardViewController.coordinator = self
+        dailyCardViewController.hidesBottomBarWhenPushed = true
+        navigationController.pushViewController(dailyCardViewController, animated: true)
+    }
+    
+    func showDailyCardDetail() {
+        let dailyCardDetailViewController = DailyCardDetailViewController(cardType: .situation)
+        dailyCardDetailViewController.coordinator = self
+        dailyCardDetailViewController.hidesBottomBarWhenPushed = true
+        navigationController.pushViewController(dailyCardDetailViewController, animated: true)
+    }
+    
+    func showBalanceCardDetail() {
+        let dailyCardDetailViewController = DailyCardDetailViewController(cardType: .balance)
+        dailyCardDetailViewController.coordinator = self
+        dailyCardDetailViewController.hidesBottomBarWhenPushed = true
+        navigationController.pushViewController(dailyCardDetailViewController, animated: true)
+    }
+    
+    func showHistoryCardDetail() {
+        let dailyCardDetailViewController = HistoryCardDetailViewController()
+        dailyCardDetailViewController.coordinator = self
+        dailyCardDetailViewController.hidesBottomBarWhenPushed = true
+        navigationController.pushViewController(dailyCardDetailViewController, animated: true)
+    }
+    
+    func navigateToHome() {
+        navigationController.popToRootViewController(animated: true)
+    }
+    
+    func navigateBack() {
+        navigationController.popViewController(animated: true)
     }
 }
 
