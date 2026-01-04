@@ -65,11 +65,11 @@ class TermsModalViewController: UIViewController {
     }
     
     
-    private let titleLabel = UILabel().then {
+    private let titleLabel = TDLabel().then {
+        $0.text = "서비스 이용을 위해\n약관 동의가 필요합니다"
         $0.font = .pretenSemiBold(20)
         $0.textColor = .grayScale900
         $0.numberOfLines = 2
-        $0.setTextWithLineHeight(text: "서비스 이용을 위해\n약관 동의가 필요합니다", multiplier: 1.3)
     }
     
     override func viewDidLoad() {

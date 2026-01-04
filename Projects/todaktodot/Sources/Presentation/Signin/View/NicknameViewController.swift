@@ -18,7 +18,7 @@ class NicknameViewController: UIViewController {
         $0.image = UIImage(resource: .connectBackground)
     }
     
-    private let titleLabel = UILabel().then {
+    private let titleLabel = TDLabel().then {
         $0.text = "닉네임을 알려주세요"
         $0.font = .pretenSemiBold(28)
         $0.textColor = .grayScale900

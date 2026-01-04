@@ -33,7 +33,7 @@ extension UIViewController {
             $0.alpha = 0
         }
 
-        let toastLabel = UILabel().then {
+        let toastLabel = TDLabel().then {
             $0.text = message
             $0.textColor = .white
             $0.textAlignment = .left

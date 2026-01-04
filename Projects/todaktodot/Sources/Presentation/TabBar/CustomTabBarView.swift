@@ -155,7 +155,7 @@ private final class TabItemView: UIView {
     
     private let contentContainer = UIView()
     private let iconImageView = UIImageView()
-    private let titleLabel = UILabel()
+    private let titleLabel = TDLabel()
     private let tabType: TabBarType
     
     let tapGesture = PublishRelay<Void>()

@@ -95,7 +95,7 @@ final class InfoPopupView: UIView {
     }
     
     private func createTitleLabel(text: String) -> UILabel {
-        let label = UILabel()
+        let label = TDLabel()
         label.font = .pretenSemiBold(16)
         label.textColor = .grayScale900
         label.numberOfLines = 0
@@ -111,7 +111,7 @@ final class InfoPopupView: UIView {
     }
     
     private func createItemLabel(text: String) -> UILabel {
-        let label = UILabel()
+        let label = TDLabel()
         label.text = text
         label.font = .pretenMedium(14)
         label.textColor = .grayScale800

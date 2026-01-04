@@ -21,7 +21,7 @@ class CheckButtonView: UIView {
     
     private var isBackground = false
     private let disposeBag = DisposeBag()
-    private let title = UILabel().then {
+    private let title = TDLabel().then {
         $0.textColor = .grayScale900
     }
     

@@ -32,39 +32,39 @@ class CoupleConnectViewController: UIViewController {
         $0.backgroundColor = .grayScale800.withAlphaComponent(0.95)
     }
     
-    private let titleLabel = UILabel().then {
+    private let titleLabel = TDLabel().then {
         $0.text = "상대와 연결하기"
         $0.font = .pretenSemiBold(28)
         $0.textColor = .grayScale900
     }
     
-    private let descriptionLabel1 = UILabel().then {
+    private let descriptionLabel1 = TDLabel().then {
+        $0.text = "내 코드를 복사해서 상대방에게 보내거나\n상대방의 코드를 입력하세요"
         $0.font = .pretenRegular(16)
         $0.textColor = .grayScale800
         $0.numberOfLines = 0
-        $0.setTextWithLineHeight(text: "내 코드를 복사해서 상대방에게 보내거나\n상대방의 코드를 입력하세요", multiplier: 1.3)
     }
     
-    private let descriptionLabel2 = UILabel().then {
+    private let descriptionLabel2 = TDLabel().then {
         $0.text = "둘 중 한 명만 상대의 코드를 입력하면 연결돼요 ☺️"
         $0.font = .pretenRegular(14)
         $0.textColor = .grayScale600
         $0.numberOfLines = 0
     }
     
-    private let myCodeLabel = UILabel().then {
+    private let myCodeLabel = TDLabel().then {
         $0.text = "내 코드"
         $0.font = .pretenSemiBold(16)
         $0.textColor = .grayScale800
     }
     
-    private let partnerCodeLabel = UILabel().then {
+    private let partnerCodeLabel = TDLabel().then {
         $0.text = "상대 코드 입력"
         $0.font = .pretenSemiBold(16)
         $0.textColor = .grayScale800
     }
     
-    private let divideTextLabel = UILabel().then {
+    private let divideTextLabel = TDLabel().then {
         $0.text = "또는"
         $0.textAlignment = .center
         $0.font = .pretenSemiBold(12)

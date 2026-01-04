@@ -18,13 +18,13 @@ class CoupleInfoViewController: UIViewController {
         $0.image = UIImage(resource: .connectBackground)
     }
     
-    private let titleLabel = UILabel().then {
+    private let titleLabel = TDLabel().then {
         $0.text = "지금 우리는?"
         $0.font = .pretenSemiBold(28)
         $0.textColor = .grayScale900
     }
     
-    private let dateLabel = UILabel().then {
+    private let dateLabel = TDLabel().then {
         $0.text = "우리가 만난 날"
         $0.font = .pretenSemiBold(16)
         $0.textColor = .grayScale900
@@ -32,7 +32,7 @@ class CoupleInfoViewController: UIViewController {
     
     private let datePickerView = CoupleDatePickerView()
     
-    private let relationshipLabel = UILabel().then {
+    private let relationshipLabel = TDLabel().then {
         $0.text = "관계 단계"
         $0.font = .pretenSemiBold(16)
         $0.textColor = .grayScale900
