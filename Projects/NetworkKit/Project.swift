@@ -7,7 +7,7 @@ let NetworkKit = Project(
             name: "NetworkKit",
             destinations: .iOS,
             product: .framework,
-            bundleId: "io.todaktodot.NetworkKit",
+            bundleId: "com.todaktodot.NetworkKit",
             deploymentTargets: .iOS("15.0"),
             infoPlist: .extendingDefault(
                 with: [
@@ -26,7 +26,7 @@ let NetworkKit = Project(
             name: "NetworkKitTests",
             destinations: .iOS,
             product: .unitTests,
-            bundleId: "io.todaktodot.NetworkKitTests",
+            bundleId: "com.todaktodot.NetworkKitTests",
             infoPlist: .default,
             sources: ["NetworkKitTests/**"],
             resources: [],
