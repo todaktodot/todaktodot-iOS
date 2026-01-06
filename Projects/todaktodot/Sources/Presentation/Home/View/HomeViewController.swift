@@ -73,7 +73,7 @@ final class HomeViewController: UIViewController, View {
         $0.layer.cornerRadius = 6
         $0.isHidden = true
     }
-    private let descriptionCard = TDLabel().then {
+    private let descriptionCard = UIView().then {
         $0.backgroundColor = .grayScale100
         $0.layer.cornerRadius = 12
     }
@@ -214,7 +214,7 @@ final class HomeViewController: UIViewController, View {
         let descParagraphStyle = NSMutableParagraphStyle()
         descParagraphStyle.lineHeightMultiple = 1.5
         descriptionLabel.attributedText = NSAttributedString(
-            string: "오전 8시 기준으로 질문이 바뀌니 8시가 지나기\n 전에 답해보세요.",
+            string: "오전 8시 기준으로 질문이 바뀌니 8시가 지나기\n전에 답해보세요.",
             attributes: [.paragraphStyle: descParagraphStyle]
         )
         

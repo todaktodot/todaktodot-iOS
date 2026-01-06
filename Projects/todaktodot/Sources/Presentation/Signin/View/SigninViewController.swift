@@ -11,12 +11,16 @@ import PinLayout
 import RxSwift
 import RxCocoa
 import Then
+import ReactorKit
 
-final class SigninViewController: UIViewController {
+final class SigninViewController: UIViewController, View {
     
-    private var disposeBag = DisposeBag()
+    var disposeBag = DisposeBag()
+    weak var coordinator: SigninCoordinator?
+    
     private let onboardingView = InfiniteSliderView()
     private let buttonContainerView = UIView()
+    private let testCode = ["a","b","d","4","5","8"]
     
     let kakaoButton = UIButton().then {
         $0.backgroundColor = UIColor(hex: "FAE64D")
@@ -133,24 +137,43 @@ final class SigninViewController: UIViewController {
     }
     
     private func bindActions() {
-        kakaoButton.rx.tap
-            .subscribe(onNext: { [weak self] _ in
-                let vc = CoupleConnectViewController(code: ["a","b","d","4","5","8"])
-                self?.navigationController?.pushViewController(vc, animated: true)
-            })
-            .disposed(by: disposeBag)
-        
-        googleButton.rx.tap
-            .subscribe(onNext: { [weak self] _ in
-                let vc = CoupleConnectViewController(code: ["a","b","d","4","5","8"])
-                self?.navigationController?.pushViewController(vc, animated: true)
-            })
-            .disposed(by: disposeBag)
-        
         appleButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
-                let vc = CoupleConnectViewController(code: ["a","b","d","4","5","8"])
-                self?.navigationController?.pushViewController(vc, animated: true)
+                guard let self = self else { return }
+                coordinator?.showCoupleConnect(code: testCode)
+            })
+            .disposed(by: disposeBag)
+    }
+    
+    func bind(reactor: SigninReactor) {
+        kakaoButton.rx.tap
+            .map { SigninReactor.Action.tapKakaoButton }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .map { $0.isKakaoSigninSuccess }
+            .distinctUntilChanged()
+            .filter { $0 }
+            .subscribe(onNext: { [weak self] _ in
+                guard let self = self else { return }
+                coordinator?.showCoupleConnect(code: testCode)
+            })
+            .disposed(by: disposeBag)
+        
+        
+        googleButton.rx.tap
+            .map { SigninReactor.Action.tapGoogleButton }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .map { $0.isGoogleSigninSuccess }
+            .distinctUntilChanged()
+            .filter { $0 }
+            .subscribe(onNext: { [weak self] _ in
+                guard let self = self else { return }
+                coordinator?.showCoupleConnect(code: testCode)
             })
             .disposed(by: disposeBag)
     }

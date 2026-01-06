@@ -194,13 +194,11 @@ final class DailyCardDetailViewController: UIViewController {
             $0.textColor = .mainPurple
         }
         
-        let situationText = "둘이 처음 가는 고급 레스토랑에서 식사를 마쳤습니다. 계산서가 15만원이 나왔는데, 마침 둘 다 지갑을 꺼내려고 하는 상황이에요!"
-        
         let situationLabel = TDLabel().then {
+            $0.text = "둘이 처음 가는 고급 레스토랑에서 식사를 마쳤습니다. 계산서가 15만원이 나왔는데, 마침 둘 다 지갑을 꺼내려고 하는 상황이에요!"
             $0.font = .pretenRegular(16)
             $0.textColor = .grayScale800
             $0.numberOfLines = 0
-            $0.setTextWithLineHeight(text: situationText, multiplier: 1.5)
         }
         
         situationContainer.flex.padding(20).define { flex in
@@ -401,7 +399,7 @@ extension DailyCardDetailViewController {
             $0.addTarget(self, action: #selector(optionButtonTapped(_:)), for: .touchUpInside)
         }
         
-        let titleLabel = UILabel().then {
+        let titleLabel = TDLabel().then {
             $0.text = title
             $0.font = .pretenSemiBold(16)
             $0.textColor = .grayScale900
@@ -409,13 +407,12 @@ extension DailyCardDetailViewController {
             $0.isUserInteractionEnabled = false
         }
         
-        let descriptionLabel = UILabel().then {
+        let descriptionLabel = TDLabel().then {
             $0.text = description
             $0.font = .pretenRegular(14)
             $0.textColor = .grayScale600
             $0.numberOfLines = 0
             $0.isUserInteractionEnabled = false
-            $0.setTextWithLineHeight(text: description, multiplier: 1.5)
         }
         
         button.addSubview(titleLabel)

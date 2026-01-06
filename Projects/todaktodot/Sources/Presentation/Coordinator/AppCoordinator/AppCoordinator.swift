@@ -15,6 +15,7 @@ final class AppCoordinator: Coordinator {
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
+        self.navigationController.isNavigationBarHidden = true
     }
     
     // TODO: 고민
@@ -28,6 +29,7 @@ final class AppCoordinator: Coordinator {
     
     // TODO: 실제 로그인 정보로 변경
     private func isLoggedIn() -> Bool {
+//        return UserdefaultKey.isSiginedIn
         return true
     }
     

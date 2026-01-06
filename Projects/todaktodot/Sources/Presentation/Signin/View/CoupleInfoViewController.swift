@@ -12,6 +12,8 @@ import PinLayout
 import RxSwift
 
 class CoupleInfoViewController: UIViewController {
+    weak var coordinator: SigninCoordinator?
+    
     private let disposeBag = DisposeBag()
     private let contentsView = UIView()
     private let backgroundView = UIImageView().then {
@@ -54,6 +56,7 @@ class CoupleInfoViewController: UIViewController {
         hideKeyboardwhenTappedAround()
         setupViews()
         setupFlexLayout()
+        bindActions()
     }
     
     override func viewDidLayoutSubviews() {
@@ -109,8 +112,7 @@ class CoupleInfoViewController: UIViewController {
     private func bindActions() {
         startButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
-                let tabBarController = ViewController()
-                (UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate)?.changeRootView(tabBarController, animated: true)
+                self?.coordinator?.navigateToMain()
             })
             .disposed(by: disposeBag)
     }
