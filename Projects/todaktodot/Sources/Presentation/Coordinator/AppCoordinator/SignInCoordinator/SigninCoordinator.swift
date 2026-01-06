@@ -18,6 +18,7 @@ final class SigninCoordinator: Coordinator {
     
     func start() {
         let signinViewController = SigninViewController()
+        signinViewController.reactor = SigninReactor()
         navigationController.setViewControllers([signinViewController], animated: false)
     }
     

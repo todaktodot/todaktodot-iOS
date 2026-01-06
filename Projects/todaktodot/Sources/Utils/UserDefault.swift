@@ -17,6 +17,9 @@ enum UserdefaultKey {
     // 저장: UserdefaultKey.test = "~~"
     // 읽기: let test = UserdefaultKey.test
     
+    @UserDefault(key: "isSiginedIn", defaultValue: false)
+    static var isSiginedIn: Bool
+    
     //탈퇴시 적용
     static func resetUserDefaults() {
         
