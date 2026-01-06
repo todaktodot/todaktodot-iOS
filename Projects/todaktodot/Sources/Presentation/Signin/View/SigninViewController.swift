@@ -11,10 +11,11 @@ import PinLayout
 import RxSwift
 import RxCocoa
 import Then
+import ReactorKit
 
-final class SigninViewController: UIViewController {
+final class SigninViewController: UIViewController, View {
     
-    private var disposeBag = DisposeBag()
+    var disposeBag = DisposeBag()
     private let onboardingView = InfiniteSliderView()
     private let buttonContainerView = UIView()
     
@@ -133,21 +134,40 @@ final class SigninViewController: UIViewController {
     }
     
     private func bindActions() {
-        kakaoButton.rx.tap
+        appleButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
                 let vc = CoupleConnectViewController(code: ["a","b","d","4","5","8"])
                 self?.navigationController?.pushViewController(vc, animated: true)
             })
             .disposed(by: disposeBag)
+    }
+    
+    func bind(reactor: SigninReactor) {
+        kakaoButton.rx.tap
+            .map { SigninReactor.Action.tapKakaoButton }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .map { $0.isKakaoSigninSuccess }
+            .distinctUntilChanged()
+            .filter { $0 }
+            .subscribe(onNext: { [weak self] _ in
+                let vc = CoupleConnectViewController(code: ["a","b","d","4","5","8"])
+                self?.navigationController?.pushViewController(vc, animated: true)
+            })
+            .disposed(by: disposeBag)
+        
         
         googleButton.rx.tap
-            .subscribe(onNext: { [weak self] _ in
-                let vc = CoupleConnectViewController(code: ["a","b","d","4","5","8"])
-                self?.navigationController?.pushViewController(vc, animated: true)
-            })
+            .map { SigninReactor.Action.tapGoogleButton }
+            .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
-        appleButton.rx.tap
+        reactor.state
+            .map { $0.isGoogleSigninSuccess }
+            .distinctUntilChanged()
+            .filter { $0 }
             .subscribe(onNext: { [weak self] _ in
                 let vc = CoupleConnectViewController(code: ["a","b","d","4","5","8"])
                 self?.navigationController?.pushViewController(vc, animated: true)
