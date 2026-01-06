@@ -12,20 +12,27 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     static let googleCodeRelay = PublishRelay<String>()
     
     var window: UIWindow?
+    var appCoordinator: AppCoordinator? // AppCoordinator로 변경
     
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         
         guard let windowScene = (scene as? UIWindowScene) else { return }
+        let navigationController = UINavigationController()
+        let appCoordinator = AppCoordinator(navigationController: navigationController)
+        self.appCoordinator = appCoordinator
         
-//        let tabBarController = TabBarController()
-        let vc = SigninViewController()
-        let navigationController = UINavigationController(rootViewController: vc)
-        navigationController.navigationBar.isHidden = true
         window = UIWindow(windowScene: windowScene)
-//        window?.rootViewController = UserdefaultKey.isSiginedIn ? tabBarController : navigationController
         window?.rootViewController = navigationController
         window?.makeKeyAndVisible()
         
+        appCoordinator.start()
+        
+        // 기존 로직 주석처리
+        /*
+        let mainCoordinator = TabBarCoordinator(navigationController: navigationController)
+        self.mainCoordinator = mainCoordinator
+        mainCoordinator.start()
+        */
     }
     
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {

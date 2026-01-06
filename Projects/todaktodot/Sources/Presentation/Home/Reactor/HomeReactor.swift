@@ -46,7 +46,7 @@ final class HomeReactor: Reactor {
             // TODO: 서버연결
             return .just(.setPoked(true))
         case .checkFirstLaunch:
-            // TODO: 서버에서 최초 실행 여부 확인
+            // TODO: 최초 실행 여부 확인
             return .just(.setShowNotificationAlert(true))
         case .dismissNotificationAlert:
             return .just(.setShowNotificationAlert(false))
