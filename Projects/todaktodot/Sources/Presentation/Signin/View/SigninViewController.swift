@@ -16,8 +16,11 @@ import ReactorKit
 final class SigninViewController: UIViewController, View {
     
     var disposeBag = DisposeBag()
+    weak var coordinator: SigninCoordinator?
+    
     private let onboardingView = InfiniteSliderView()
     private let buttonContainerView = UIView()
+    private let testCode = ["a","b","d","4","5","8"]
     
     let kakaoButton = UIButton().then {
         $0.backgroundColor = UIColor(hex: "FAE64D")
@@ -136,8 +139,8 @@ final class SigninViewController: UIViewController, View {
     private func bindActions() {
         appleButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
-                let vc = CoupleConnectViewController(code: ["a","b","d","4","5","8"])
-                self?.navigationController?.pushViewController(vc, animated: true)
+                guard let self = self else { return }
+                coordinator?.showCoupleConnect(code: testCode)
             })
             .disposed(by: disposeBag)
     }
@@ -153,8 +156,8 @@ final class SigninViewController: UIViewController, View {
             .distinctUntilChanged()
             .filter { $0 }
             .subscribe(onNext: { [weak self] _ in
-                let vc = CoupleConnectViewController(code: ["a","b","d","4","5","8"])
-                self?.navigationController?.pushViewController(vc, animated: true)
+                guard let self = self else { return }
+                coordinator?.showCoupleConnect(code: testCode)
             })
             .disposed(by: disposeBag)
         
@@ -169,8 +172,8 @@ final class SigninViewController: UIViewController, View {
             .distinctUntilChanged()
             .filter { $0 }
             .subscribe(onNext: { [weak self] _ in
-                let vc = CoupleConnectViewController(code: ["a","b","d","4","5","8"])
-                self?.navigationController?.pushViewController(vc, animated: true)
+                guard let self = self else { return }
+                coordinator?.showCoupleConnect(code: testCode)
             })
             .disposed(by: disposeBag)
     }

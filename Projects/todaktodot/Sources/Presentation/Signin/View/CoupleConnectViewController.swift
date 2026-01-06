@@ -14,6 +14,7 @@ import RxCocoa
 
 
 class CoupleConnectViewController: UIViewController {
+    weak var coordinator: SigninCoordinator?
     private let disposeBag = DisposeBag()
     private let code: String?
     
@@ -123,7 +124,7 @@ class CoupleConnectViewController: UIViewController {
         setupViews()
         setupFlexLayout()
         hideKeyboardwhenTappedAround()
-        presentModal()
+        coordinator?.showTermsModal()
     }
     
     override func viewDidLayoutSubviews() {
@@ -223,8 +224,7 @@ class CoupleConnectViewController: UIViewController {
         connectButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
                 self?.showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
-                    let vc = NicknameViewController()
-                    self?.navigationController?.pushViewController(vc, animated: true)
+                    self?.coordinator?.showNickname()
                 })
             })
             .disposed(by: disposeBag)
@@ -236,12 +236,5 @@ class CoupleConnectViewController: UIViewController {
             })
             .disposed(by: disposeBag)
             
-    }
-    
-    private func presentModal() {
-        let modalVC = TermsModalViewController()
-        modalVC.modalPresentationStyle = .overFullScreen
-        modalVC.modalTransitionStyle = .crossDissolve
-        self.present(modalVC, animated: true, completion: nil)
     }
 }

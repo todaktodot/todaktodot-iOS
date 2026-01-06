@@ -18,29 +18,34 @@ final class SigninCoordinator: Coordinator {
     
     func start() {
         let signinViewController = SigninViewController()
+        signinViewController.coordinator = self
         signinViewController.reactor = SigninReactor()
         navigationController.setViewControllers([signinViewController], animated: false)
     }
     
     func showNickname() {
         let nicknameViewController = NicknameViewController()
+        nicknameViewController.coordinator = self
         navigationController.pushViewController(nicknameViewController, animated: true)
     }
     
     func showCoupleInfo() {
         let coupleInfoViewController = CoupleInfoViewController()
+        coupleInfoViewController.coordinator = self
         navigationController.pushViewController(coupleInfoViewController, animated: true)
     }
     
-    func showCoupleConnect() {
-        let coupleConnectViewController = CoupleConnectViewController()
+    func showCoupleConnect(code: [String]) {
+        let coupleConnectViewController = CoupleConnectViewController(code: code)
+        coupleConnectViewController.coordinator = self
         navigationController.pushViewController(coupleConnectViewController, animated: true)
     }
     
     func showTermsModal() {
         let termsModalViewController = TermsModalViewController()
-        termsModalViewController.modalPresentationStyle = .pageSheet
-        navigationController.present(termsModalViewController, animated: true)
+        termsModalViewController.modalPresentationStyle = .overFullScreen
+        termsModalViewController.modalTransitionStyle = .crossDissolve
+        navigationController.topViewController?.present(termsModalViewController, animated: true, completion: nil)
     }
     
     func dismissModal() {

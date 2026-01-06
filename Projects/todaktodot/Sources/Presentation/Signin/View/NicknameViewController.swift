@@ -12,6 +12,8 @@ import PinLayout
 import RxSwift
 
 class NicknameViewController: UIViewController {
+    weak var coordinator: SigninCoordinator?
+    
     private let disposeBag = DisposeBag()
     private let contentsView = UIView()
     private let backgroundView = UIImageView().then {
@@ -97,8 +99,7 @@ class NicknameViewController: UIViewController {
     private func bindActions() {
         nextButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
-                let vc = CoupleInfoViewController()
-                self?.navigationController?.pushViewController(vc, animated: true)
+                self?.coordinator?.showCoupleInfo()
             })
             .disposed(by: disposeBag)
     }
