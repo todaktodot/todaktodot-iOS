@@ -111,9 +111,7 @@ final class AIReportCoordinator: Coordinator {
     }
     
     func start() {
-        let aiReportViewController = UIViewController()
-        aiReportViewController.view.backgroundColor = TodotColors.Background.primary
-        aiReportViewController.title = "AI 리포트"
+        let aiReportViewController = AIReportViewController()
         navigationController.setViewControllers([aiReportViewController], animated: false)
     }
 }

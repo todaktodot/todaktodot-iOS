@@ -123,7 +123,7 @@ final class SigninViewController: UIViewController, View {
             .all()
         
         appLogo.pin
-            .top(view.pin.safeArea.top + 12)
+            .top(56)
             .left(20)
             .width(92)
             .height(32)
