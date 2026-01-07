@@ -8,6 +8,8 @@
 import UIKit
 
 final class TDLabel: UILabel {
+    var headIndent: CGFloat?
+    
     var lineHeightMultiplier: CGFloat = 1.26 {
         didSet { applyLineHeight() }
     }
@@ -24,7 +26,8 @@ final class TDLabel: UILabel {
         didSet { applyLineHeight() }
     }
 
-    override init(frame: CGRect) {
+    init(frame: CGRect = .zero, headIndent: CGFloat? = nil) {
+        self.headIndent = headIndent
         super.init(frame: frame)
         applyLineHeight()
     }
@@ -41,6 +44,9 @@ final class TDLabel: UILabel {
         let size = font.lineHeight * lineHeightMultiplier
 
         let style = NSMutableParagraphStyle()
+        if let indent = headIndent {
+            style.headIndent = indent
+        }
         style.minimumLineHeight = size
         style.maximumLineHeight = size
         style.alignment = self.textAlignment
@@ -50,7 +56,7 @@ final class TDLabel: UILabel {
             .paragraphStyle: style,
             .baselineOffset: (size - font.lineHeight) / 2
         ]
-
+        
         super.attributedText = NSAttributedString(string: text, attributes: attributes)
     }
 }

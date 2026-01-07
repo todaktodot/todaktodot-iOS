@@ -89,6 +89,7 @@ let project = Project(
                 .external(name: "FirebaseAnalytics"),
                 .external(name: "FlexLayout"),
                 .external(name: "PinLayout"),
+                .external(name: "Lottie"),
                 .project(target: "NetworkKit", path: "../NetworkKit"),
                 .target(name: "SharedLibraries")
             ],
