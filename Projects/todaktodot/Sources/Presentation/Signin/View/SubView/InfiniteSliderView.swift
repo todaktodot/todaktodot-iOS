@@ -71,7 +71,7 @@ final class InfiniteSliderView: UIView {
             .bottom(300)
             .hCenter()
             .height(10)
-            .width(80)
+            .width(180)
         
         layoutScrollViews()
     }
