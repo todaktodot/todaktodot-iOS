@@ -101,17 +101,3 @@ final class HomeCoordinator: Coordinator {
         navigationController.popViewController(animated: true)
     }
 }
-
-final class AIReportCoordinator: Coordinator {
-    var childCoordinators: [Coordinator] = []
-    var navigationController: UINavigationController
-    
-    init(navigationController: UINavigationController) {
-        self.navigationController = navigationController
-    }
-    
-    func start() {
-        let aiReportViewController = AIReportViewController()
-        navigationController.setViewControllers([aiReportViewController], animated: false)
-    }
-}

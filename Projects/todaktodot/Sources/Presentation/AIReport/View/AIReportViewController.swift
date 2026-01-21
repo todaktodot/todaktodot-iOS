@@ -16,6 +16,8 @@ import ReactorKit
 final class AIReportViewController: UIViewController {
     
     var disposeBag = DisposeBag()
+    weak var coordinator: AIReportCoordinator?
+    private var dataEmpty = true
     
     private let scrollView = UIScrollView().then {
         $0.showsVerticalScrollIndicator = false
@@ -42,6 +44,7 @@ final class AIReportViewController: UIViewController {
     private let lineContainer = UIView()
     
     private let emptyReportView = EmptyReportView()
+    private let lastWeekAIReportView = LastWeekAIReportView()
     
     private let lastWeekButton = UIButton().then {
         $0.setTitle("지난 한 주", for: .normal)
@@ -112,7 +115,7 @@ final class AIReportViewController: UIViewController {
                 .marginHorizontal(20)
                 .height(1)
             
-            $0.addItem(emptyReportView)
+            $0.addItem(dataEmpty ? lastWeekAIReportView : emptyReportView)
                 .marginTop(20)
                 .marginHorizontal(20)
         }
@@ -183,6 +186,13 @@ final class AIReportViewController: UIViewController {
                 storageButton.isSelected = true
                
                 layoutSelectedLine(index: 1)
+            })
+            .disposed(by: disposeBag)
+        
+        lastWeekAIReportView.reportDetailButton.rx.tap
+            .subscribe(onNext: { [weak self] in
+                guard let self else { return }
+                coordinator?.showLoading()
             })
             .disposed(by: disposeBag)
     }

@@ -42,7 +42,7 @@ class ImageTextButton: UIButton {
     }
     
     private func setupFlexLayout() {
-        self.flex.direction(.row).alignItems(.center).paddingVertical(8).paddingHorizontal(horizonPadding).define { flex in
+        self.flex.direction(.row).alignItems(.center).paddingVertical(verticalPadding).paddingHorizontal(horizonPadding).define { flex in
             flex.addItem(customImage).size(imageSize).marginRight(spacing)
             flex.addItem(customText)
         }
