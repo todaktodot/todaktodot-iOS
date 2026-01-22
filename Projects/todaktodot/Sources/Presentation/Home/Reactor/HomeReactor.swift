@@ -20,6 +20,7 @@ final class HomeReactor: Reactor {
     enum Action {
         case updateAnswerStatus(AnswerStatus)
         case tapPokeButton
+        case tapConnectCoupleButton
         case checkFirstLaunch
         case dismissNotificationAlert
     }
@@ -28,12 +29,14 @@ final class HomeReactor: Reactor {
         case setAnswerStatus(AnswerStatus)
         case setPoked(Bool)
         case setShowNotificationAlert(Bool)
+        case setCoupleConnected(Bool)
     }
     
     struct State {
         var answerStatus: AnswerStatus = .myAnswered
         var isPoked: Bool = false
         var shouldShowNotificationAlert: Bool = true
+        var isCoupleConnected: Bool = false
     }
     
     let initialState = State()
@@ -43,8 +46,11 @@ final class HomeReactor: Reactor {
         case .updateAnswerStatus(let status):
             return .just(.setAnswerStatus(status))
         case .tapPokeButton:
-            // TODO: 서버연결
+            // TODO: 서버연결 - 콕 찌르기
             return .just(.setPoked(true))
+        case .tapConnectCoupleButton:
+            // TODO: 서버연결 - 커플 연결
+            return .just(.setCoupleConnected(true))
         case .checkFirstLaunch:
             // TODO: 최초 실행 여부 확인
             return .just(.setShowNotificationAlert(true))
@@ -62,6 +68,8 @@ final class HomeReactor: Reactor {
             newState.isPoked = isPoked
         case .setShowNotificationAlert(let show):
             newState.shouldShowNotificationAlert = show
+        case .setCoupleConnected(let connected):
+            newState.isCoupleConnected = connected
         }
         return newState
     }
