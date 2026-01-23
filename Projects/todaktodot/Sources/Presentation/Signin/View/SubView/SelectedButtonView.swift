@@ -17,7 +17,7 @@ final class SelectedButtonView: UIView {
     private let buttons: [UIButton]
     private let disposeBag = DisposeBag()
 
-    let selectedIndex = PublishRelay<Int>()
+    let isSelected = BehaviorRelay<Bool>(value: false)
 
     override init(frame: CGRect) {
         let items = ["❤️ 연애중이예요", "🏠 동거중이예요", "💝 결혼 준비중이에요", "👩‍❤️‍👨 신혼이에요", "💍 부부에요"]
@@ -61,8 +61,7 @@ final class SelectedButtonView: UIView {
         mergedTap
             .subscribe(onNext: { [weak self] index in
                 self?.updateUI(index)
-                self?.selectedIndex.accept(index)
-                print(index)
+                self?.isSelected.accept(true)
             })
             .disposed(by: disposeBag)
     }

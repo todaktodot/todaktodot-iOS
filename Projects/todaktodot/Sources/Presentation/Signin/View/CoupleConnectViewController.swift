@@ -235,6 +235,13 @@ class CoupleConnectViewController: UIViewController {
                 self?.connectButton.isEnabled = $0
             })
             .disposed(by: disposeBag)
-            
+        
+        lookAroundButton.rx.tap
+            .subscribe(onNext: { [weak self] _ in
+                self?.showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
+                    self?.coordinator?.showNickname()
+                })
+            })
+            .disposed(by: disposeBag)
     }
 }

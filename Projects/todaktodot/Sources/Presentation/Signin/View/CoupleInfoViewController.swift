@@ -10,10 +10,14 @@ import Then
 import FlexLayout
 import PinLayout
 import RxSwift
+import RxRelay
 
 class CoupleInfoViewController: UIViewController {
     weak var coordinator: SigninCoordinator?
     
+    private var isDone = BehaviorRelay<Bool>(value: false)
+    private let isDateSelected = BehaviorRelay<Bool>(value: false)
+    private let isRelationSelected = BehaviorRelay<Bool>(value: false)
     private let disposeBag = DisposeBag()
     private let contentsView = UIView()
     private let backgroundView = UIImageView().then {
@@ -43,9 +47,11 @@ class CoupleInfoViewController: UIViewController {
     private let startButton = UIButton(type: .system).then {
         $0.setTitle("시작하기", for: .normal)
         $0.titleLabel?.font = .pretenSemiBold(16)
-        $0.tintColor = .white
+        $0.setTitleColor(.white, for: .normal)
+        $0.setTitleColor(.white, for: .disabled)
         $0.backgroundColor = .mainPurple
         $0.layer.cornerRadius = 6
+        $0.isEnabled = false
     }
     
     private let buttonsView = SelectedButtonView()
@@ -110,6 +116,36 @@ class CoupleInfoViewController: UIViewController {
     }
     
     private func bindActions() {
+        isDone
+            .bind(to: startButton.rx.isEnabled)
+            .disposed(by: disposeBag)
+        
+        isDone
+            .subscribe(onNext: { [weak self] bool in
+                self?.startButton.backgroundColor = bool
+                    ? .mainPurple
+                    : .grayScale400
+            })
+            .disposed(by: disposeBag)
+        
+        datePickerView.isDateSelected
+            .subscribe(onNext: { [weak self] bool in
+                self?.isDateSelected.accept(bool)
+            })
+            .disposed(by: disposeBag)
+        
+        buttonsView.isSelected
+            .subscribe(onNext: { [weak self] bool in
+                self?.isRelationSelected.accept(bool)
+            })
+            .disposed(by: disposeBag)
+            
+        Observable
+            .combineLatest(isDateSelected, isRelationSelected)
+            .map { $0 && $1 }
+            .bind(to: isDone)
+            .disposed(by: disposeBag)
+        
         startButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
                 self?.coordinator?.navigateToMain()
