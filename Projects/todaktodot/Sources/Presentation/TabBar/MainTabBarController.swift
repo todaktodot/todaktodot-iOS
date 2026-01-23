@@ -45,7 +45,6 @@ final class MainTabBarController: UIViewController {
         
         containerView.pin.all()
         
-        // Check if current view controller should hide tab bar
         let shouldHideTabBar = shouldHideCustomTabBar()
         
         if shouldHideTabBar {
@@ -74,17 +73,8 @@ final class MainTabBarController: UIViewController {
         guard let navController = currentViewController as? UINavigationController else {
             return false
         }
-        
-        // Check if any view controller in the navigation stack has hidesBottomBarWhenPushed = true
-        return navController.viewControllers.contains { $0.hidesBottomBarWhenPushed }
-    }
-}
 
-// MARK: - UINavigationControllerDelegate
-extension MainTabBarController: UINavigationControllerDelegate {
-    func navigationController(_ navigationController: UINavigationController, didShow viewController: UIViewController, animated: Bool) {
-        // Update tab bar visibility when navigation changes
-        view.setNeedsLayout()
+        return navController.viewControllers.contains { $0.hidesBottomBarWhenPushed }
     }
 }
 
@@ -129,5 +119,35 @@ extension MainTabBarController {
         
         // Update tab bar visibility
         view.setNeedsLayout()
+    }
+}
+
+// MARK: - UINavigationControllerDelegate
+extension MainTabBarController: UINavigationControllerDelegate {
+    func navigationController(_ navigationController: UINavigationController,
+                              willShow viewController: UIViewController,
+                              animated: Bool) {
+        
+        let isPushing = navigationController.viewControllers.count > 1
+        let shouldHide = viewController.hidesBottomBarWhenPushed || isPushing
+        
+        if let coordinator = viewController.transitionCoordinator {
+            coordinator.animate(alongsideTransition: { [weak self] _ in
+                self?.updateTabBarAppearance(hidden: shouldHide)
+            }, completion: nil)
+        } else {
+            updateTabBarAppearance(hidden: shouldHide)
+        }
+    }
+    
+    private func updateTabBarAppearance(hidden: Bool) {
+        customTabBar.alpha = hidden ? 0 : 1
+        blurEffectView.alpha = hidden ? 0 : 1
+
+        if hidden {
+            customTabBar.transform = CGAffineTransform(translationX: 0, y: 150)
+        } else {
+            customTabBar.transform = .identity
+        }
     }
 }
