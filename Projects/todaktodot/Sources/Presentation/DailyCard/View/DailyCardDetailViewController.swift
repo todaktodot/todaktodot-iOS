@@ -269,7 +269,6 @@ final class DailyCardDetailViewController: UIViewController {
         button.addSubview(radioButton)
         button.addSubview(textLabel)
         
-        // Use flex layout instead of absolute positioning
         button.flex.paddingHorizontal(16).paddingVertical(18).define { flex in
             flex.addItem().direction(.row).alignItems(.start).define { rowFlex in
                 rowFlex.addItem(radioButton).size(24)
@@ -279,7 +278,6 @@ final class DailyCardDetailViewController: UIViewController {
         
         return button
     }
-    
     
     private func setupReasonSection() {
         let titleLabel = TDLabel().then {
@@ -300,7 +298,6 @@ final class DailyCardDetailViewController: UIViewController {
         rootFlexContainer.flex.layout(mode: .adjustHeight)
         scrollView.contentSize = rootFlexContainer.frame.size
         
-        // Update gradient frame
         if let gradientLayer = mainCardContainer.layer.sublayers?.first as? CAGradientLayer {
             gradientLayer.frame = mainCardContainer.bounds
         }
@@ -333,7 +330,11 @@ extension DailyCardDetailViewController {
     }
     
     @objc private func optionButtonTapped(_ sender: UIButton) {
+        print("Button tapped: \(sender.tag)")
         selectedOptionIndex = sender.tag
+        
+        let radioOn = UIImage(named: "radio_button")?.resizedWithBetterQuality(to: CGSize(width: 24, height: 24))
+        let radioOff = UIImage(systemName: "circle")
         
         optionButtons.forEach { button in
             if cardType == .balance {
@@ -355,12 +356,12 @@ extension DailyCardDetailViewController {
                 UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5) {
                     if button.tag == sender.tag {
                         button.layer.borderColor = UIColor.mainPurple.cgColor
-                        radioButton?.image = UIImage(systemName: "dot.circle")
+                        radioButton?.image = radioOn
                         radioButton?.tintColor = .mainPurple
                         textLabel?.textColor = .mainPurple
                     } else {
                         button.layer.borderColor = UIColor.grayScale200.cgColor
-                        radioButton?.image = UIImage(systemName: "circle")
+                        radioButton?.image = radioOff
                         radioButton?.tintColor = .grayScale200
                         textLabel?.textColor = .grayScale800
                     }

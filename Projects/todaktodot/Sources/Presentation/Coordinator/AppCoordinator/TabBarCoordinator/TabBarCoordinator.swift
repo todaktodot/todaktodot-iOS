@@ -28,11 +28,18 @@ final class TabBarCoordinator: Coordinator {
         navigationController.setViewControllers([tabBarController], animated: false)
     }
     
+    func showCoupleConnect() {
+        let signinCoordinator = SigninCoordinator(navigationController: navigationController)
+        addChild(signinCoordinator)
+        signinCoordinator.showCoupleConnect(code: [])
+    }
+    
     private func setupChildCoordinators(tabBarController: MainTabBarController) {
         var viewControllers: [UIViewController] = []
         
         let homeNavController = UINavigationController()
         let homeCoordinator = HomeCoordinator(navigationController: homeNavController)
+        homeCoordinator.tabBarCoordinator = self
         addChild(homeCoordinator)
         homeCoordinator.start()
         viewControllers.append(homeNavController)
@@ -50,6 +57,7 @@ final class TabBarCoordinator: Coordinator {
 final class HomeCoordinator: Coordinator {
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
+    weak var tabBarCoordinator: TabBarCoordinator?
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController

@@ -93,6 +93,7 @@ final class HomeViewController: UIViewController, View {
     
     private let weekCardsContainer = UIView()
     private let weekdays = ["토", "금", "목", "수", "화", "월"]
+    private var hasWeekCards = false // TODO: 임시 설정. 카드 존재여부 확인
     
     init(reactor: HomeReactor) {
         super.init(nibName: nil, bundle: nil)
@@ -131,6 +132,16 @@ final class HomeViewController: UIViewController, View {
             })
             .disposed(by: disposeBag)
         
+        let answerStatusStream = reactor.state.map { $0.answerStatus }.distinctUntilChanged()
+        let coupleConnectedStream = reactor.state.map { $0.isCoupleConnected }.distinctUntilChanged()
+        
+        Observable.combineLatest(answerStatusStream, coupleConnectedStream)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] status, isCoupleConnected in
+                self?.updateButtonForMyAnswered(status: status, isCoupleConnected: isCoupleConnected)
+            })
+            .disposed(by: disposeBag)
+        
         reactor.state.map { $0.shouldShowNotificationAlert }
             .distinctUntilChanged()
             .observe(on: MainScheduler.instance)
@@ -142,11 +153,15 @@ final class HomeViewController: UIViewController, View {
             .disposed(by: disposeBag)
         
         pokeButton.rx.tap
-            .do(onNext: { [weak self] in
-                self?.showPokeAlert()
+            .withLatestFrom(reactor.state.map { ($0.answerStatus, $0.isCoupleConnected) })
+            .subscribe(onNext: { [weak self] status, isCoupleConnected in
+                if status == .myAnswered && !isCoupleConnected {
+                    self?.coordinator?.tabBarCoordinator?.showCoupleConnect()
+                } else {
+                    self?.showPokeAlert()
+                    reactor.action.onNext(.tapPokeButton)
+                }
             })
-            .map { Reactor.Action.tapPokeButton }
-            .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
         arrowButton.rx.tap
@@ -203,7 +218,7 @@ final class HomeViewController: UIViewController, View {
             .paddingBottom(150)
             .define { flex in
                 flex.addItem(mainCard).marginVertical(20)
-                flex.addItem(weekCardsContainer).marginTop(36)
+                flex.addItem(weekCardsContainer).marginTop(hasWeekCards ? 36 : 28)
             }
     }
     
@@ -239,7 +254,7 @@ final class HomeViewController: UIViewController, View {
                     descFlex.addItem(descriptionTitle).marginTop(16).marginLeft(16)
                     descFlex.addItem(descriptionLabel).marginTop(4).marginLeft(16).marginBottom(16)
                 }
-                flex.addItem(pokeButton).height(48).marginTop(16).isIncludedInLayout(false)
+                flex.addItem(pokeButton).height(48).marginTop(16)
             }
     }
     
@@ -269,7 +284,6 @@ final class HomeViewController: UIViewController, View {
                 string: "답변 완료!\n연인이 답하기 전까지\n확인할 수 없어요",
                 attributes: [.paragraphStyle: paragraphStyle]
             )
-            // pokeButton 추가
             pokeButton.isHidden = false
             pokeButton.flex.isIncludedInLayout(true).height(48).marginTop(16)
             
@@ -288,12 +302,17 @@ final class HomeViewController: UIViewController, View {
     
     private func setupWeekCards() {
         weekCardsContainer.flex.define { flex in
-            weekdays.enumerated().forEach { index, day in
-                let card = createWeekCard(day: day, date: "\(27-index)", index: index)
-                let isLast = index == weekdays.count - 1
-                flex.addItem(card)
-                    .height(isLast ? 83 : 83 + 60)
-                    .marginTop(index == 0 ? 0 : -60)
+            if hasWeekCards {
+                weekdays.enumerated().forEach { index, day in
+                    let card = createWeekCard(day: day, date: "\(27-index)", index: index)
+                    let isLast = index == weekdays.count - 1
+                    flex.addItem(card)
+                        .height(isLast ? 83 : 83 + 60)
+                        .marginTop(index == 0 ? 0 : -60)
+                }
+            } else {
+                let emptyView = createEmptyWeekView()
+                flex.addItem(emptyView)
             }
         }
     }
@@ -346,8 +365,83 @@ final class HomeViewController: UIViewController, View {
         return card
     }
     
+    private func createEmptyWeekView() -> UIView {
+        let container = UIView()
+        container.backgroundColor = .clear
+        container.layer.cornerRadius = 16
+        
+        let dashedBorder = CAShapeLayer()
+        dashedBorder.strokeColor = UIColor(hex: "E0D3F1").cgColor
+        dashedBorder.lineDashPattern = [4, 4]
+        dashedBorder.fillColor = UIColor.clear.cgColor
+        dashedBorder.lineWidth = 1
+        container.layer.addSublayer(dashedBorder)
+        
+        let gloomyImageView = UIImageView().then {
+            $0.image = UIImage(named: "gloomy")
+            $0.contentMode = .scaleAspectFit
+        }
+        
+        let emptyLabel = TDLabel().then {
+            $0.text = "이번 주에 작성된 카드가 없어요"
+            $0.font = .pretenMedium(14)
+            $0.textColor = .grayScale600
+            $0.textAlignment = .center
+        }
+        
+        container.addSubview(gloomyImageView)
+        container.addSubview(emptyLabel)
+        
+        container.flex
+            .paddingHorizontal(20)
+            .paddingVertical(16)
+            .alignItems(.center)
+            .define { flex in
+                flex.addItem(gloomyImageView).size(36).marginTop(16)
+                flex.addItem(emptyLabel).marginTop(4).marginBottom(16)
+            }
+        
+        container.layoutIfNeeded()
+        DispatchQueue.main.async {
+            let path = UIBezierPath(roundedRect: container.bounds, cornerRadius: 16)
+            dashedBorder.path = path.cgPath
+            dashedBorder.frame = container.bounds
+        }
+        
+        return container
+    }
+    
     @objc private func weekCardTapped() {
         coordinator?.showHistoryCardDetail()
+    }
+    
+    private func updateButtonForMyAnswered(status: AnswerStatus, isCoupleConnected: Bool) {
+        guard status == .myAnswered else { return }
+        
+        if isCoupleConnected {
+            pokeButton.setTitle("콕 찌르기", for: .normal)
+            pokeButton.setImage(nil, for: .normal)
+            pokeButton.imageEdgeInsets = .zero
+            pokeButton.titleEdgeInsets = .zero
+        } else {
+            pokeButton.setTitle("커플 연결하기", for: .normal)
+            if let heartLinkImage = UIImage(named: "heart_link") {
+                let resizedImage = heartLinkImage.resizedWithBetterQuality(to: CGSize(width: 28, height: 28))
+                pokeButton.setImage(resizedImage, for: .normal)
+                pokeButton.imageEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 8)
+                pokeButton.titleEdgeInsets = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 0)
+            }
+        }
+    }
+    
+    private func showConnectCoupleAlert() {
+        showAlert(
+            icon: UIImage(named: "heart_link"),
+            title: "커플 연결 요청을 보냈어요\n상대방이 수락하면 연결돼요",
+            description: nil,
+            primaryButtonTitle: "확인",
+            primaryButtonAction: {}
+        )
     }
     
     private func showPokeAlert() {
@@ -367,7 +461,7 @@ final class HomeViewController: UIViewController, View {
             description: "• 상대방이 답변하면 바로 알 수 있어요\n• 서로의 답변이 공개되면 알림을 받아요\n• 상대방의 쿡 찌르기를 받을 수 있어요",
             primaryButtonTitle: "알림켜기",
             primaryButtonAction: { [weak self] in
-                self?.requestNotificationPermission()
+                self?.openAppSettings()
             },
             secondaryButtonTitle: "나중에 할게요",
             secondaryButtonAction: { [weak self] in
@@ -376,10 +470,10 @@ final class HomeViewController: UIViewController, View {
         )
     }
     
-    private func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            DispatchQueue.main.async { [weak self] in
-                self?.reactor?.action.onNext(.dismissNotificationAlert)
+    private func openAppSettings() {
+        if let appSettings = URL(string: UIApplication.openSettingsURLString) {
+            if UIApplication.shared.canOpenURL(appSettings) {
+                UIApplication.shared.open(appSettings)
             }
         }
     }
