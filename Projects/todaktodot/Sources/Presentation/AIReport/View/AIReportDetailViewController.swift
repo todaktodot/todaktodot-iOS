@@ -65,6 +65,10 @@ final class AIReportDetailViewController: UIViewController {
         setupViews()
         setupFlexLayout()
         bindActions()
+        
+        if step == .full {
+            hiddenSubviesTitle()
+        }
     }
     
     override func viewDidLayoutSubviews() {
@@ -120,10 +124,12 @@ final class AIReportDetailViewController: UIViewController {
             
             $0.addItem().grow(1)
             
-            $0.addItem(nextButton)
-                .height(52)
-                .marginTop(40)
-                .marginBottom(14)
+            if step != .full {
+                $0.addItem(nextButton)
+                    .height(52)
+                    .marginTop(40)
+                    .marginBottom(14)
+            }
         }
     }
     
@@ -169,6 +175,11 @@ final class AIReportDetailViewController: UIViewController {
                 }
             })
             .disposed(by: disposeBag)
+    }
+    
+    private func hiddenSubviesTitle() {
+        secondDetailView.hiddenTitleLabel()
+        thirdDetailView.hiddenTitleLabel()
     }
     
     @objc private func backButtonTapped() {

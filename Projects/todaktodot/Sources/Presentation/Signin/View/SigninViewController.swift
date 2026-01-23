@@ -140,7 +140,8 @@ final class SigninViewController: UIViewController, View {
         appleButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
                 guard let self = self else { return }
-                coordinator?.showCoupleConnect(code: testCode)
+//                coordinator?.showCoupleConnect(code: testCode)
+                coordinator?.navigateToMain()
             })
             .disposed(by: disposeBag)
     }
