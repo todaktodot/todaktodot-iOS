@@ -105,6 +105,8 @@ final class AIReportDetailViewController: UIViewController {
         navigationController?.navigationBar.standardAppearance = appearance
         navigationController?.navigationBar.scrollEdgeAppearance = appearance
         navigationController?.navigationBar.compactAppearance = appearance
+        
+        disableGlassStyle()
     }
     
     private func setupFlexLayout() {

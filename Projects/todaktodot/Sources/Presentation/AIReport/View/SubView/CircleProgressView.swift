@@ -99,8 +99,7 @@ final class CircleProgressView: UIView {
         let text = "대화 참여율\n\(Int(value * 100))%"
         let attributed = NSMutableAttributedString(string: text)
         attributed.addAttribute(.font, value: UIFont.pretenMedium(14), range: NSRange(location: 0, length: text.count - 3))
-        attributed.addAttribute(.font, value: UIFont.pretenSemiBold(28), range: NSRange(location: text.count - (numCount + 1), length: numCount))
-        attributed.addAttribute(.font, value: UIFont.pretenMedium(18), range: NSRange(location: text.count - 1, length: 1))
+        attributed.addAttribute(.font, value: UIFont.pretenSemiBold(28), range: NSRange(location: text.count - (numCount + 1), length: numCount + 1))
 
         percentLabel.attributedText = attributed
     }

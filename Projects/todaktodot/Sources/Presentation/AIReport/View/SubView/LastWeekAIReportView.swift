@@ -79,6 +79,11 @@ class LastWeekAIReportView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        flex.layout(mode: .adjustHeight)
+    }
+    
     func setupViews() {
         self.flex.alignItems(.center).define {
             $0.addItem(dateLabel)

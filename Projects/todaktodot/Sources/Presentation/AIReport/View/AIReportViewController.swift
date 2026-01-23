@@ -17,10 +17,11 @@ final class AIReportViewController: UIViewController {
     
     var disposeBag = DisposeBag()
     weak var coordinator: AIReportCoordinator?
-    private var dataEmpty = true
+    private var dataEmpty = false
     
     private let scrollView = UIScrollView().then {
         $0.showsVerticalScrollIndicator = false
+        $0.contentInset.bottom = 100
     }
     
     private let backgroundView = UIImageView().then {
@@ -28,8 +29,6 @@ final class AIReportViewController: UIViewController {
         $0.contentMode = .scaleAspectFill
         $0.clipsToBounds = true
     }
-    
-    private let contentContainer = UIView()
     
     private let segmentView = UIView()
     
@@ -41,25 +40,26 @@ final class AIReportViewController: UIViewController {
         $0.backgroundColor = .grayScale900
     }
     
+    private let rootContainer = UIView()
     private let lineContainer = UIView()
-    
+    private let contentView = UIView()
     private let emptyReportView = EmptyReportView()
     private let lastWeekAIReportView = LastWeekAIReportView()
+    private let storageAIReportView = AIReportStorageView()
     
     private let lastWeekButton = UIButton().then {
         $0.setTitle("지난 한 주", for: .normal)
         $0.setTitleColor(.grayScale600, for: .normal)
-        $0.setTitleColor(.grayScale900, for: .selected)
+        $0.setTitleColor(.grayScale900, for: .disabled)
         $0.titleLabel?.font = UIFont.pretenSemiBold(16)
-        $0.isSelected = true
+        $0.isEnabled = false
     }
     
     private let storageButton = UIButton().then {
         $0.setTitle("돌아보기", for: .normal)
         $0.setTitleColor(.grayScale600, for: .normal)
-        $0.setTitleColor(.grayScale900, for: .selected)
+        $0.setTitleColor(.grayScale900, for: .disabled)
         $0.titleLabel?.font = UIFont.pretenSemiBold(16)
-        $0.isSelected = false
     }
     
     override func viewDidLoad() {
@@ -68,6 +68,7 @@ final class AIReportViewController: UIViewController {
         setupFlexLayout()
         bindActions()
         setupNavigationBar()
+        showLastWeek()
     }
     
     override func viewDidLayoutSubviews() {
@@ -93,16 +94,18 @@ final class AIReportViewController: UIViewController {
         personContainer.addSubview(personImageView)
         personImageView.frame.origin.x = 20
         navigationItem.rightBarButtonItem = UIBarButtonItem(customView: personContainer)
+        
+        disableGlassStyle()
     }
     
     private func setupViews() {
         view.addSubview(backgroundView)
-        view.addSubview(scrollView)
-        scrollView.addSubview(contentContainer)
+        view.addSubview(rootContainer)
+        scrollView.addSubview(contentView)
     }
     
     private func setupFlexLayout() {
-        contentContainer.flex.define {
+        rootContainer.flex.define {
             $0.addItem(segmentView)
                 .marginHorizontal(20)
                 .height(45)
@@ -112,12 +115,9 @@ final class AIReportViewController: UIViewController {
                 .height(2)
             
             $0.addItem(underLineView)
-                .marginHorizontal(20)
                 .height(1)
             
-            $0.addItem(dataEmpty ? lastWeekAIReportView : emptyReportView)
-                .marginTop(20)
-                .marginHorizontal(20)
+            $0.addItem(scrollView)
         }
         
         segmentView.flex.direction(.row).define {
@@ -130,12 +130,18 @@ final class AIReportViewController: UIViewController {
             }
         }
         
-        lineContainer.flex.define { flex in
-            flex.addItem(selectedLineView)
-                .position(.absolute)
-                .top(0)
+        lineContainer.flex.direction(.row).define {
+            $0.addItem(selectedLineView)
                 .left(0)
+                .top(0)
                 .height(2)
+                .width(50%)
+        }
+        
+        scrollView.flex.define {
+            $0.addItem(contentView)
+                .marginTop(20)
+                .marginHorizontal(20)
         }
     }
     
@@ -152,40 +158,32 @@ final class AIReportViewController: UIViewController {
             .horizontally()
             .height(scaledHeight)
         
-        scrollView.pin
+        rootContainer.pin
             .top(view.pin.safeArea.top)
             .horizontally()
             .bottom()
         
-        contentContainer.pin
-            .top()
-            .horizontally()
-        
-        contentContainer.flex.layout(mode: .adjustHeight)
+        rootContainer.flex.layout()
         
         layoutSelectedLine(index: 0)
         
-        scrollView.contentSize = contentContainer.frame.size
+        scrollView.contentSize = contentView.frame.size
     }
     
     private func bindActions() {
         lastWeekButton.rx.tap
             .subscribe(onNext: { [weak self] in
                 guard let self else { return }
-                lastWeekButton.isSelected = true
-                storageButton.isSelected = false
                 
-                layoutSelectedLine(index: 0)
+                showLastWeek()
             })
             .disposed(by: disposeBag)
 
         storageButton.rx.tap
             .subscribe(onNext: { [weak self] in
                 guard let self else { return }
-                lastWeekButton.isSelected = false
-                storageButton.isSelected = true
-               
-                layoutSelectedLine(index: 1)
+                
+                showStorage()
             })
             .disposed(by: disposeBag)
         
@@ -195,6 +193,10 @@ final class AIReportViewController: UIViewController {
                 coordinator?.showLoading()
             })
             .disposed(by: disposeBag)
+        
+        storageAIReportView.onCardTap = { [weak self] _ in
+            self?.coordinator?.showDetail()
+        }
     }
     
     private func layoutSelectedLine(index: Int) {
@@ -202,9 +204,32 @@ final class AIReportViewController: UIViewController {
         let x = index == 0 ? 0 : half
 
         let apply = {
-            self.selectedLineView.frame = CGRect(x: x,y: 0,width: half,height: 2)
+            self.selectedLineView.frame.origin.x = x
         }
+        UIView.animate(withDuration: 0.2, animations: apply)
+    }
+    
+    private func showLastWeek() {
+        lastWeekButton.isEnabled = false
+        storageButton.isEnabled = true
         
-        UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseInOut], animations: apply)
+        contentView.subviews.forEach { $0.removeFromSuperview() }
+
+        contentView.addSubview(dataEmpty ? emptyReportView : lastWeekAIReportView)
+        (dataEmpty ? emptyReportView : lastWeekAIReportView).pin.all()
+        
+        layoutSelectedLine(index: 0)
+    }
+    
+    private func showStorage() {
+        lastWeekButton.isEnabled = true
+        storageButton.isEnabled = false
+        
+        contentView.subviews.forEach { $0.removeFromSuperview() }
+
+        contentView.addSubview(storageAIReportView)
+        storageAIReportView.pin.all()
+        
+        layoutSelectedLine(index: 1)
     }
 }

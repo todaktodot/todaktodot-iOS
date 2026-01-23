@@ -36,8 +36,8 @@ class AIReportFirstView: UIView {
     }
     
     private let talkCountLabel = TDLabel().then {
-        $0.text = "0개"
-        $0.font = .pretenSemiBold(16)
+        $0.text = "127개"
+        $0.font = .pretenSemiBold(28)
         $0.textColor = .grayScale800
     }
     
@@ -70,7 +70,6 @@ class AIReportFirstView: UIView {
         progressView1.setProgress(0.7, animated: true)
         progressView2.setProgress(0.55, animated: true)
         progressView3.setProgress(0.8, animated: true)
-        setCount(127)
         circleProgress.setProgress(0.78, animated: true)
     }
     
@@ -142,16 +141,5 @@ class AIReportFirstView: UIView {
             $0.addItem(talkCountLabel)
                 .alignSelf(.end)
         }
-    }
-}
-
-extension AIReportFirstView {
-    func setCount(_ count: Int) {
-        let text = "\(count)개"
-        let attributed = NSMutableAttributedString(string: text)
-        attributed.addAttribute(.font, value: UIFont.pretenSemiBold(28), range: NSRange(location: 0, length: text.count - 1))
-        attributed.addAttribute(.font, value: UIFont.pretenMedium(18), range: NSRange(location: text.count - 1, length: 1))
-
-        talkCountLabel.attributedText = attributed
     }
 }

@@ -42,6 +42,14 @@ final class AIReportCoordinator: Coordinator {
         self.navigationController.setViewControllers(vcs, animated: animated)
     }
     
+    func showDetail() {
+        let vc = AIReportDetailViewController(step: .full)
+        vc.hidesBottomBarWhenPushed = true
+        vc.coordinator = self
+        
+        navigationController.pushViewController(vc, animated: true)
+    }
+    
     func navigateBack() {
         navigationController.popViewController(animated: true)
     }

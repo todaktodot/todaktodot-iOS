@@ -66,4 +66,10 @@ extension UIViewController {
         }
     }
 
+    func disableGlassStyle() {
+        if #available(iOS 26.0, *) {
+            navigationItem.leftBarButtonItem?.hidesSharedBackground = true
+            navigationItem.rightBarButtonItem?.hidesSharedBackground = true
+        }
+    }
 }
