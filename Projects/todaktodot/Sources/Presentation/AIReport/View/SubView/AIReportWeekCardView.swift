@@ -44,8 +44,10 @@ final class AIReportWeekCardView: UIView {
         super.init(frame: .zero)
         setupUI(title: title, state: state)
         
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(weekCardTapped))
-        addGestureRecognizer(tapGesture)
+        if state == .active {
+            let tapGesture = UITapGestureRecognizer(target: self, action: #selector(weekCardTapped))
+            addGestureRecognizer(tapGesture)
+        }   
     }
 
     required init?(coder: NSCoder) {
