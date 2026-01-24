@@ -66,6 +66,8 @@ class AIReportLoadingViewController: UIViewController {
         navigationItem.leftBarButtonItem = backButton
         
         navigationController?.navigationBar.isHidden = false
+        
+        disableGlassStyle()
     }
     
     private func setupViews() {
