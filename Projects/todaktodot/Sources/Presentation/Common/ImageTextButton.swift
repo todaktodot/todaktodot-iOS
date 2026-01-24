@@ -10,7 +10,7 @@ import Then
 import FlexLayout
 import PinLayout
 
-class ImageTextButton: UIButton {
+final class ImageTextButton: UIButton {
     let customImage = UIImageView().then {
         $0.contentMode = .scaleAspectFit
     }

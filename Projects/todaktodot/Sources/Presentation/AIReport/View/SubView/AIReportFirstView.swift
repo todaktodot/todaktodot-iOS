@@ -11,7 +11,7 @@ import FlexLayout
 import Then
 import Lottie
 
-class AIReportFirstView: UIView {
+final class AIReportFirstView: UIView {
     private let syncBoxBackground = UIImageView().then {
         $0.image = UIImage(resource: .purpleBoxHigh)
         $0.contentMode = .scaleAspectFit

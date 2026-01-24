@@ -17,7 +17,7 @@ import Then
 // agreeButton.configure(isBackground: true, title: "유의사항을 모두 확인했으며, 이에 동의합니다.")
 // agreeButton.setState(isSelected: self.onTabCheckButton)
 
-class CheckButtonView: UIView {
+final class CheckButtonView: UIView {
     
     private var isBackground = false
     private let disposeBag = DisposeBag()

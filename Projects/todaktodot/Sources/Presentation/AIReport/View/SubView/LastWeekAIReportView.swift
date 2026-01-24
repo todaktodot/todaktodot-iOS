@@ -10,7 +10,7 @@ import FlexLayout
 import Then
 import Lottie
 
-class LastWeekAIReportView: UIView {
+final class LastWeekAIReportView: UIView {
     private let dateLabel = TDLabel().then {
         $0.text = "2025년 9월 29일 - 10월 5일"
         $0.font = .pretenMedium(14)

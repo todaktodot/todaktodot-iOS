@@ -11,7 +11,7 @@ import FlexLayout
 import Then
 import Lottie//
 
-class AIReportThirdView: UIView {
+final class AIReportThirdView: UIView {
     
     private let titleLabel = TDLabel().then {
         $0.text = "어떤 부분에서\n생각이 같았고, 또 달랐을까요?"

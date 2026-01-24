@@ -12,7 +12,7 @@ import Then
 import FlexLayout
 import PinLayout
 
-class TopicDetailButton: UIButton {
+final class TopicDetailButton: UIButton {
     private let dateLabel = TDLabel().then {
         $0.font = .pretenSemiBold(16)
         $0.textColor = .grayScale900

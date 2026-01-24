@@ -11,7 +11,7 @@ import FlexLayout
 import PinLayout
 import RxRelay
 
-class CodeTextFieldView: UIView {
+final class CodeTextFieldView: UIView {
     let isCodeFull = PublishRelay<Bool>()
     
     private var codeTextFields: [UITextField]

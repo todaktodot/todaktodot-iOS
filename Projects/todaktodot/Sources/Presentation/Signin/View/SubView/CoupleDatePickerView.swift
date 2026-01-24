@@ -12,7 +12,7 @@ import PinLayout
 import RxSwift
 import RxRelay
 
-class CoupleDatePickerView: UIView {
+final class CoupleDatePickerView: UIView {
     
     let isDateSelected = BehaviorRelay<Bool>(value: false)
     

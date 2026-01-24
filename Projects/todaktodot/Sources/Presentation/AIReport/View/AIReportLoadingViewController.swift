@@ -11,7 +11,7 @@ import FlexLayout
 import Then
 import Lottie
 
-class AIReportLoadingViewController: UIViewController {
+final class AIReportLoadingViewController: UIViewController {
     weak var coordinator: AIReportCoordinator?
     private let background = UIImageView().then {
         $0.image = UIImage(resource: .aiReportLoadingBackground)

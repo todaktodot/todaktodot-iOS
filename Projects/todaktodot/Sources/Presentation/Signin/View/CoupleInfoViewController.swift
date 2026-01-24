@@ -12,7 +12,7 @@ import PinLayout
 import RxSwift
 import RxRelay
 
-class CoupleInfoViewController: UIViewController {
+final class CoupleInfoViewController: UIViewController {
     weak var coordinator: SigninCoordinator?
     
     private var isDone = BehaviorRelay<Bool>(value: false)

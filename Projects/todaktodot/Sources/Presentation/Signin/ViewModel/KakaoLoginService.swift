@@ -14,7 +14,7 @@ import KakaoSDKAuth
 import Alamofire
 import NetworkKit
 
-class KakaoLoginService {
+final class KakaoLoginService {
     static let shared = KakaoLoginService()
     
     private var disposeBag = DisposeBag()

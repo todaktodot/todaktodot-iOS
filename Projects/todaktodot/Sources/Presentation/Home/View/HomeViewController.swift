@@ -14,7 +14,7 @@ import RxCocoa
 import UserNotifications
 import Then
 
-final class HomeViewController: UIViewController, View {
+final class HomeViewController: BaseViewController, View {
     
     var disposeBag = DisposeBag()
     weak var coordinator: HomeCoordinator?
@@ -98,6 +98,7 @@ final class HomeViewController: UIViewController, View {
     init(reactor: HomeReactor) {
         super.init(nibName: nil, bundle: nil)
         self.reactor = reactor
+        self.delegate = self
     }
     
     required init?(coder: NSCoder) {
@@ -106,7 +107,6 @@ final class HomeViewController: UIViewController, View {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupNavigationBar()
         setupUI()
     }
     
@@ -169,31 +169,6 @@ final class HomeViewController: UIViewController, View {
                 self?.coordinator?.showDailyCard()
             })
             .disposed(by: disposeBag)
-    }
-    
-    private func setupNavigationBar() {
-        navigationController?.navigationBar.isHidden = false
-        
-        let appearance = UINavigationBarAppearance()
-        appearance.configureWithTransparentBackground()
-        navigationController?.navigationBar.standardAppearance = appearance
-        navigationController?.navigationBar.scrollEdgeAppearance = appearance
-        
-        let logoImageView = UIImageView(image: UIImage(named: "Logo"))
-        logoImageView.contentMode = .scaleAspectFit
-        logoImageView.frame = CGRect(x: 0, y: 0, width: 92, height: 32)
-        let logoContainer = UIView(frame: CGRect(x: 0, y: 0, width: 92 + 20, height: 32))
-        logoContainer.addSubview(logoImageView)
-        logoImageView.frame.origin.x = 0
-        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: logoContainer)
-        
-        let personImageView = UIImageView(image: UIImage(named: "Person"))
-        personImageView.contentMode = .scaleAspectFit
-        personImageView.frame = CGRect(x: 0, y: 0, width: 18, height: 18)
-        let personContainer = UIView(frame: CGRect(x: 0, y: 0, width: 18 + 20, height: 18))
-        personContainer.addSubview(personImageView)
-        personImageView.frame.origin.x = 20
-        navigationItem.rightBarButtonItem = UIBarButtonItem(customView: personContainer)
     }
     
     private func setupUI() {
@@ -547,4 +522,8 @@ private final class ChipView: UIView {
     }
 }
 
-
+extension HomeViewController: BaseViewControllerDelegate {
+    func navigateToMyPage() {
+        coordinator?.navigateToMyPage()
+    }
+}

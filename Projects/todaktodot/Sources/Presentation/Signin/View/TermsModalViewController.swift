@@ -12,7 +12,7 @@ import PinLayout
 import RxSwift
 import RxRelay
 
-class TermsModalViewController: UIViewController {
+final class TermsModalViewController: UIViewController {
     private var disposeBag = DisposeBag()
     private var countRelay = PublishRelay<Set<Int>>()
     private var currentSelected = Set<Int>()

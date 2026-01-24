@@ -7,7 +7,7 @@
 
 import UIKit
 
-class CodeTextField: UITextField {
+final class CodeTextField: UITextField {
     var previousTextField: UITextField?
     var nextTextField: UITextField?
     

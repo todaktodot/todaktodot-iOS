@@ -11,7 +11,7 @@ import GoogleSignIn
 import NetworkKit
 import Alamofire
 
-class GoogleLoginService {
+final class GoogleLoginService {
     static let shared = GoogleLoginService()
     
     private var disposeBag = DisposeBag()

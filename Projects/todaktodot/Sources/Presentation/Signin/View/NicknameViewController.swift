@@ -12,7 +12,7 @@ import PinLayout
 import RxSwift
 import RxRelay
 
-class NicknameViewController: UIViewController {
+final class NicknameViewController: UIViewController {
     weak var coordinator: SigninCoordinator?
     private var passCoupleInfo = BehaviorRelay<Bool>(value: false)
     private let disposeBag = DisposeBag()

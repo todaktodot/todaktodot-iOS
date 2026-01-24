@@ -13,7 +13,7 @@ import RxSwift
 import RxCocoa
 
 
-class CoupleConnectViewController: UIViewController {
+final class CoupleConnectViewController: UIViewController {
     weak var coordinator: SigninCoordinator?
     
     private var passCoupleInfo: Bool = false

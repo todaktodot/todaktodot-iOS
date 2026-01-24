@@ -11,7 +11,7 @@ import FlexLayout
 import Then
 import Lottie
 
-class AIReportSecondView: UIView {
+final class AIReportSecondView: UIView {
     
     private let titleLabel = TDLabel().then {
         $0.text = "AI가 두 분의 대화를\n더 자세히 분석해보았어요"
