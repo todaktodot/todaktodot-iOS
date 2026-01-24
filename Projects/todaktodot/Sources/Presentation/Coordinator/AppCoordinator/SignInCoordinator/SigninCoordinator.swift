@@ -23,8 +23,8 @@ final class SigninCoordinator: Coordinator {
         navigationController.setViewControllers([signinViewController], animated: false)
     }
     
-    func showNickname() {
-        let nicknameViewController = NicknameViewController()
+    func showNickname(passCoupleInfo: Bool = false) {
+        let nicknameViewController = NicknameViewController(passCoupleInfo: passCoupleInfo)
         nicknameViewController.coordinator = self
         navigationController.pushViewController(nicknameViewController, animated: true)
     }
@@ -35,10 +35,16 @@ final class SigninCoordinator: Coordinator {
         navigationController.pushViewController(coupleInfoViewController, animated: true)
     }
     
-    func showCoupleConnect(code: [String]) {
-        let coupleConnectViewController = CoupleConnectViewController(code: code)
+    func showCoupleConnect() {
+        let coupleConnectViewController = CoupleConnectViewController(code: ["A", "A", "A", "A", "A"])
         coupleConnectViewController.coordinator = self
         navigationController.pushViewController(coupleConnectViewController, animated: true)
+    }
+    
+    func showCoupleConnectOnly() {
+        let coupleConnectViewController = CoupleConnectViewController(code: ["A", "A", "A", "A", "A"], passCoupleInfo: true)
+        coupleConnectViewController.coordinator = self
+        navigationController.setViewControllers([coupleConnectViewController], animated: false)
     }
     
     func showTermsModal() {
@@ -58,5 +64,11 @@ final class SigninCoordinator: Coordinator {
     
     func navigateToMain() {
         parentCoordinator?.showMainFlow()
+    }
+    
+    func goMainFlow() {
+        let tabBarCoordinator = TabBarCoordinator(navigationController: navigationController)
+        addChild(tabBarCoordinator)
+        tabBarCoordinator.start()
     }
 }

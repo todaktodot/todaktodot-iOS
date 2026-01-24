@@ -10,10 +10,11 @@ import Then
 import FlexLayout
 import PinLayout
 import RxSwift
+import RxRelay
 
 class NicknameViewController: UIViewController {
     weak var coordinator: SigninCoordinator?
-    
+    private var passCoupleInfo = BehaviorRelay<Bool>(value: false)
     private let disposeBag = DisposeBag()
     private let contentsView = UIView()
     private let backgroundView = UIImageView().then {
@@ -47,6 +48,15 @@ class NicknameViewController: UIViewController {
         $0.backgroundColor = .grayScale400
         $0.layer.cornerRadius = 6
         $0.isEnabled = false
+    }
+    
+    init(passCoupleInfo: Bool) {
+        self.passCoupleInfo.accept(passCoupleInfo)
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
     
     override func viewDidLoad() {
@@ -100,8 +110,13 @@ class NicknameViewController: UIViewController {
     
     private func bindActions() {
         nextButton.rx.tap
-            .subscribe(onNext: { [weak self] _ in
-                self?.coordinator?.showCoupleInfo()
+            .withLatestFrom(passCoupleInfo)
+            .subscribe(onNext: { [weak self] pass in
+                if pass {
+                    self?.coordinator?.goMainFlow()
+                } else {
+                    self?.coordinator?.showCoupleInfo()
+                }
             })
             .disposed(by: disposeBag)
         

@@ -15,6 +15,8 @@ import RxCocoa
 
 class CoupleConnectViewController: UIViewController {
     weak var coordinator: SigninCoordinator?
+    
+    private var passCoupleInfo: Bool = false
     private let disposeBag = DisposeBag()
     private let code: String?
     
@@ -105,8 +107,9 @@ class CoupleConnectViewController: UIViewController {
         $0.tintColor = .grayScale600
     }
     
-    init(code: [String]? = nil) {
+    init(code: [String]? = nil, passCoupleInfo: Bool = false) {
         self.code = code?.joined()
+        self.passCoupleInfo = passCoupleInfo
         myCodeTextField = CodeTextFieldView(code: code)
         
         super.init(nibName: nil, bundle: nil)
@@ -223,8 +226,9 @@ class CoupleConnectViewController: UIViewController {
         
         connectButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
-                self?.showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
-                    self?.coordinator?.showNickname()
+                guard let self else { return }
+                showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
+                    self.coordinator?.showNickname(passCoupleInfo: self.passCoupleInfo)
                 })
             })
             .disposed(by: disposeBag)
@@ -238,9 +242,7 @@ class CoupleConnectViewController: UIViewController {
         
         lookAroundButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
-                self?.showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
-                    self?.coordinator?.showNickname()
-                })
+                self?.coordinator?.navigateToMain()
             })
             .disposed(by: disposeBag)
     }
