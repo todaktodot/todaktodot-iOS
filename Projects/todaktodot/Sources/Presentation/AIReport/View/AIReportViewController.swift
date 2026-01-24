@@ -101,6 +101,7 @@ final class AIReportViewController: UIViewController {
     private func setupViews() {
         view.addSubview(backgroundView)
         view.addSubview(rootContainer)
+        view.addSubview(scrollView)
         scrollView.addSubview(contentView)
     }
     
@@ -116,8 +117,6 @@ final class AIReportViewController: UIViewController {
             
             $0.addItem(underLineView)
                 .height(1)
-            
-            $0.addItem(scrollView)
         }
         
         segmentView.flex.direction(.row).define {
@@ -136,12 +135,6 @@ final class AIReportViewController: UIViewController {
                 .top(0)
                 .height(2)
                 .width(50%)
-        }
-        
-        scrollView.flex.define {
-            $0.addItem(contentView)
-                .marginTop(20)
-                .marginHorizontal(20)
         }
     }
     
@@ -163,11 +156,21 @@ final class AIReportViewController: UIViewController {
             .horizontally()
             .bottom()
         
+        scrollView.pin
+            .top(view.pin.safeArea.top + 48)
+            .horizontally()
+            .bottom()
+        
+        contentView.pin
+            .top(20)
+            .horizontally(20)
+        
         rootContainer.flex.layout()
+        contentView.flex.layout(mode: .adjustHeight)
         
         layoutSelectedLine(index: 0)
         
-        scrollView.contentSize = contentView.frame.size
+        scrollView.contentSize = CGSize(width: contentView.frame.width, height: contentView.frame.height + 100)
     }
     
     private func bindActions() {
