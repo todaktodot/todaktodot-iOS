@@ -1,0 +1,85 @@
+name: Gemini Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get PR diff
+        id: diff
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          # base 브랜치와 현재 HEAD 사이의 차이점 추출
+          DIFF=$(git diff origin/${{ github.base_ref }}...HEAD)
+          echo "diff<<EOF" >> $GITHUB_OUTPUT
+          echo "$DIFF" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      
+      - name: Gemini Code Review
+        uses: actions/github-script@v7
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # Diff 데이터를 환경 변수로 안전하게 넘김
+          PR_DIFF: ${{ steps.diff.outputs.diff }}
+        with:
+          script: |
+            const diff = process.env.PR_DIFF;
+            
+            if (!diff || diff.trim() === '') {
+              console.log('리뷰할 변경 사항이 없습니다.');
+              return;
+            }
+            
+            // 2.5-flash 모델 사용 시 엔드포인트 확인
+            const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + process.env.GEMINI_API_KEY;
+            
+            const prompt = `You are a senior code reviewer. Review this code change and provide ONLY actionable feedback.
+            Focus on: Critical bugs, Security, Performance, Breaking changes.
+            Format: Bullet points, specific, concise. If no issues, say "LGTM 👍".
+            Respond in Korean.`;
+
+            try {
+              const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  contents: [{
+                    parts: [{ text: prompt + "\n\nDiff:\n" + diff }]
+                  }]
+                })
+              });
+              
+              const data = await response.json();
+              
+              // API 응답 에러 핸들링
+              if (data.error) {
+                throw new Error(`API Error: ${data.error.message}`);
+              }
+              
+              if (!data.candidates || !data.candidates[0].content) {
+                throw new Error('응답 데이터 구조가 올바르지 않습니다.');
+              }
+              
+              const review = data.candidates[0].content.parts[0].text;
+              
+              // PR에 댓글 달기
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: `## 🤖 코드 리뷰\n\n${review}`
+              });
+            } catch (error) {
+              console.error('리뷰 생성 중 오류 발생:', error);
+            }
