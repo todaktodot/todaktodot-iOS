@@ -268,7 +268,7 @@ final class DailyCardDetailViewController: UIViewController {
         button.addSubview(radioButton)
         button.addSubview(textLabel)
         
-        button.flex.padding(18).direction(.row).alignItems(.start).define { flex in
+        button.flex.padding(16).direction(.row).alignItems(.start).define { flex in
             flex.addItem(radioButton).size(24)
             flex.addItem(textLabel).marginLeft(12).grow(1).shrink(1)
         }
