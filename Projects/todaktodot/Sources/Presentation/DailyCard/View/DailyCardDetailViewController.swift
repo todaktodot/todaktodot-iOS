@@ -246,7 +246,6 @@ final class DailyCardDetailViewController: UIViewController {
             $0.layer.cornerRadius = 12
             $0.layer.borderWidth = 1
             $0.layer.borderColor = UIColor.grayScale200.cgColor
-            $0.contentHorizontalAlignment = .left
             $0.tag = index
             $0.addTarget(self, action: #selector(optionButtonTapped(_:)), for: .touchUpInside)
         }
@@ -269,11 +268,9 @@ final class DailyCardDetailViewController: UIViewController {
         button.addSubview(radioButton)
         button.addSubview(textLabel)
         
-        button.flex.paddingHorizontal(16).paddingVertical(18).define { flex in
-            flex.addItem().direction(.row).alignItems(.start).define { rowFlex in
-                rowFlex.addItem(radioButton).size(24)
-                rowFlex.addItem(textLabel).marginLeft(12).grow(1).shrink(1)
-            }
+        button.flex.padding(18).direction(.row).alignItems(.start).define { flex in
+            flex.addItem(radioButton).size(24)
+            flex.addItem(textLabel).marginLeft(12).grow(1).shrink(1)
         }
         
         return button
