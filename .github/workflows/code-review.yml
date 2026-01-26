@@ -78,7 +78,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                body: `## 🤖 Gemini 2.5 Flash 리뷰\n\n${review}`
+                body: `## 🤖 코드 리뷰\n\n${review}`
               });
             } catch (error) {
               console.error('리뷰 생성 중 오류 발생:', error);
