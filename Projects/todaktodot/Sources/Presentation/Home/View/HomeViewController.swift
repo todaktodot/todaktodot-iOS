@@ -524,6 +524,6 @@ private final class ChipView: UIView {
 
 extension HomeViewController: BaseViewControllerDelegate {
     func navigateToMyPage() {
-        coordinator?.navigateToMyPage()
+        coordinator?.navigateToMyPage(self.navigationController)
     }
 }
