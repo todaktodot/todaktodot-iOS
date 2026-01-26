@@ -8,8 +8,7 @@
 import UIKit
 import WebKit
 
-
-class WebViewController: UIViewController {
+final class WebViewController: UIViewController {
 
     // MARK: - Properties
     var webView: WKWebView?

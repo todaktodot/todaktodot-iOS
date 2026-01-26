@@ -31,7 +31,7 @@ final class TabBarCoordinator: Coordinator {
     func showCoupleConnect() {
         let signinCoordinator = SigninCoordinator(navigationController: navigationController)
         addChild(signinCoordinator)
-        signinCoordinator.showCoupleConnect(code: [])
+        signinCoordinator.showCoupleConnectOnly()
     }
     
     private func setupChildCoordinators(tabBarController: MainTabBarController) {
@@ -107,21 +107,5 @@ final class HomeCoordinator: Coordinator {
     
     func navigateBack() {
         navigationController.popViewController(animated: true)
-    }
-}
-
-final class AIReportCoordinator: Coordinator {
-    var childCoordinators: [Coordinator] = []
-    var navigationController: UINavigationController
-    
-    init(navigationController: UINavigationController) {
-        self.navigationController = navigationController
-    }
-    
-    func start() {
-        let aiReportViewController = UIViewController()
-        aiReportViewController.view.backgroundColor = TodotColors.Background.primary
-        aiReportViewController.title = "AI 리포트"
-        navigationController.setViewControllers([aiReportViewController], animated: false)
     }
 }

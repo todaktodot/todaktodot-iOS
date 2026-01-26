@@ -10,21 +10,26 @@ import Then
 import FlexLayout
 import PinLayout
 
-class ImageTextButton: UIButton {
-    let customImage = UIImageView()
+final class ImageTextButton: UIButton {
+    let customImage = UIImageView().then {
+        $0.contentMode = .scaleAspectFit
+    }
     let customText = TDLabel()
     
     private let spacing: CGFloat
     private let imageSize: CGFloat
     private let horizonPadding: CGFloat
     private let verticalPadding: CGFloat
+    private var imageFirst: Bool
 
-    init(frame: CGRect = .zero, horizonPadding: CGFloat? = nil, verticalPadding: CGFloat? = nil, spacing: CGFloat? = nil, imageSize: CGFloat) {
+    init(frame: CGRect = .zero, horizonPadding: CGFloat? = nil, verticalPadding: CGFloat? = nil, spacing: CGFloat? = nil, imageSize: CGFloat, imageFirst: Bool = true) {
         
         self.spacing = spacing ?? 2
         self.imageSize = imageSize
         self.horizonPadding = horizonPadding ?? 12
         self.verticalPadding = verticalPadding ?? 8
+        self.imageFirst = imageFirst
+        
         super.init(frame: frame)
         
         setupViews()
@@ -42,9 +47,15 @@ class ImageTextButton: UIButton {
     }
     
     private func setupFlexLayout() {
-        self.flex.direction(.row).alignItems(.center).paddingVertical(8).paddingHorizontal(horizonPadding).define { flex in
-            flex.addItem(customImage).size(imageSize).marginRight(spacing)
-            flex.addItem(customText)
+        self.flex.direction(.row).alignItems(.center).paddingVertical(verticalPadding).paddingHorizontal(horizonPadding).define { flex in
+            
+            if imageFirst {
+                flex.addItem(customImage).size(imageSize).marginRight(spacing)
+                flex.addItem(customText)
+            } else {
+                flex.addItem(customText)
+                flex.addItem(customImage).size(imageSize).marginLeft(spacing)
+            }
         }
     }
     

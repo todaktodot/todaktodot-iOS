@@ -10,10 +10,13 @@ import Then
 import FlexLayout
 import PinLayout
 import RxSwift
+import RxRelay
 
-class CoupleDatePickerView: UIView {
-
-    let dateTextField = UITextField().then {
+final class CoupleDatePickerView: UIView {
+    
+    let isDateSelected = BehaviorRelay<Bool>(value: false)
+    
+    private let dateTextField = UITextField().then {
         $0.attributedPlaceholder = NSAttributedString(
             string: "YY-MM-DD",
             attributes: [.foregroundColor: UIColor.grayScale400]
@@ -90,6 +93,13 @@ class CoupleDatePickerView: UIView {
                 IconView.image = UIImage(resource: .check)
                 dateTextField.text = formatter.string(from: datePicker.date)
                 dateTextField.resignFirstResponder()
+            })
+            .disposed(by: disposeBag)
+        
+        dateTextField.rx.text.orEmpty
+            .map { !$0.isEmpty }
+            .subscribe(onNext: { [weak self] enabled in
+                self?.isDateSelected.accept(enabled)
             })
             .disposed(by: disposeBag)
     }

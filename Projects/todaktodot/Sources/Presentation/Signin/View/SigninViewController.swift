@@ -20,7 +20,6 @@ final class SigninViewController: UIViewController, View {
     
     private let onboardingView = InfiniteSliderView()
     private let buttonContainerView = UIView()
-    private let testCode = ["a","b","d","4","5","8"]
     
     let kakaoButton = UIButton().then {
         $0.backgroundColor = UIColor(hex: "FAE64D")
@@ -123,7 +122,7 @@ final class SigninViewController: UIViewController, View {
             .all()
         
         appLogo.pin
-            .top(view.pin.safeArea.top + 12)
+            .top(56)
             .left(20)
             .width(92)
             .height(32)
@@ -140,7 +139,8 @@ final class SigninViewController: UIViewController, View {
         appleButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
                 guard let self = self else { return }
-                coordinator?.showCoupleConnect(code: testCode)
+//                coordinator?.showCoupleConnect(code: testCode)
+                coordinator?.navigateToMain()
             })
             .disposed(by: disposeBag)
     }
@@ -157,7 +157,7 @@ final class SigninViewController: UIViewController, View {
             .filter { $0 }
             .subscribe(onNext: { [weak self] _ in
                 guard let self = self else { return }
-                coordinator?.showCoupleConnect(code: testCode)
+                coordinator?.showCoupleConnect()
             })
             .disposed(by: disposeBag)
         
@@ -173,7 +173,7 @@ final class SigninViewController: UIViewController, View {
             .filter { $0 }
             .subscribe(onNext: { [weak self] _ in
                 guard let self = self else { return }
-                coordinator?.showCoupleConnect(code: testCode)
+                coordinator?.showCoupleConnect()
             })
             .disposed(by: disposeBag)
     }

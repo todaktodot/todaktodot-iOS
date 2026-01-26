@@ -15,6 +15,7 @@
             "SharedLibraries": .framework,
             "FlexLayout": .staticFramework,
             "PinLayout": .framework,
+            "Lottie": .framework,
             "firebase-ios-sdk": .framework
         ]
     )
@@ -33,6 +34,7 @@ let package = Package(
         .package(url: "https://github.com/google/GoogleSignIn-iOS", .upToNextMinor(from: "8.0.0")),
         .package(url: "https://github.com/layoutBox/FlexLayout", .upToNextMinor(from: "2.2.2")),
         .package(url: "https://github.com/layoutBox/PinLayout", .upToNextMinor(from: "1.10.6")),
+        .package(url: "https://github.com/airbnb/lottie-ios", .upToNextMinor(from: "4.6.0")),
     ]
 )
 
