@@ -129,7 +129,7 @@ final class NicknameViewController: UIViewController {
                 case .create:
                     self?.coordinator?.showCoupleInfo()
                 case .join:
-                    self?.coordinator?.goMainFlow()
+                    self?.coordinator?.tabBarCoordinator?.start()
                 case .edit:
                     self?.coordinator?.navigateBack()
                 }

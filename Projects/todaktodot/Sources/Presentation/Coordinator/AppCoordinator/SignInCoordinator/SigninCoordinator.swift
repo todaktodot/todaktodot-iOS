@@ -11,6 +11,7 @@ final class SigninCoordinator: Coordinator {
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
     weak var parentCoordinator: AppCoordinator?
+    weak var tabBarCoordinator: TabBarCoordinator?
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
@@ -65,11 +66,5 @@ final class SigninCoordinator: Coordinator {
     
     func navigateToMain() {
         parentCoordinator?.showMainFlow()
-    }
-    
-    func goMainFlow() {
-        let tabBarCoordinator = TabBarCoordinator(navigationController: navigationController)
-        addChild(tabBarCoordinator)
-        tabBarCoordinator.start()
     }
 }

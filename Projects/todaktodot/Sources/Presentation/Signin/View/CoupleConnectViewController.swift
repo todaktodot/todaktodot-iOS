@@ -242,7 +242,7 @@ final class CoupleConnectViewController: UIViewController {
         
         lookAroundButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
-                self?.coordinator?.navigateToMain()
+                self?.coordinator?.tabBarCoordinator?.start()
             })
             .disposed(by: disposeBag)
     }
