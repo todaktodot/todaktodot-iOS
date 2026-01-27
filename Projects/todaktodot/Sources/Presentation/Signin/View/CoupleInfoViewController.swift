@@ -12,7 +12,13 @@ import PinLayout
 import RxSwift
 import RxRelay
 
+enum CoupleInfoFlowType {
+    case newUser
+    case editUser
+}
+
 final class CoupleInfoViewController: UIViewController {
+    
     weak var coordinator: SigninCoordinator?
     
     private var isDone = BehaviorRelay<Bool>(value: false)
@@ -20,6 +26,7 @@ final class CoupleInfoViewController: UIViewController {
     private let isRelationSelected = BehaviorRelay<Bool>(value: false)
     private let disposeBag = DisposeBag()
     private let contentsView = UIView()
+    private let flowType: CoupleInfoFlowType
     private let backgroundView = UIImageView().then {
         $0.image = UIImage(resource: .connectBackground)
     }
@@ -55,6 +62,16 @@ final class CoupleInfoViewController: UIViewController {
     }
     
     private let buttonsView = SelectedButtonView()
+    
+    init(flowType: CoupleInfoFlowType) {
+        self.flowType = flowType
+        
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -148,7 +165,14 @@ final class CoupleInfoViewController: UIViewController {
         
         startButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
-                self?.coordinator?.navigateToMain()
+                switch self?.flowType {
+                case .newUser:
+                    self?.coordinator?.navigateToMain()
+                case .editUser:
+                    self?.coordinator?.navigateBack()
+                case .none:
+                    break
+                }
             })
             .disposed(by: disposeBag)
     }

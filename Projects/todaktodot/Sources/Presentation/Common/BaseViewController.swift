@@ -30,13 +30,13 @@ class BaseViewController: UIViewController {
         logoImageView.frame = CGRect(x: 0, y: 0, width: 92, height: 32)
         let logoContainer = UIView(frame: CGRect(x: 0, y: 0, width: 92 + 20, height: 32))
         logoContainer.addSubview(logoImageView)
-        logoImageView.frame.origin.x = 0
+        logoImageView.frame.origin.x = 5
         navigationItem.leftBarButtonItem = UIBarButtonItem(customView: logoContainer)
         
         let personImageView = UIImageView(image: UIImage(resource: .person))
         personImageView.contentMode = .scaleAspectFit
         personImageView.frame = CGRect(x: 0, y: 0, width: 18, height: 18)
-        let personContainer = UIView(frame: CGRect(x: 0, y: 0, width: 18 + 20, height: 18))
+        let personContainer = UIView(frame: CGRect(x: 0, y: 0, width: 18 + 35, height: 18))
         personContainer.addSubview(personImageView)
         personImageView.frame.origin.x = 20
         navigationItem.rightBarButtonItem = UIBarButtonItem(customView: personContainer)

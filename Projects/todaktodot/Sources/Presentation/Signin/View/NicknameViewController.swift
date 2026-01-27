@@ -12,9 +12,15 @@ import PinLayout
 import RxSwift
 import RxRelay
 
+enum ConnectFlowType {
+    case create /// 먼저 커플 연결 하는 사용자
+    case join /// 상대방이 먼저 연결한 사용자
+    case edit /// 닉네임 수정
+}
+
 final class NicknameViewController: UIViewController {
     weak var coordinator: SigninCoordinator?
-    private var passCoupleInfo = BehaviorRelay<Bool>(value: false)
+    private var flowType = BehaviorRelay<ConnectFlowType>(value: .create)
     private let disposeBag = DisposeBag()
     private let contentsView = UIView()
     private let backgroundView = UIImageView().then {
@@ -50,8 +56,8 @@ final class NicknameViewController: UIViewController {
         $0.isEnabled = false
     }
     
-    init(passCoupleInfo: Bool) {
-        self.passCoupleInfo.accept(passCoupleInfo)
+    init(flowType: ConnectFlowType) {
+        self.flowType.accept(flowType)
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -61,6 +67,8 @@ final class NicknameViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        navigationItem.hidesBackButton = true
+        navigationController?.interactivePopGestureRecognizer?.isEnabled = true
         
         textFiled.delegate = self
         hideKeyboardwhenTappedAround()
@@ -72,6 +80,11 @@ final class NicknameViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         layoutViews()
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        navigationController?.interactivePopGestureRecognizer?.delegate = nil
     }
     
     private func setupViews() {
@@ -110,12 +123,15 @@ final class NicknameViewController: UIViewController {
     
     private func bindActions() {
         nextButton.rx.tap
-            .withLatestFrom(passCoupleInfo)
-            .subscribe(onNext: { [weak self] pass in
-                if pass {
-                    self?.coordinator?.goMainFlow()
-                } else {
+            .withLatestFrom(flowType)
+            .subscribe(onNext: { [weak self] type in
+                switch type {
+                case .create:
                     self?.coordinator?.showCoupleInfo()
+                case .join:
+                    self?.coordinator?.goMainFlow()
+                case .edit:
+                    self?.coordinator?.navigateBack()
                 }
             })
             .disposed(by: disposeBag)

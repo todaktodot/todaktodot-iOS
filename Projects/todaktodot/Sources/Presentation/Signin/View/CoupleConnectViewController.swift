@@ -16,7 +16,7 @@ import RxCocoa
 final class CoupleConnectViewController: UIViewController {
     weak var coordinator: SigninCoordinator?
     
-    private var passCoupleInfo: Bool = false
+    private var flowType: ConnectFlowType
     private let disposeBag = DisposeBag()
     private let code: String?
     
@@ -107,9 +107,9 @@ final class CoupleConnectViewController: UIViewController {
         $0.tintColor = .grayScale600
     }
     
-    init(code: [String]? = nil, passCoupleInfo: Bool = false) {
+    init(code: [String]? = nil, flowType: ConnectFlowType) {
         self.code = code?.joined()
-        self.passCoupleInfo = passCoupleInfo
+        self.flowType = flowType
         myCodeTextField = CodeTextFieldView(code: code)
         
         super.init(nibName: nil, bundle: nil)
@@ -228,7 +228,7 @@ final class CoupleConnectViewController: UIViewController {
             .subscribe(onNext: { [weak self] _ in
                 guard let self else { return }
                 showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
-                    self.coordinator?.showNickname(passCoupleInfo: self.passCoupleInfo)
+                    self.coordinator?.showNickname(flowType: self.flowType)
                 })
             })
             .disposed(by: disposeBag)
