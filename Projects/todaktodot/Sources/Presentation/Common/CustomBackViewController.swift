@@ -20,6 +20,7 @@ class CustomBackViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setup()
+        navigationController?.interactivePopGestureRecognizer?.delegate = nil
     }
     
     private func setup() {

@@ -1,5 +1,5 @@
 //
-//  MypageViewContorller.swift
+//  MypageViewController.swift
 //  todaktodot
 //
 //  Created by 임대진 on 1/24/26.
@@ -11,7 +11,7 @@ import FlexLayout
 import PinLayout
 import RxSwift
 
-final class MypageViewContorller: CustomBackViewController {
+final class MypageViewController: CustomBackViewController {
     weak var coordinator: MypageCoordinator?
     private var disposeBag = DisposeBag()
     private var connected = true
@@ -214,8 +214,8 @@ final class MypageViewContorller: CustomBackViewController {
         coupleDisconnectButton.rx.tap
             .subscribe(onNext: { [weak self] in
                 self?.showAlert(icon: UIImage(resource: .warning), title: "정말 커플 연결을 해제하시겠어요?", description: "즉시 연결이 해제되며\n그동안 작성하신 기록은 모두 삭제되어\n되돌릴 수 없으니 신중히 결정해주세요",primaryButtonTitle: "커플 해제", primaryButtonAction: {
-                    self?.coordinator?.showSigninFlow()
                     self?.showAlert(icon: UIImage(resource: .check), title: "정상적으로 커플 연결이 해제됐어요\n다시 로그인이 필요해요", primaryButtonTitle: "확인", primaryButtonAction: {})
+                    self?.coordinator?.showSigninFlow()
                 }, secondaryButtonTitle: "취소")
                 
             })
@@ -224,8 +224,8 @@ final class MypageViewContorller: CustomBackViewController {
         logoutButton.rx.tap
             .subscribe(onNext: { [weak self] in
                 self?.showAlert(icon: UIImage(resource: .warning), title: "로그아웃 시 서비스 사용이\n제한돼요. 그래도 로그아웃할까요?", primaryButtonTitle: "로그아웃", primaryButtonAction: {
-                    self?.coordinator?.showSigninFlow()
                     self?.showAlert(icon: UIImage(resource: .check), title: "정상적으로 로그아웃 되었어요", primaryButtonTitle: "확인", primaryButtonAction: {})
+                    self?.coordinator?.showSigninFlow()
                 }, secondaryButtonTitle: "취소")
                 
             })
@@ -235,8 +235,8 @@ final class MypageViewContorller: CustomBackViewController {
             .subscribe(onNext: { [weak self] in
                 
                 self?.showAlert(icon: UIImage(resource: .warning), title: "계정 탈퇴 시 서비스 사용이\n제한돼요. 그래도 탈퇴할까요?", primaryButtonTitle: "탈퇴", primaryButtonAction: {
-                    self?.coordinator?.showSigninFlow()
                     self?.showAlert(icon: UIImage(resource: .check), title: "정상적으로 탈퇴 되었어요", primaryButtonTitle: "확인", primaryButtonAction: {})
+                    self?.coordinator?.showSigninFlow()
                 }, secondaryButtonTitle: "취소")
                 
             })
@@ -273,7 +273,7 @@ final class MypageViewContorller: CustomBackViewController {
     }
 }
 
-extension MypageViewContorller: CustomBackViewControllerDelegate {
+extension MypageViewController: CustomBackViewControllerDelegate {
     func navigateBack() {
         coordinator?.navigateBack()
     }
