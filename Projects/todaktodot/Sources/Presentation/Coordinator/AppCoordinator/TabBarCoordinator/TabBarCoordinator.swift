@@ -30,9 +30,16 @@ final class TabBarCoordinator: Coordinator {
     
     func showCoupleConnect() {
         let signinCoordinator = SigninCoordinator(navigationController: navigationController)
-        signinCoordinator.tabBarCoordinator = self
+        signinCoordinator.parentCoordinator = self
         addChild(signinCoordinator)
         signinCoordinator.showCoupleConnectOnly()
+    }
+    
+    func showSignin() {
+        let signinCoordinator = SigninCoordinator(navigationController: navigationController)
+        signinCoordinator.parentCoordinator = self
+        addChild(signinCoordinator)
+        signinCoordinator.start()
     }
     
     private func setupChildCoordinators(tabBarController: MainTabBarController) {
@@ -47,6 +54,7 @@ final class TabBarCoordinator: Coordinator {
         
         let aiReportNavController = UINavigationController()
         let aiReportCoordinator = AIReportCoordinator(navigationController: aiReportNavController)
+        aiReportCoordinator.tabBarCoordinator = self
         addChild(aiReportCoordinator)
         aiReportCoordinator.start()
         viewControllers.append(aiReportNavController)

@@ -19,11 +19,10 @@ class CustomBackViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupMyPageButton()
+        setup()
     }
     
-    private func setupMyPageButton() {
-        
+    private func setup() {
         let backButton = UIBarButtonItem(
             image: UIImage(resource: .back),
             style: .plain,

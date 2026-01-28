@@ -18,7 +18,7 @@ final class CustomSwitch: UIView {
         $0.layer.cornerRadius = 10
     }
 
-    var tapEvent: ((Bool) -> Void)?
+    var onTap: ((Bool) -> Void)?
 
     init(isOn: Bool = false) {
         self.isOn = isOn
@@ -76,6 +76,6 @@ final class CustomSwitch: UIView {
     }
 
     @objc func tapSwitch() {
-        tapEvent?(isOn)
+        onTap?(isOn)
     }
 }

@@ -10,12 +10,11 @@ import UIKit
 final class SigninCoordinator: Coordinator {
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
-    weak var parentCoordinator: AppCoordinator?
+    weak var parentCoordinator: Coordinator?
     weak var tabBarCoordinator: TabBarCoordinator?
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
-        self.navigationController.isNavigationBarHidden = true
     }
     
     func start() {
@@ -40,12 +39,14 @@ final class SigninCoordinator: Coordinator {
     func showNickname(flowType: ConnectFlowType) {
         let nicknameViewController = NicknameViewController(flowType: flowType)
         nicknameViewController.coordinator = self
+        self.navigationController.isNavigationBarHidden = true
         navigationController.pushViewController(nicknameViewController, animated: true)
     }
     
     func showCoupleInfo(flowType: CoupleInfoFlowType = .newUser) {
         let coupleInfoViewController = CoupleInfoViewController(flowType: flowType)
         coupleInfoViewController.coordinator = self
+        self.navigationController.isNavigationBarHidden = true
         navigationController.pushViewController(coupleInfoViewController, animated: true)
     }
     
@@ -65,6 +66,11 @@ final class SigninCoordinator: Coordinator {
     }
     
     func navigateToMain() {
-        parentCoordinator?.showMainFlow()
+        if let coordinator = parentCoordinator as? AppCoordinator {
+            coordinator.showMainFlow()
+        }
+        if let coordinator = parentCoordinator as? TabBarCoordinator {
+            coordinator.start()
+        }
     }
 }

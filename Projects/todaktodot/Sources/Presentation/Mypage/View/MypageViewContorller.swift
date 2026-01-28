@@ -260,7 +260,7 @@ final class MypageViewContorller: CustomBackViewController {
             })
             .disposed(by: disposeBag)
         
-        settingSectionView.notiSwitch.tapEvent = { [weak self] isOn in
+        settingSectionView.notiSwitch.onTap = { [weak self] isOn in
             guard let self else { return }
             if isOn {
                 showAlert(icon: UIImage(resource: .warning), title: "푸시 알림을 끄시겠어요?", description: "•  상대방이 답변해도 바로 알 수 없어요\n•  서로의 답변이 공개되도 알 수 없어요\n•  상대방의 쿡 찌르기를 받을 수 없어요", primaryButtonTitle: "알림 유지하기", primaryButtonAction: {}, secondaryButtonTitle: "알림 끄기", secondaryButtonAction: {

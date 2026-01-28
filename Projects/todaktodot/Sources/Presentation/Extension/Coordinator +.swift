@@ -8,9 +8,10 @@
 import UIKit
 
 extension Coordinator {
-    func navigateToMyPage(_ navigationController: UINavigationController?) {
+    func navigateToMyPage(_ navigationController: UINavigationController?, tabBarCoordinator: TabBarCoordinator?) {
         guard let navigationController else { return }
         let coordinator = MypageCoordinator(navigationController: navigationController)
+        coordinator.tabBarCoordinator = tabBarCoordinator
         addChild(coordinator)
         coordinator.start()
     }

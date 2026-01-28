@@ -66,6 +66,7 @@ let project = Project(
                     "NSAppTransportSecurity": [
                         "NSAllowsArbitraryLoads": true
                     ],
+                    "ITSAppUsesNonExemptEncryption" : false,
                 ]
             ),
             sources: ["Sources/**"],

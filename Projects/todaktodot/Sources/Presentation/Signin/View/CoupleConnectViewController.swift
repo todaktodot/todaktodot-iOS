@@ -24,6 +24,11 @@ final class CoupleConnectViewController: UIViewController {
         $0.image = UIImage(resource: .connectBackground)
     }
     
+    private let scrollview = UIScrollView().then {
+        $0.showsVerticalScrollIndicator = false
+        $0.isScrollEnabled = false
+    }
+    
     private let contentsView = UIView()
     
     private let codeInputView = UIView().then {
@@ -128,6 +133,7 @@ final class CoupleConnectViewController: UIViewController {
         setupFlexLayout()
         hideKeyboardwhenTappedAround()
         coordinator?.showTermsModal()
+        registerKeyboardNotification()
     }
     
     override func viewDidLayoutSubviews() {
@@ -139,9 +145,10 @@ final class CoupleConnectViewController: UIViewController {
 
     private func setupViews() {
         view.addSubview(background)
-        view.addSubview(contentsView)
+        view.addSubview(scrollview)
         view.addSubview(connectButton)
         view.addSubview(lookAroundButton)
+        scrollview.addSubview(contentsView)
     }
 
     private func setupFlexLayout() {
@@ -194,10 +201,15 @@ final class CoupleConnectViewController: UIViewController {
         background.pin
             .all()
         
-        contentsView.pin
+        scrollview.pin
             .top(view.pin.safeArea.top)
-            .horizontally()
+            .left()
+            .right()
             .bottom()
+        
+        contentsView.pin
+            .top()
+            .horizontally()
         
         connectButton.pin
             .horizontally(20)
@@ -209,9 +221,9 @@ final class CoupleConnectViewController: UIViewController {
             .bottom(48)
             .height(52)
         
-        codeInputView.flex.layout(mode: .adjustHeight)
+        contentsView.flex.layout(mode: .adjustHeight)
         
-        contentsView.flex.layout()
+        scrollview.contentSize = contentsView.frame.size
     }
     
     private func bindActions() {
@@ -242,8 +254,53 @@ final class CoupleConnectViewController: UIViewController {
         
         lookAroundButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
-                self?.coordinator?.tabBarCoordinator?.start()
+                self?.coordinator?.navigateToMain()
             })
             .disposed(by: disposeBag)
+    }
+}
+
+extension CoupleConnectViewController {
+    private func registerKeyboardNotification() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillShow),
+            name: UIResponder.keyboardWillShowNotification,
+            object: nil
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillHide),
+            name: UIResponder.keyboardWillHideNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func keyboardWillShow(_ notification: Notification) {
+        guard
+            let userInfo = notification.userInfo,
+            let keyboardFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
+        else { return }
+        
+        let bottomInset =
+            keyboardFrame.height
+            - view.safeAreaInsets.bottom
+            + 80
+        UIView.animate(withDuration: 0.1) {
+            self.scrollview.isScrollEnabled = true
+            self.scrollview.contentInset.bottom = bottomInset
+            self.scrollview.verticalScrollIndicatorInsets.bottom = bottomInset
+        }
+    }
+    
+    @objc private func keyboardWillHide(_ notification: Notification) {
+        UIView.animate(withDuration: 0.1) {
+            self.scrollview.contentInset.bottom = 0
+            self.scrollview.verticalScrollIndicatorInsets.bottom = 0
+            
+            self.scrollview.setContentOffset(.zero, animated: false)
+            self.scrollview.isScrollEnabled = false
+        }
     }
 }

@@ -19,10 +19,10 @@ class BaseViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupMyPageButton()
+        setup()
     }
     
-    private func setupMyPageButton() {
+    private func setup() {
         navigationController?.navigationBar.isHidden = false
         
         let logoImageView = UIImageView(image: UIImage(resource: .appLogo))

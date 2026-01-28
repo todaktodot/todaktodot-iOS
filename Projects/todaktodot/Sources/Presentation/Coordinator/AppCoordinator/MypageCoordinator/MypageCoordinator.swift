@@ -10,7 +10,7 @@ import UIKit
 final class MypageCoordinator: Coordinator {
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
-    weak var parentCoordinator: AppCoordinator?
+    weak var tabBarCoordinator: TabBarCoordinator?
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
@@ -23,7 +23,7 @@ final class MypageCoordinator: Coordinator {
     }
     
     func showSigninFlow() {
-        (UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate)?.appCoordinator?.showSigninFlow()
+        tabBarCoordinator?.showSignin()
     }
     
     func showTerms() {
