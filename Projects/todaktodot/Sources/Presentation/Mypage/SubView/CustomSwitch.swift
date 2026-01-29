@@ -70,8 +70,8 @@ final class CustomSwitch: UIView {
         layoutThumb()
     }
     
-    func toggleSwitch() {
-        isOn.toggle()
+    func setSwitch(isOn: Bool) {
+        self.isOn = isOn
         updateUI()
     }
 

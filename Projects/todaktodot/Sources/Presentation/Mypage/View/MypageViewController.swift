@@ -10,6 +10,7 @@ import Then
 import FlexLayout
 import PinLayout
 import RxSwift
+import UserNotifications
 
 final class MypageViewController: CustomBackViewController {
     weak var coordinator: MypageCoordinator?
@@ -106,6 +107,18 @@ final class MypageViewController: CustomBackViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         navigationController?.isNavigationBarHidden = false
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(syncNotificationSwitch),
+            name: UIApplication.willEnterForegroundNotification,
+            object: nil
+        )
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        self.syncNotificationSwitch()
     }
     
     override func viewDidLayoutSubviews() {
@@ -264,10 +277,27 @@ final class MypageViewController: CustomBackViewController {
             guard let self else { return }
             if isOn {
                 showAlert(icon: UIImage(resource: .warning), title: "푸시 알림을 끄시겠어요?", description: "•  상대방이 답변해도 바로 알 수 없어요\n•  서로의 답변이 공개되도 알 수 없어요\n•  상대방의 쿡 찌르기를 받을 수 없어요", primaryButtonTitle: "알림 유지하기", primaryButtonAction: {}, secondaryButtonTitle: "알림 끄기", secondaryButtonAction: {
-                    self.settingSectionView.notiSwitch.toggleSwitch()
+                    self.openSystemNotificationSettings()
                 })
             } else {
-                settingSectionView.notiSwitch.toggleSwitch()
+                openSystemNotificationSettings()
+            }
+        }
+    }
+    
+    func openSystemNotificationSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+    
+    @objc private func syncNotificationSwitch() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                let enabled =
+                    settings.authorizationStatus == .authorized ||
+                    settings.authorizationStatus == .provisional
+
+                self.settingSectionView.notiSwitch.setSwitch(isOn: enabled)
             }
         }
     }

@@ -28,6 +28,7 @@ final class AIReportLoadingViewController: UIViewController {
         $0.numberOfLines = 2
         $0.textAlignment = .center
     }
+    private var transitionWorkItem: DispatchWorkItem?
     
     init() {
         super.init(nibName: nil, bundle: nil)
@@ -45,9 +46,12 @@ final class AIReportLoadingViewController: UIViewController {
         setupNavigationBar()
         setupFlexLayout()
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            self.coordinator?.showNext(step: .first, animated: false)
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.coordinator?.showNext(step: .first, animated: false)
         }
+        transitionWorkItem = workItem
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: workItem)
     }
     
     override func viewDidLayoutSubviews() {

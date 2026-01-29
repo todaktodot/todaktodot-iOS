@@ -18,6 +18,7 @@ enum AIReportViewStep {
     case second
     case third
     case full
+    case detail
 }
 
 final class AIReportDetailViewController: CustomBackViewController {
@@ -40,7 +41,6 @@ final class AIReportDetailViewController: CustomBackViewController {
     private let contentContainer = UIView()
     
     private let nextButton = UIButton().then {
-        $0.setTitle("다음", for: .normal)
         $0.setTitleColor(.mainPurple, for: .normal)
         $0.titleLabel?.font = .pretenSemiBold(16)
         $0.backgroundColor = .white
@@ -52,6 +52,10 @@ final class AIReportDetailViewController: CustomBackViewController {
     init(step: AIReportViewStep) {
         self.step = step
         super.init(nibName: nil, bundle: nil)
+        if step == .third {
+            nextButton.setTitle("한 눈에 보기", for: .normal)
+        } else {
+            nextButton.setTitle("다음", for: .normal)        }
     }
     
     required init?(coder: NSCoder) {
@@ -66,7 +70,7 @@ final class AIReportDetailViewController: CustomBackViewController {
         setupFlexLayout()
         bindActions()
         
-        if step == .full {
+        if step == .full || step == .detail {
             hiddenSubviesTitle()
         }
     }
@@ -91,7 +95,7 @@ final class AIReportDetailViewController: CustomBackViewController {
                 $0.addItem(secondDetailView)
             case .third:
                 $0.addItem(thirdDetailView)
-            case .full:
+            case .full, .detail:
                 $0.addItem(firstDetailView)
                 $0.addItem(secondDetailView)
                 $0.addItem(thirdDetailView)
@@ -99,7 +103,7 @@ final class AIReportDetailViewController: CustomBackViewController {
             
             $0.addItem().grow(1)
             
-            if step != .full {
+            if step != .full && step != .detail {
                 $0.addItem(nextButton)
                     .height(52)
                     .marginTop(40)
@@ -150,6 +154,10 @@ final class AIReportDetailViewController: CustomBackViewController {
                 }
             })
             .disposed(by: disposeBag)
+        
+        thirdDetailView.onTapTopic = {
+            self.coordinator?.showNext(step: .detail)
+        }
     }
     
     private func hiddenSubviesTitle() {
