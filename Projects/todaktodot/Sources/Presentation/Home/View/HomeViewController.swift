@@ -93,7 +93,7 @@ final class HomeViewController: BaseViewController, View {
     
     private let weekCardsContainer = UIView()
     private let weekdays = ["토", "금", "목", "수", "화", "월"]
-    private var hasWeekCards = false // TODO: 임시 설정. 카드 존재여부 확인
+    private var hasWeekCards = true // TODO: 임시 설정. 카드 존재여부 확인
     
     init(reactor: HomeReactor) {
         super.init(nibName: nil, bundle: nil)
@@ -524,6 +524,6 @@ private final class ChipView: UIView {
 
 extension HomeViewController: BaseViewControllerDelegate {
     func navigateToMyPage() {
-        coordinator?.navigateToMyPage()
+        coordinator?.navigateToMyPage(self.navigationController, tabBarCoordinator: coordinator?.tabBarCoordinator)
     }
 }

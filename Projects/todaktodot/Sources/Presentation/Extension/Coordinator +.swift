@@ -8,11 +8,11 @@
 import UIKit
 
 extension Coordinator {
-    func navigateToMyPage() {
-        let vc = UIViewController()
-        vc.title = "My Page"
-        vc.view.backgroundColor = .white
-        vc.disableGlassStyle()
-        navigationController.pushViewController(vc, animated: true)
+    func navigateToMyPage(_ navigationController: UINavigationController?, tabBarCoordinator: TabBarCoordinator?) {
+        guard let navigationController else { return }
+        let coordinator = MypageCoordinator(navigationController: navigationController)
+        coordinator.tabBarCoordinator = tabBarCoordinator
+        addChild(coordinator)
+        coordinator.start()
     }
 }

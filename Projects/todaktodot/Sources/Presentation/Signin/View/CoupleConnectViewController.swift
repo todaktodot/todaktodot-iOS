@@ -16,12 +16,17 @@ import RxCocoa
 final class CoupleConnectViewController: UIViewController {
     weak var coordinator: SigninCoordinator?
     
-    private var passCoupleInfo: Bool = false
+    private var flowType: ConnectFlowType
     private let disposeBag = DisposeBag()
     private let code: String?
     
     private let background = UIImageView().then {
         $0.image = UIImage(resource: .connectBackground)
+    }
+    
+    private let scrollview = UIScrollView().then {
+        $0.showsVerticalScrollIndicator = false
+        $0.isScrollEnabled = false
     }
     
     private let contentsView = UIView()
@@ -107,9 +112,9 @@ final class CoupleConnectViewController: UIViewController {
         $0.tintColor = .grayScale600
     }
     
-    init(code: [String]? = nil, passCoupleInfo: Bool = false) {
+    init(code: [String]? = nil, flowType: ConnectFlowType) {
         self.code = code?.joined()
-        self.passCoupleInfo = passCoupleInfo
+        self.flowType = flowType
         myCodeTextField = CodeTextFieldView(code: code)
         
         super.init(nibName: nil, bundle: nil)
@@ -128,6 +133,7 @@ final class CoupleConnectViewController: UIViewController {
         setupFlexLayout()
         hideKeyboardwhenTappedAround()
         coordinator?.showTermsModal()
+        registerKeyboardNotification()
     }
     
     override func viewDidLayoutSubviews() {
@@ -139,9 +145,10 @@ final class CoupleConnectViewController: UIViewController {
 
     private func setupViews() {
         view.addSubview(background)
-        view.addSubview(contentsView)
+        view.addSubview(scrollview)
         view.addSubview(connectButton)
         view.addSubview(lookAroundButton)
+        scrollview.addSubview(contentsView)
     }
 
     private func setupFlexLayout() {
@@ -194,10 +201,15 @@ final class CoupleConnectViewController: UIViewController {
         background.pin
             .all()
         
-        contentsView.pin
+        scrollview.pin
             .top(view.pin.safeArea.top)
-            .horizontally()
+            .left()
+            .right()
             .bottom()
+        
+        contentsView.pin
+            .top()
+            .horizontally()
         
         connectButton.pin
             .horizontally(20)
@@ -209,9 +221,9 @@ final class CoupleConnectViewController: UIViewController {
             .bottom(48)
             .height(52)
         
-        codeInputView.flex.layout(mode: .adjustHeight)
+        contentsView.flex.layout(mode: .adjustHeight)
         
-        contentsView.flex.layout()
+        scrollview.contentSize = contentsView.frame.size
     }
     
     private func bindActions() {
@@ -228,7 +240,7 @@ final class CoupleConnectViewController: UIViewController {
             .subscribe(onNext: { [weak self] _ in
                 guard let self else { return }
                 showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
-                    self.coordinator?.showNickname(passCoupleInfo: self.passCoupleInfo)
+                    self.coordinator?.showNickname(flowType: self.flowType)
                 })
             })
             .disposed(by: disposeBag)
@@ -245,5 +257,50 @@ final class CoupleConnectViewController: UIViewController {
                 self?.coordinator?.navigateToMain()
             })
             .disposed(by: disposeBag)
+    }
+}
+
+extension CoupleConnectViewController {
+    private func registerKeyboardNotification() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillShow),
+            name: UIResponder.keyboardWillShowNotification,
+            object: nil
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillHide),
+            name: UIResponder.keyboardWillHideNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func keyboardWillShow(_ notification: Notification) {
+        guard
+            let userInfo = notification.userInfo,
+            let keyboardFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
+        else { return }
+        
+        let bottomInset =
+            keyboardFrame.height
+            - view.safeAreaInsets.bottom
+            + 80
+        UIView.animate(withDuration: 0.1) {
+            self.scrollview.isScrollEnabled = true
+            self.scrollview.contentInset.bottom = bottomInset
+            self.scrollview.verticalScrollIndicatorInsets.bottom = bottomInset
+        }
+    }
+    
+    @objc private func keyboardWillHide(_ notification: Notification) {
+        UIView.animate(withDuration: 0.1) {
+            self.scrollview.contentInset.bottom = 0
+            self.scrollview.verticalScrollIndicatorInsets.bottom = 0
+            
+            self.scrollview.setContentOffset(.zero, animated: false)
+            self.scrollview.isScrollEnabled = false
+        }
     }
 }

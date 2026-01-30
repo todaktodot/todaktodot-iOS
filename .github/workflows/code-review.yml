@@ -44,10 +44,7 @@ jobs:
             // 2.5-flash 모델 사용 시 엔드포인트 확인
             const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + process.env.GEMINI_API_KEY;
             
-            const prompt = `You are a senior code reviewer. Review this code change and provide ONLY actionable feedback.
-            Focus on: Critical bugs, Security, Performance, Breaking changes.
-            Format: Bullet points, specific, concise. If no issues, say "LGTM 👍".
-            Respond in Korean.`;
+            const prompt = `당신은 10년 차 이상의 숙련된 시니어 소프트웨어 엔지니어입니다. 코드 변경 사항을 리뷰할 때, 스타일 수정 및 런타임 에러, 보안 취약점, 비효율적인 알고리즘, 치명적인 이슈를 찾는 데 집중하십시오. 찾은 이슈는 다시 분석해서 95퍼센트 이상의 정확도가 판단될경우에만 피드백을 제시하시오. 모든 피드백은 반드시 한국어로 작성하며, 단순히 무엇이 잘못되었는지 지적하는 것을 넘어 구체적인 수정 코드 예시와 기술적 근거를 포함하여 즉시 적용 가능한(Actionable) 형태로 제공해야 합니다. 답변의 가독성을 중요하게 여기며, 각 항목은 [위치 및 분류], [수정 제안], [근거 및 이유]의 구조를 가진 불렛 포인트로 간결하게 구성하십시오. 만약 코드에 결함이 없고 품질이 우수하다면 군더더기 없이 LGTM 👍`;
 
             try {
               const response = await fetch(url, {

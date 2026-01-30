@@ -18,9 +18,10 @@ enum AIReportViewStep {
     case second
     case third
     case full
+    case detail
 }
 
-final class AIReportDetailViewController: UIViewController {
+final class AIReportDetailViewController: CustomBackViewController {
     var disposeBag = DisposeBag()
     weak var coordinator: AIReportCoordinator?
     private var dataEmpty = false
@@ -40,7 +41,6 @@ final class AIReportDetailViewController: UIViewController {
     private let contentContainer = UIView()
     
     private let nextButton = UIButton().then {
-        $0.setTitle("다음", for: .normal)
         $0.setTitleColor(.mainPurple, for: .normal)
         $0.titleLabel?.font = .pretenSemiBold(16)
         $0.backgroundColor = .white
@@ -52,6 +52,10 @@ final class AIReportDetailViewController: UIViewController {
     init(step: AIReportViewStep) {
         self.step = step
         super.init(nibName: nil, bundle: nil)
+        if step == .third {
+            nextButton.setTitle("한 눈에 보기", for: .normal)
+        } else {
+            nextButton.setTitle("다음", for: .normal)        }
     }
     
     required init?(coder: NSCoder) {
@@ -60,13 +64,13 @@ final class AIReportDetailViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        self.delegate = self
         title = "주간 AI 리포트"
-        setupNavigationBar()
         setupViews()
         setupFlexLayout()
         bindActions()
         
-        if step == .full {
+        if step == .full || step == .detail {
             hiddenSubviesTitle()
         }
     }
@@ -82,33 +86,6 @@ final class AIReportDetailViewController: UIViewController {
         scrollView.addSubview(contentContainer)
     }
     
-    private func setupNavigationBar() {
-        
-        let backButton = UIBarButtonItem(
-            image: UIImage(resource: .back),
-            style: .plain,
-            target: self,
-            action: #selector(backButtonTapped)
-        )
-        backButton.tintColor = .black
-        navigationItem.leftBarButtonItem = backButton
-        
-        let appearance = UINavigationBarAppearance()
-        appearance.configureWithTransparentBackground()
-        
-        appearance.titleTextAttributes = [
-            .font: UIFont.pretenSemiBold(18),
-            .foregroundColor: UIColor.grayScale900
-        ]
-        
-        navigationController?.navigationBar.isHidden = false
-        navigationController?.navigationBar.standardAppearance = appearance
-        navigationController?.navigationBar.scrollEdgeAppearance = appearance
-        navigationController?.navigationBar.compactAppearance = appearance
-        
-        disableGlassStyle()
-    }
-    
     private func setupFlexLayout() {
         contentContainer.flex.marginHorizontal(20).minHeight(view.bounds.height - 130).define {
             switch step {
@@ -118,7 +95,7 @@ final class AIReportDetailViewController: UIViewController {
                 $0.addItem(secondDetailView)
             case .third:
                 $0.addItem(thirdDetailView)
-            case .full:
+            case .full, .detail:
                 $0.addItem(firstDetailView)
                 $0.addItem(secondDetailView)
                 $0.addItem(thirdDetailView)
@@ -126,7 +103,7 @@ final class AIReportDetailViewController: UIViewController {
             
             $0.addItem().grow(1)
             
-            if step != .full {
+            if step != .full && step != .detail {
                 $0.addItem(nextButton)
                     .height(52)
                     .marginTop(40)
@@ -177,14 +154,20 @@ final class AIReportDetailViewController: UIViewController {
                 }
             })
             .disposed(by: disposeBag)
+        
+        thirdDetailView.onTapTopic = {
+            self.coordinator?.showNext(step: .detail)
+        }
     }
     
     private func hiddenSubviesTitle() {
         secondDetailView.hiddenTitleLabel()
         thirdDetailView.hiddenTitleLabel()
     }
-    
-    @objc private func backButtonTapped() {
+}
+
+extension AIReportDetailViewController: CustomBackViewControllerDelegate {
+    func navigateBack() {
         if step == .full {
             coordinator?.navigateRoot()
         } else {

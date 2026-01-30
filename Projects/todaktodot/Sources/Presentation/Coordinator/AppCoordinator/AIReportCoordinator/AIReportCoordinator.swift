@@ -11,7 +11,7 @@ final class AIReportCoordinator: Coordinator {
     
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
-    weak var parentCoordinator: AppCoordinator?
+    weak var tabBarCoordinator: TabBarCoordinator?
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController

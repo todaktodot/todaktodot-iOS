@@ -22,7 +22,7 @@ let project = Project(
             name: "todaktodot",
             destinations: .iOS,
             product: .app,
-            bundleId: "com.todaktodot.dev",
+            bundleId: "$(PRODUCT_BUNDLE_IDENTIFIER)",
             deploymentTargets: .iOS("15.0"),
             infoPlist: .extendingDefault(
                 with: [
@@ -66,6 +66,7 @@ let project = Project(
                     "NSAppTransportSecurity": [
                         "NSAllowsArbitraryLoads": true
                     ],
+                    "ITSAppUsesNonExemptEncryption" : false,
                 ]
             ),
             sources: ["Sources/**"],

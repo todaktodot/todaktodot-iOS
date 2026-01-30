@@ -217,6 +217,6 @@ final class AIReportViewController: BaseViewController {
 
 extension AIReportViewController: BaseViewControllerDelegate {
     func navigateToMyPage() {
-        coordinator?.navigateToMyPage()
+        coordinator?.navigateToMyPage(self.navigationController, tabBarCoordinator: coordinator?.tabBarCoordinator)
     }
 }
