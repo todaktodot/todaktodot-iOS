@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import NetworkKit
 
 final class SigninCoordinator: Coordinator {
     var childCoordinators: [Coordinator] = []
@@ -18,9 +19,16 @@ final class SigninCoordinator: Coordinator {
     }
     
     func start() {
+        let useCase = LoginUseCase(
+            repository: AuthRepositoryImpl(
+                kakaoAuthProvider: KakaoAuthProvider(),
+                googleAuthProvider: GoogleAuthProvider(),
+                networkManager: NetworkManager()
+            )
+        )
         let signinViewController = SigninViewController()
         signinViewController.coordinator = self
-        signinViewController.reactor = SigninReactor()
+        signinViewController.reactor = SigninReactor(loginUseCase: useCase)
         navigationController.setViewControllers([signinViewController], animated: true)
     }
     

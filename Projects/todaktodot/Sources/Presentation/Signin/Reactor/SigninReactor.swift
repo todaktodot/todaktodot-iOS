@@ -14,11 +14,6 @@ import ReactorKit
 final class SigninReactor: Reactor {
     let disposeBag = DisposeBag()
     
-    enum LoginType {
-        case kakao
-        case google
-    }
-    
     struct State {
         var isLoading: Bool = false
 
@@ -43,23 +38,28 @@ final class SigninReactor: Reactor {
     }
     
     let initialState = State()
-    private let kakaoLoginService = KakaoLoginService2.shared
-    private let googleLoginService = GoogleLoginService.shared
+    
+    
+    
+    private let loginUseCase: LoginUseCase
 
+    init(loginUseCase: LoginUseCase) {
+        self.loginUseCase = loginUseCase
+    }
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .tapKakaoButton:
             return Observable.concat([
                 .just(.setLoading(true)),
-                kakaoLoginService.signIn()
+                loginUseCase.execute(type: .kakao)
                     .map { Mutation.setKakaoSigninSuccess($0) },
                 .just(.setLoading(false))
             ])
         case .tapGoogleButton:
             return Observable.concat([
                 .just(.setLoading(true)),
-                googleLoginService.signIn()
+                loginUseCase.execute(type: .google)
                     .map { Mutation.setGoogleSigninSuccess($0) },
                 .just(.setLoading(false))
             ])
