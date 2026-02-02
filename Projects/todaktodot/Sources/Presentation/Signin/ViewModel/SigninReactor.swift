@@ -11,21 +11,16 @@ import RxSwift
 import AuthenticationServices
 import ReactorKit
 
-enum ServerAuthError: Error {
-    case invalidURL
-    case invalidResponse
-    case invalidData
-    case parsingError
-    case serverClosed
-}
-
 final class SigninReactor: Reactor {
     let disposeBag = DisposeBag()
     
+    enum LoginType {
+        case kakao
+        case google
+    }
+    
     struct State {
-        var isKakaoSigninTapped: Bool = false
-        var isGoogleSigninTapped: Bool = false
-//        var isAppleSigninTapped: Bool = false
+        var isLoading: Bool = false
 
         // 변경될수도?
 //        var appleLoginResult: Result<ASAuthorizationAppleIDCredential, Error>?
@@ -40,9 +35,7 @@ final class SigninReactor: Reactor {
     }
     
     enum Mutation {
-        case setKakaoSigninTapped(Bool)
-        case setGoogleSigninTapped(Bool)
-//        case setAppleSigninTapped(Bool)
+        case setLoading(Bool)
         
 //        case setAppleLoginResult(Result<ASAuthorizationAppleIDCredential, Error>)
         case setKakaoSigninSuccess(Bool)
@@ -50,23 +43,26 @@ final class SigninReactor: Reactor {
     }
     
     let initialState = State()
-    private let kakaoLoginService = KakaoLoginService.shared
+    private let kakaoLoginService = KakaoLoginService2.shared
     private let googleLoginService = GoogleLoginService.shared
 
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .tapKakaoButton:
-            return kakaoLoginService.signIn()
-                .map { Mutation.setKakaoSigninSuccess($0) }
+            return Observable.concat([
+                .just(.setLoading(true)),
+                kakaoLoginService.signIn()
+                    .map { Mutation.setKakaoSigninSuccess($0) },
+                .just(.setLoading(false))
+            ])
         case .tapGoogleButton:
-            return googleLoginService.signIn()
-                .map { Mutation.setGoogleSigninSuccess($0) }
-//        case .tapAppleButton:
-//            print("tap apple")
-//            appleLoginService.startSignInWithApple()
-//            return appleLoginService.loginResult
-//                .map{Mutation.setAppleLoginResult($0) }
+            return Observable.concat([
+                .just(.setLoading(true)),
+                googleLoginService.signIn()
+                    .map { Mutation.setGoogleSigninSuccess($0) },
+                .just(.setLoading(false))
+            ])
         }
     }
     
@@ -74,12 +70,8 @@ final class SigninReactor: Reactor {
         var newState = state
         
         switch mutation {
-            case .setKakaoSigninTapped(let isTapped):
-                newState.isKakaoSigninTapped = isTapped
-            case .setGoogleSigninTapped(let isTapped):
-                newState.isGoogleSigninTapped = isTapped
-//            case .setAppleSigninTapped(let isTapped):
-//                newState.isAppleSigninTapped = isTapped
+            case .setLoading(let isLoading):
+                newState.isLoading = isLoading
                
 //            case .setAppleLoginResult(let result):
 //                newState.appleLoginResult = result
