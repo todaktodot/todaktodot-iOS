@@ -20,6 +20,9 @@ enum UserdefaultKey {
     @UserDefault(key: "isSiginedIn", defaultValue: false)
     static var isSiginedIn: Bool
     
+    @UserDefault(key: "accessToken", defaultValue: "")
+    static var accessToken: String
+    
     //탈퇴시 적용
     static func resetUserDefaults() {
         

@@ -11,18 +11,16 @@ final class CodeTextField: UITextField {
     var previousTextField: UITextField?
     var nextTextField: UITextField?
     
-    init(frame: CGRect = .zero, char: String? = nil) {
+    override init(frame: CGRect = .zero) {
         super.init(frame: frame)
         
-        self.isEnabled = char == nil
-        self.text = char ?? ""
         self.tintColor = .mainPurple
         self.textColor = .mainPurple
         self.textAlignment = .center
         self.font = .pretenMedium(24)
-        self.backgroundColor = char == nil ? .white : .lightPurple
+        self.backgroundColor = .white
         self.layer.cornerRadius = 6
-        self.layer.borderWidth = char == nil ? 1 : 0
+        self.layer.borderWidth = 1
         self.layer.borderColor = UIColor.grayScale200.cgColor
         self.keyboardType = .asciiCapable
         self.autocapitalizationType = .allCharacters
@@ -41,5 +39,12 @@ final class CodeTextField: UITextField {
         } else {
             super.deleteBackward()
         }
+    }
+    
+    func setMyCodeStyle(char: String) {
+        self.isEnabled = false
+        self.backgroundColor = .lightPurple
+        self.layer.borderWidth = 0
+        self.text = char
     }
 }

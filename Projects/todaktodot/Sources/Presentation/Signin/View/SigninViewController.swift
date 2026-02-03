@@ -78,6 +78,11 @@ final class SigninViewController: UIViewController, View {
         layoutViews()
     }
     
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        indicatorView.stopAnimating()
+    }
+    
     private func setupViews() {
         view.addSubview(onboardingView)
         view.addSubview(appLogo)

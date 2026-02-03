@@ -13,6 +13,7 @@ final class SigninCoordinator: Coordinator {
     var navigationController: UINavigationController
     weak var parentCoordinator: Coordinator?
     weak var tabBarCoordinator: TabBarCoordinator?
+    private let networkManager = NetworkManager() // TODO: AppDIContainer 사용? 고민
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
@@ -23,7 +24,7 @@ final class SigninCoordinator: Coordinator {
             repository: AuthRepositoryImpl(
                 kakaoAuthProvider: KakaoAuthProvider(),
                 googleAuthProvider: GoogleAuthProvider(),
-                networkManager: NetworkManager()
+                networkManager: networkManager
             )
         )
         let signinViewController = SigninViewController()
@@ -33,13 +34,19 @@ final class SigninCoordinator: Coordinator {
     }
     
     func showCoupleConnect() {
-        let coupleConnectViewController = CoupleConnectViewController(code: ["A", "A", "A", "A", "A"], flowType: .create)
+        let useCase = CoupleUseCase(
+            repository: CoupleRepositoryImpl(
+                    networkManager: networkManager
+                )
+        )
+        let coupleConnectViewController = CoupleConnectViewController(flowType: .create)
         coupleConnectViewController.coordinator = self
+        coupleConnectViewController.reactor = CoupleReactor(coupleUseCase: useCase)
         navigationController.pushViewController(coupleConnectViewController, animated: true)
     }
     
     func showCoupleConnectOnly() {
-        let coupleConnectViewController = CoupleConnectViewController(code: ["A", "A", "A", "A", "A"], flowType: .join)
+        let coupleConnectViewController = CoupleConnectViewController(flowType: .join)
         coupleConnectViewController.coordinator = self
         navigationController.setViewControllers([coupleConnectViewController], animated: true)
     }
@@ -62,7 +69,7 @@ final class SigninCoordinator: Coordinator {
         let termsModalViewController = TermsModalViewController()
         termsModalViewController.modalPresentationStyle = .overFullScreen
         termsModalViewController.modalTransitionStyle = .crossDissolve
-        navigationController.topViewController?.present(termsModalViewController, animated: true, completion: nil)
+        navigationController.present(termsModalViewController, animated: true, completion: nil)
     }
     
     func dismissModal() {

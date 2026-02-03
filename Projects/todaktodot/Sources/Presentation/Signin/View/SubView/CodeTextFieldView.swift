@@ -14,28 +14,23 @@ import RxRelay
 final class CodeTextFieldView: UIView {
     let isCodeFull = PublishRelay<Bool>()
     
-    private var codeTextFields: [UITextField]
+    private var codeTextFields: [CodeTextField]
     
     init(frame: CGRect = .zero, code: [String]? = nil) {
         
-        if let code = code {
-            self.codeTextFields = code.map { CodeTextField(char: $0.uppercased()) }
-        } else {
-            self.codeTextFields = (0..<6).map { _ in CodeTextField() }
-        }
+        self.codeTextFields = (0..<6).map { _ in CodeTextField() }
         
         super.init(frame: frame)
         
         for i in 0..<codeTextFields.count {
-            let current = codeTextFields[i] as? CodeTextField
-            current?.delegate = self
-            
+            codeTextFields[i].delegate = self
+    
             if i > 0 {
-                current?.previousTextField = codeTextFields[i - 1]
+                codeTextFields[i].previousTextField = codeTextFields[i - 1]
             }
-            
+    
             if i < codeTextFields.count - 1 {
-                current?.nextTextField = codeTextFields[i + 1]
+                codeTextFields[i].nextTextField = codeTextFields[i + 1]
             }
         }
         
@@ -45,6 +40,21 @@ final class CodeTextFieldView: UIView {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    func setMyCodeStyle(_ code: String? = nil) {
+        guard let code else { return }
+        
+        for (index, char) in code.enumerated() {
+            guard index < codeTextFields.count else { break }
+            codeTextFields[index].setMyCodeStyle(char: String(char).uppercased())
+        }
+        
+        flex.markDirty()
+    }
+    
+    func getCode() -> String {
+        codeTextFields.compactMap(\.text).joined()
     }
     
     private func setupFlexLayout() {

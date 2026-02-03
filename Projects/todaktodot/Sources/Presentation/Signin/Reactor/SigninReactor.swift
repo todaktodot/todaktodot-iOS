@@ -5,8 +5,6 @@
 //  Created by 임대진 on 12/9/25.
 //
 
-import Alamofire
-import Foundation
 import RxSwift
 import AuthenticationServices
 import ReactorKit
@@ -53,14 +51,20 @@ final class SigninReactor: Reactor {
             return Observable.concat([
                 .just(.setLoading(true)),
                 loginUseCase.execute(type: .kakao)
-                    .map { Mutation.setKakaoSigninSuccess($0) },
+                    .map { Mutation.setKakaoSigninSuccess($0) }
+                    .catch { _ in
+                        .just(.setKakaoSigninSuccess(false))
+                    },
                 .just(.setLoading(false))
             ])
         case .tapGoogleButton:
             return Observable.concat([
                 .just(.setLoading(true)),
                 loginUseCase.execute(type: .google)
-                    .map { Mutation.setGoogleSigninSuccess($0) },
+                    .map { Mutation.setGoogleSigninSuccess($0) }
+                    .catch { _ in
+                        .just(.setGoogleSigninSuccess(false))
+                    },
                 .just(.setLoading(false))
             ])
         }

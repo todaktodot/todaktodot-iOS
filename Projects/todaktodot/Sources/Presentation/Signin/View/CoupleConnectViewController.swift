@@ -11,14 +11,13 @@ import PinLayout
 import FlexLayout
 import RxSwift
 import RxCocoa
+import ReactorKit
 
-
-final class CoupleConnectViewController: UIViewController {
+final class CoupleConnectViewController: UIViewController, View {
+    var disposeBag = DisposeBag()
     weak var coordinator: SigninCoordinator?
     
     private var flowType: ConnectFlowType
-    private let disposeBag = DisposeBag()
-    private let code: String?
     
     private let background = UIImageView().then {
         $0.image = UIImage(resource: .connectBackground)
@@ -80,8 +79,7 @@ final class CoupleConnectViewController: UIViewController {
         $0.backgroundColor = .white
     }
     
-    private let myCodeTextField: UIView
-    
+    private let myCodeTextField = CodeTextFieldView()
     private let partnerCodeTextField = CodeTextFieldView()
     
     private let copyButton = ImageTextButton(imageSize: 20).then {
@@ -112,10 +110,8 @@ final class CoupleConnectViewController: UIViewController {
         $0.tintColor = .grayScale600
     }
     
-    init(code: [String]? = nil, flowType: ConnectFlowType) {
-        self.code = code?.joined()
+    init(flowType: ConnectFlowType) {
         self.flowType = flowType
-        myCodeTextField = CodeTextFieldView(code: code)
         
         super.init(nibName: nil, bundle: nil)
     }
@@ -132,8 +128,9 @@ final class CoupleConnectViewController: UIViewController {
         setupViews()
         setupFlexLayout()
         hideKeyboardwhenTappedAround()
-        coordinator?.showTermsModal()
         registerKeyboardNotification()
+        
+        reactor?.action.onNext(.issueCoupleCode)
     }
     
     override func viewDidLayoutSubviews() {
@@ -229,7 +226,7 @@ final class CoupleConnectViewController: UIViewController {
     private func bindActions() {
         copyButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
-                if let code = self?.code {
+                if let code = self?.myCodeTextField.getCode() {
                     UIPasteboard.general.string = code.uppercased()
                     self?.showToast(message: "복사가 완료되었습니다")
                 }
@@ -255,6 +252,29 @@ final class CoupleConnectViewController: UIViewController {
         lookAroundButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
                 self?.coordinator?.navigateToMain()
+            })
+            .disposed(by: disposeBag)
+    }
+    
+    func bind(reactor: CoupleReactor) {
+        
+        reactor.state
+            .compactMap { $0.mycode }
+            .distinctUntilChanged()
+            .subscribe(onNext: { [weak self] code in
+                guard let self = self else { return }
+                self.myCodeTextField.setMyCodeStyle(code)
+                self.coordinator?.showTermsModal()
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .map { $0.isMyCodeIssueFailed }
+            .distinctUntilChanged()
+            .filter { $0 }
+            .subscribe(onNext: { [weak self] _ in
+                guard let self = self else { return }
+                self.coordinator?.navigateBack()
             })
             .disposed(by: disposeBag)
     }
