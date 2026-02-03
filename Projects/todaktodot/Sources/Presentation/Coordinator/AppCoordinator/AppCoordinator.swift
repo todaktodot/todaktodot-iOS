@@ -29,8 +29,7 @@ final class AppCoordinator: Coordinator {
     
     // TODO: 실제 로그인 정보로 변경
     private func isLoggedIn() -> Bool {
-//        return UserdefaultKey.isSiginedIn
-        return true
+        return UserdefaultKey.joined
     }
     
     func showSigninFlow() {

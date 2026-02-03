@@ -201,16 +201,10 @@ final class SigninViewController: UIViewController, View {
     }
     
     private func moveNext() {
-        if !UserdefaultKey.couple {
-            coordinator?.showCoupleConnect()
-        } else if !UserdefaultKey.joined {
-            if UserdefaultKey.couple {
-                coordinator?.showNickname(flowType: .join)
-            } else {
-                coordinator?.showNickname(flowType: .create)
-            }
-        } else {
+        if UserdefaultKey.couple && UserdefaultKey.joined {
             coordinator?.navigateToMain()
+        } else {
+            coordinator?.showCoupleConnect()
         }
     }
 }

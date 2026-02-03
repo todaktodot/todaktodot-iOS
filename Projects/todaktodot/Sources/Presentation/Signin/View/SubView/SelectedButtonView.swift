@@ -11,20 +11,37 @@ import RxRelay
 import FlexLayout
 import PinLayout
 
-final class SelectedButtonView: UIView {
+enum CoupleStage: String, CaseIterable, Codable{
+    case dating = "DATING"
+    case living = "LIVING_TOGETHER"
+    case engaged = "PREPARING_MARRIAGE"
+    case newlywed = "NEWLYWED"
+    case married = "MARRIED"
+
+    var title: String {
+        switch self {
+        case .dating: return "❤️ 연애중이예요"
+        case .living: return "🏠 동거중이예요"
+        case .engaged: return "💝 결혼 준비중이에요"
+        case .newlywed: return "👩‍❤️‍👨 신혼이에요"
+        case .married: return "💍 부부에요"
+        }
+    }
+}
+
+final class CoupleStepSelectView: UIView {
 
     private let root = UIView()
     private let buttons: [UIButton]
     private let disposeBag = DisposeBag()
 
-    let isSelected = BehaviorRelay<Bool>(value: false)
-
+    let isSelected = BehaviorRelay<CoupleStage?>(value: nil)
+    
     override init(frame: CGRect) {
-        let items = ["❤️ 연애중이예요", "🏠 동거중이예요", "💝 결혼 준비중이에요", "👩‍❤️‍👨 신혼이에요", "💍 부부에요"]
 
-        buttons = items.enumerated().map { index, item in
+        buttons = CoupleStage.allCases.enumerated().map { index, step in
             
-            let btn = PaddingButton(text: item)
+            let btn = PaddingButton(text: step.title)
             btn.tag = index
             
             return btn
@@ -61,7 +78,7 @@ final class SelectedButtonView: UIView {
         mergedTap
             .subscribe(onNext: { [weak self] index in
                 self?.updateUI(index)
-                self?.isSelected.accept(true)
+                self?.isSelected.accept(CoupleStage.allCases[index])
             })
             .disposed(by: disposeBag)
     }

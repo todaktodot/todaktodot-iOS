@@ -7,18 +7,18 @@
 
 import Foundation
 
-enum SignInType: String {
-    case apple = "apple"
-    case kakao = "kakao"
-    case google = "google"
-}
-
 enum UserdefaultKey {
     // 저장: UserdefaultKey.test = "~~"
     // 읽기: let test = UserdefaultKey.test
     
     @UserDefault(key: "isSiginedIn", defaultValue: false)
     static var isSiginedIn: Bool
+    
+    @UserDefault(key: "couple", defaultValue: false)
+    static var couple: Bool
+    
+    @UserDefault(key: "joined", defaultValue: false)
+    static var joined: Bool
     
     @UserDefault(key: "accessToken", defaultValue: "")
     static var accessToken: String

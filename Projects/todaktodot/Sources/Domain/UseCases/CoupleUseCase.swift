@@ -18,4 +18,16 @@ final class CoupleUseCase {
     func issueCode() -> Observable<CoupleCode> {
         repository.issueCode()
     }
+    
+    func connectCouple(code: String) -> Observable<Bool> {
+        repository.connectCouple(code: code)
+    }
+    
+    func setNickname(nickname: String) -> Observable<Bool> {
+        repository.setNickname(nickname: nickname)
+    }
+    
+    func setCoupleInfo(date: String, stage: String) -> Observable<Bool> {
+        repository.setCoupleInfo(date: date, stage: stage)
+    }
 }

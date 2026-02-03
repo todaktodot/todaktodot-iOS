@@ -36,7 +36,7 @@ final class SigninCoordinator: Coordinator {
     func showCoupleConnect() {
         let useCase = CoupleUseCase(
             repository: CoupleRepositoryImpl(
-                    networkManager: networkManager
+                networkManager: networkManager
                 )
         )
         let coupleConnectViewController = CoupleConnectViewController(flowType: .create)
@@ -52,21 +52,39 @@ final class SigninCoordinator: Coordinator {
     }
     
     func showNickname(flowType: ConnectFlowType) {
+        let useCase = CoupleUseCase(
+            repository: CoupleRepositoryImpl(
+                networkManager: networkManager
+                )
+        )
         let nicknameViewController = NicknameViewController(flowType: flowType)
         nicknameViewController.coordinator = self
+        nicknameViewController.reactor = CoupleReactor(coupleUseCase: useCase)
         self.navigationController.isNavigationBarHidden = true
         navigationController.pushViewController(nicknameViewController, animated: true)
     }
     
     func showCoupleInfo(flowType: CoupleInfoFlowType = .newUser) {
+        let useCase = CoupleUseCase(
+            repository: CoupleRepositoryImpl(
+                networkManager: networkManager
+                )
+        )
         let coupleInfoViewController = CoupleInfoViewController(flowType: flowType)
         coupleInfoViewController.coordinator = self
+        coupleInfoViewController.reactor = CoupleReactor(coupleUseCase: useCase)
         self.navigationController.isNavigationBarHidden = true
         navigationController.pushViewController(coupleInfoViewController, animated: true)
     }
     
     func showTermsModal() {
+        let useCase = CoupleUseCase(
+            repository: CoupleRepositoryImpl(
+                networkManager: networkManager
+                )
+        )
         let termsModalViewController = TermsModalViewController()
+        termsModalViewController.reactor = CoupleReactor(coupleUseCase: useCase)
         termsModalViewController.modalPresentationStyle = .overFullScreen
         termsModalViewController.modalTransitionStyle = .crossDissolve
         navigationController.present(termsModalViewController, animated: true, completion: nil)

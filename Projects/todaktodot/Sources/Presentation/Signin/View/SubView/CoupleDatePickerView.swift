@@ -14,7 +14,7 @@ import RxRelay
 
 final class CoupleDatePickerView: UIView {
     
-    let isDateSelected = BehaviorRelay<Bool>(value: false)
+    let isDateSelected = BehaviorRelay<String?>(value: nil)
     
     private let dateTextField = UITextField().then {
         $0.attributedPlaceholder = NSAttributedString(
@@ -98,8 +98,8 @@ final class CoupleDatePickerView: UIView {
         
         dateTextField.rx.text.orEmpty
             .map { !$0.isEmpty }
-            .subscribe(onNext: { [weak self] enabled in
-                self?.isDateSelected.accept(enabled)
+            .subscribe(onNext: { [weak self] _ in
+                self?.isDateSelected.accept(self?.dateTextField.text)
             })
             .disposed(by: disposeBag)
     }

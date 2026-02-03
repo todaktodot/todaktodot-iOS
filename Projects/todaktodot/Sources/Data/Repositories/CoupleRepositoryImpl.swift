@@ -7,6 +7,7 @@
 
 import RxSwift
 import NetworkKit
+import Alamofire
 
 final class CoupleRepositoryImpl: CoupleRepository {
     
@@ -29,7 +30,48 @@ final class CoupleRepositoryImpl: CoupleRepository {
         return networkManager.request(with: endpoint)
     }
     
-    func linkCouple() -> Observable<Bool> {
-        return .just(false)
+    func connectCouple(code: String) -> Observable<Bool> {
+        let endpoint = Endpoint<Empty>(
+            baseURL: .todaktodotAPI,
+            path: "/api/couple-link/connect",
+            method: .post,
+            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
+            parameters: ["linkCode": code],
+        )
+
+        return networkManager.request(with: endpoint)
+            .map { _ in true }
+    }
+    
+    func setNickname(nickname: String) -> Observable<Bool> {
+        let endpoint = Endpoint<Empty>(
+            baseURL: .todaktodotAPI,
+            path: "/api/profile/nickname",
+            method: .patch,
+            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
+            parameters: ["nickname": nickname],
+        )
+
+        return networkManager.request(with: endpoint)
+            .map { _ in true }
+    }
+    
+    func setCoupleInfo(date: String, stage: String) -> Observable<Bool> {
+        let endpoint = Endpoint<Empty>(
+            baseURL: .todaktodotAPI,
+            path: "/api/couple/info",
+            method: .patch,
+            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
+            parameters: [
+                "firstMetDt": date,
+                "relationshipStage": stage,
+            ],
+        )
+
+        return networkManager.request(with: endpoint)
+            .do(onNext: { _ in
+                UserdefaultKey.joined = true
+            })
+            .map { _ in true }
     }
 }

@@ -14,29 +14,39 @@ final class CoupleReactor: Reactor {
     struct State {
         var mycode: String?
         var isLoading: Bool = false
-        var isMyCodeIssueFailed: Bool = false
+        
         var isTermsAgreeSuccess: Bool = false
         var isCoupleConnectSuccess: Bool = false
+        var isNicknameSetSuccess: Bool = false
+        var isJoinSuccess: Bool = false
+        
+        var isMyCodeIssueFailed: Bool = false
     }
     
     enum Action {
         case issueCoupleCode
-//        case tapTemrsAgreeButton
-//        case tapConnectButton
+        //        case tapTemrsAgreeButton
+        case tapConnectButton(String)
+        case tapNicknameButton(String)
+        case tapJoinButton(String, String)
     }
     
     enum Mutation {
         case setLoading(Bool)
+        
         case setMyCode(String)
-        case setMyCodeIssueFailed
         case setTermsAgreeSuccess(Bool)
         case setCoupleConnectSuccess(Bool)
+        case setNicknameSuccess(Bool)
+        case setJoinSuccess(Bool)
+        
+        case setMyCodeIssueFailed
     }
     
     let initialState = State()
     
     private let coupleUseCase: CoupleUseCase
-
+    
     init(coupleUseCase: CoupleUseCase) {
         self.coupleUseCase = coupleUseCase
     }
@@ -47,20 +57,20 @@ final class CoupleReactor: Reactor {
             return coupleUseCase.issueCode()
                 .map { Mutation.setMyCode($0.linkCode) }
                 .catchAndReturn(Mutation.setMyCodeIssueFailed)
-//        case .tapTemrsAgreeButton:
-//            return Observable.concat([
-//                .just(.setLoading(true)),
-//                loginUseCase.execute(type: .kakao)
-//                    .map { Mutation.setKakaoSigninSuccess($0) },
-//                .just(.setLoading(false))
-//            ])
-//        case .tapConnectButton:
-//            return Observable.concat([
-//                .just(.setLoading(true)),
-//                loginUseCase.execute(type: .google)
-//                    .map { Mutation.setGoogleSigninSuccess($0) },
-//                .just(.setLoading(false))
-//            ])
+            
+        case .tapConnectButton(let code):
+            return coupleUseCase.connectCouple(code: code)
+                .map { Mutation.setCoupleConnectSuccess($0) }
+                .catchAndReturn(Mutation.setCoupleConnectSuccess(false))
+            
+        case .tapNicknameButton(let nickname):
+            return coupleUseCase.setNickname(nickname: nickname)
+                .map { Mutation.setNicknameSuccess($0) }
+                .catchAndReturn(Mutation.setNicknameSuccess(false))
+        case .tapJoinButton(let date, let stage):
+            return coupleUseCase.setCoupleInfo(date: date, stage: stage)
+                .map { Mutation.setJoinSuccess($0) }
+                .catchAndReturn(Mutation.setJoinSuccess(false))
         }
     }
     
@@ -68,21 +78,26 @@ final class CoupleReactor: Reactor {
         var newState = state
         
         switch mutation {
-            case .setLoading(let isLoading):
-                newState.isLoading = isLoading
-               
-            case .setMyCode(let code):
-                newState.mycode = code
-//            case .setKakaoSigninSuccess(let isSuccess):
-//                newState.isKakaoSigninSuccess = isSuccess
-//            case .setGoogleSigninSuccess(let isSuccess):
-//                newState.isGoogleSigninSuccess = isSuccess
-            case .setMyCodeIssueFailed:
-                newState.isMyCodeIssueFailed = true
-            case .setTermsAgreeSuccess(_):
-                break
-            case .setCoupleConnectSuccess(_):
-                break
+        case .setLoading(let isLoading):
+            newState.isLoading = isLoading
+            
+        case .setMyCode(let code):
+            newState.mycode = code
+            
+        case .setTermsAgreeSuccess(_):
+            break
+            
+        case .setMyCodeIssueFailed:
+            newState.isMyCodeIssueFailed = true
+            
+        case .setCoupleConnectSuccess(let isSuccess):
+            newState.isCoupleConnectSuccess = isSuccess
+            
+        case .setNicknameSuccess(let isSuccess):
+            newState.isNicknameSetSuccess = isSuccess
+            
+        case .setJoinSuccess(let isSuccess):
+            newState.isJoinSuccess = isSuccess
         }
         
         return newState

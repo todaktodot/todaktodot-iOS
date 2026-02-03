@@ -11,20 +11,21 @@ import FlexLayout
 import PinLayout
 import RxSwift
 import RxRelay
+import ReactorKit
 
 enum CoupleInfoFlowType {
     case newUser
     case editUser
 }
 
-final class CoupleInfoViewController: UIViewController {
+final class CoupleInfoViewController: UIViewController, View {
     
+    var disposeBag = DisposeBag()
     weak var coordinator: SigninCoordinator?
     
     private var isDone = BehaviorRelay<Bool>(value: false)
-    private let isDateSelected = BehaviorRelay<Bool>(value: false)
-    private let isRelationSelected = BehaviorRelay<Bool>(value: false)
-    private let disposeBag = DisposeBag()
+    private let isDateSelected = BehaviorRelay<String?>(value: nil)
+    private let isRelationSelected = BehaviorRelay<CoupleStage?>(value: nil)
     private let contentsView = UIView()
     private let flowType: CoupleInfoFlowType
     private let backgroundView = UIImageView().then {
@@ -61,7 +62,7 @@ final class CoupleInfoViewController: UIViewController {
         $0.isEnabled = false
     }
     
-    private let buttonsView = SelectedButtonView()
+    private let coupleStepSelectView = CoupleStepSelectView()
     
     init(flowType: CoupleInfoFlowType) {
         self.flowType = flowType
@@ -79,7 +80,6 @@ final class CoupleInfoViewController: UIViewController {
         hideKeyboardwhenTappedAround()
         setupViews()
         setupFlexLayout()
-        bindActions()
     }
     
     override func viewDidLayoutSubviews() {
@@ -110,7 +110,7 @@ final class CoupleInfoViewController: UIViewController {
             $0.addItem(relationshipLabel)
                 .marginTop(20)
             
-            $0.addItem(buttonsView)
+            $0.addItem(coupleStepSelectView)
                 .marginTop(12)
         }
     }
@@ -132,7 +132,32 @@ final class CoupleInfoViewController: UIViewController {
         contentsView.flex.layout()
     }
     
-    private func bindActions() {
+    func bind(reactor: CoupleReactor) {
+        reactor.state
+            .map { $0.isJoinSuccess }
+            .filter { $0 }
+            .distinctUntilChanged()
+            .subscribe(onNext: { [weak self] _ in
+                switch self?.flowType {
+                case .newUser:
+                    self?.coordinator?.navigateToMain()
+                case .editUser:
+                    self?.coordinator?.navigateBack()
+                case .none:
+                    break
+                }
+            })
+            .disposed(by: disposeBag)
+        
+        startButton.rx.tap
+            .compactMap { [weak self] in
+                guard let date = self?.isDateSelected.value,
+                      let step = self?.isRelationSelected.value else { return nil }
+                return CoupleReactor.Action.tapJoinButton(date, step.rawValue)
+            }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
         isDone
             .bind(to: startButton.rx.isEnabled)
             .disposed(by: disposeBag)
@@ -146,34 +171,21 @@ final class CoupleInfoViewController: UIViewController {
             .disposed(by: disposeBag)
         
         datePickerView.isDateSelected
-            .subscribe(onNext: { [weak self] bool in
-                self?.isDateSelected.accept(bool)
+            .subscribe(onNext: { [weak self] text in
+                self?.isDateSelected.accept(text)
             })
             .disposed(by: disposeBag)
         
-        buttonsView.isSelected
-            .subscribe(onNext: { [weak self] bool in
-                self?.isRelationSelected.accept(bool)
+        coupleStepSelectView.isSelected
+            .subscribe(onNext: { [weak self] step in
+                self?.isRelationSelected.accept(step)
             })
             .disposed(by: disposeBag)
             
         Observable
             .combineLatest(isDateSelected, isRelationSelected)
-            .map { $0 && $1 }
+            .map { ($0 != nil) && ($1 != nil) }
             .bind(to: isDone)
-            .disposed(by: disposeBag)
-        
-        startButton.rx.tap
-            .subscribe(onNext: { [weak self] _ in
-                switch self?.flowType {
-                case .newUser:
-                    self?.coordinator?.navigateToMain()
-                case .editUser:
-                    self?.coordinator?.navigateBack()
-                case .none:
-                    break
-                }
-            })
             .disposed(by: disposeBag)
     }
 }

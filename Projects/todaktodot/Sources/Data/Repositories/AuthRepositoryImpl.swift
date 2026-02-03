@@ -64,6 +64,8 @@ final class AuthRepositoryImpl: AuthRepository {
         return networkManager.request(with: endpoint)
             .do(onNext: { result in
                 UserdefaultKey.accessToken = result.accessToken
+                UserdefaultKey.couple = result.couple
+                UserdefaultKey.joined = result.joined
             })
             .map { _ in true }
             .catchAndReturn(false)

@@ -11,17 +11,22 @@ import FlexLayout
 import PinLayout
 import RxSwift
 import RxRelay
+import ReactorKit
 
 enum ConnectFlowType {
-    case create /// 먼저 커플 연결 하는 사용자
-    case join /// 상대방이 먼저 연결한 사용자
-    case edit /// 닉네임 수정
+    /// 먼저 커플 연결 하는 사용자
+    case create
+    /// 상대방이 먼저 연결한 사용자
+    case join
+    /// 닉네임 수정
+    case edit
 }
 
-final class NicknameViewController: UIViewController {
+final class NicknameViewController: UIViewController, View {
+    var disposeBag = DisposeBag()
     weak var coordinator: SigninCoordinator?
     private var flowType = BehaviorRelay<ConnectFlowType>(value: .create)
-    private let disposeBag = DisposeBag()
+    
     private let contentsView = UIView()
     private let backgroundView = UIImageView().then {
         $0.image = UIImage(resource: .connectBackground)
@@ -74,7 +79,6 @@ final class NicknameViewController: UIViewController {
         hideKeyboardwhenTappedAround()
         setupViews()
         setupFlexLayout()
-        bindActions()
     }
     
     override func viewDidLayoutSubviews() {
@@ -116,19 +120,30 @@ final class NicknameViewController: UIViewController {
         contentsView.flex.layout()
     }
     
-    private func bindActions() {
-        nextButton.rx.tap
-            .withLatestFrom(flowType)
-            .subscribe(onNext: { [weak self] type in
-                switch type {
+    func bind(reactor: CoupleReactor) {
+        reactor.state
+            .map { $0.isNicknameSetSuccess }
+            .distinctUntilChanged()
+            .filter { $0 }
+            .subscribe(onNext: { [weak self] _ in
+                guard let self = self else { return }
+                print(flowType.value)
+                switch flowType.value {
                 case .create:
-                    self?.coordinator?.showCoupleInfo()
+                    self.coordinator?.showCoupleInfo()
                 case .join:
-                    self?.coordinator?.tabBarCoordinator?.start()
+                    self.coordinator?.tabBarCoordinator?.start()
                 case .edit:
-                    self?.coordinator?.navigateBack()
+                    self.coordinator?.navigateBack()
                 }
             })
+            .disposed(by: disposeBag)
+        
+        nextButton.rx.tap
+            .compactMap { self.textFiled.text }
+            .filter { !$0.isEmpty }
+            .map { CoupleReactor.Action.tapNicknameButton($0) }
+            .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
         textFiled.rx.text.orEmpty
@@ -162,8 +177,9 @@ extension NicknameViewController: UITextFieldDelegate {
         if string.isEmpty {
             return true
         }
-
-        let allowedPattern = "^[가-힣a-zA-Z]+$"
+        
+        let allowedPattern = "^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z]+$"
+        
         let isValidInput = string.range(
             of: allowedPattern,
             options: .regularExpression

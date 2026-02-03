@@ -9,5 +9,7 @@ import RxSwift
 
 protocol CoupleRepository {
     func issueCode() -> Observable<CoupleCode>
-    func linkCouple() -> Observable<Bool>
+    func connectCouple(code: String) -> Observable<Bool>
+    func setNickname(nickname: String) -> Observable<Bool>
+    func setCoupleInfo(date: String, stage: String) -> Observable<Bool>
 }

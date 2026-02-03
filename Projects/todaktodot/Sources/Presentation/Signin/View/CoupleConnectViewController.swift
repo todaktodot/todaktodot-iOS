@@ -124,13 +124,18 @@ final class CoupleConnectViewController: UIViewController, View {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        bindActions()
         setupViews()
         setupFlexLayout()
         hideKeyboardwhenTappedAround()
         registerKeyboardNotification()
         
-        reactor?.action.onNext(.issueCoupleCode)
+        if !UserdefaultKey.couple {
+            reactor?.action.onNext(.issueCoupleCode)
+        } else {
+            showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
+                self.coordinator?.showNickname(flowType: self.flowType)
+            })
+        }
     }
     
     override func viewDidLayoutSubviews() {
@@ -222,8 +227,44 @@ final class CoupleConnectViewController: UIViewController, View {
         
         scrollview.contentSize = contentsView.frame.size
     }
-    
-    private func bindActions() {
+    func bind(reactor: CoupleReactor) {
+        reactor.state
+            .compactMap { $0.mycode }
+            .distinctUntilChanged()
+            .subscribe(onNext: { [weak self] code in
+                guard let self = self else { return }
+                self.myCodeTextField.setMyCodeStyle(code)
+                self.coordinator?.showTermsModal()
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .map { $0.isCoupleConnectSuccess }
+            .distinctUntilChanged()
+            .filter { $0 }
+            .subscribe(onNext: { [weak self] success in
+                guard let self = self else { return }
+                if success {
+                    showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
+                        self.coordinator?.showNickname(flowType: self.flowType)
+                    })
+                } else {
+                    showAlert(icon: UIImage(resource: .heart), title: "앗, 입력하신 코드가 올바르지 않아요", primaryButtonTitle: "다시 입력하기", primaryButtonAction: {})
+                }
+                     
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .map { $0.isMyCodeIssueFailed }
+            .distinctUntilChanged()
+            .filter { $0 }
+            .subscribe(onNext: { [weak self] _ in
+                guard let self = self else { return }
+                self.coordinator?.navigateBack()
+            })
+            .disposed(by: disposeBag)
+        
         copyButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
                 if let code = self?.myCodeTextField.getCode() {
@@ -234,12 +275,8 @@ final class CoupleConnectViewController: UIViewController, View {
             .disposed(by: disposeBag)
         
         connectButton.rx.tap
-            .subscribe(onNext: { [weak self] _ in
-                guard let self else { return }
-                showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
-                    self.coordinator?.showNickname(flowType: self.flowType)
-                })
-            })
+            .map { CoupleReactor.Action.tapConnectButton(self.partnerCodeTextField.getCode()) }
+            .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
         partnerCodeTextField.isCodeFull
@@ -252,29 +289,6 @@ final class CoupleConnectViewController: UIViewController, View {
         lookAroundButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
                 self?.coordinator?.navigateToMain()
-            })
-            .disposed(by: disposeBag)
-    }
-    
-    func bind(reactor: CoupleReactor) {
-        
-        reactor.state
-            .compactMap { $0.mycode }
-            .distinctUntilChanged()
-            .subscribe(onNext: { [weak self] code in
-                guard let self = self else { return }
-                self.myCodeTextField.setMyCodeStyle(code)
-                self.coordinator?.showTermsModal()
-            })
-            .disposed(by: disposeBag)
-        
-        reactor.state
-            .map { $0.isMyCodeIssueFailed }
-            .distinctUntilChanged()
-            .filter { $0 }
-            .subscribe(onNext: { [weak self] _ in
-                guard let self = self else { return }
-                self.coordinator?.navigateBack()
             })
             .disposed(by: disposeBag)
     }
