@@ -170,13 +170,12 @@ final class SigninViewController: UIViewController, View {
         
         reactor.state
             .compactMap { $0.signinEvent }
+            .distinctUntilChanged()
+            .observe(on: MainScheduler.asyncInstance)
             .subscribe(onNext: { [weak self] event in
                 guard let self = self else { return }
                 switch event {
-                case .kakaoSuccess:
-                    self.moveNext()
-                    
-                case .googleSuccess:
+                case .kakaoSuccess, .googleSuccess:
                     self.moveNext()
                     
                 case .kakaoFail:
