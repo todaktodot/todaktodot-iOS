@@ -168,19 +168,30 @@ final class SigninViewController: UIViewController, View {
             })
             .disposed(by: disposeBag)
         
+        reactor.state
+            .compactMap { $0.signinEvent }
+            .subscribe(onNext: { [weak self] event in
+                guard let self = self else { return }
+                switch event {
+                case .kakaoSuccess:
+                    self.moveNext()
+                    
+                case .googleSuccess:
+                    self.moveNext()
+                    
+                case .kakaoFail:
+                    break
+                    
+                case .googleFail:
+                    break
+                }
+                self.reactor?.action.onNext(.clearEvent)
+            })
+            .disposed(by: disposeBag)
+        
         kakaoButton.rx.tap
             .map { SigninReactor.Action.tapKakaoButton }
             .bind(to: reactor.action)
-            .disposed(by: disposeBag)
-        
-        reactor.state
-            .map { $0.isKakaoSigninSuccess }
-            .distinctUntilChanged()
-            .filter { $0 }
-            .subscribe(onNext: { [weak self] _ in
-                guard let self = self else { return }
-                coordinator?.showCoupleConnect()
-            })
             .disposed(by: disposeBag)
         
         
@@ -188,15 +199,19 @@ final class SigninViewController: UIViewController, View {
             .map { SigninReactor.Action.tapGoogleButton }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
-        
-        reactor.state
-            .map { $0.isGoogleSigninSuccess }
-            .distinctUntilChanged()
-            .filter { $0 }
-            .subscribe(onNext: { [weak self] _ in
-                guard let self = self else { return }
-                coordinator?.showCoupleConnect()
-            })
-            .disposed(by: disposeBag)
+    }
+    
+    private func moveNext() {
+        if !UserdefaultKey.couple {
+            coordinator?.showCoupleConnect()
+        } else if !UserdefaultKey.joined {
+            if UserdefaultKey.couple {
+                coordinator?.showNickname(flowType: .join)
+            } else {
+                coordinator?.showNickname(flowType: .create)
+            }
+        } else {
+            coordinator?.navigateToMain()
+        }
     }
 }

@@ -14,25 +14,25 @@ final class SigninReactor: Reactor {
     
     struct State {
         var isLoading: Bool = false
+        var signinEvent: SigninEvent? = nil
+    }
 
-        // 변경될수도?
-//        var appleLoginResult: Result<ASAuthorizationAppleIDCredential, Error>?
-        var isKakaoSigninSuccess: Bool = false
-        var isGoogleSigninSuccess: Bool = false
+    enum SigninEvent {
+        case kakaoSuccess
+        case googleSuccess
+        case kakaoFail
+        case googleFail
     }
     
     enum Action {
         case tapKakaoButton
         case tapGoogleButton
-//        case tapAppleButton
+        case clearEvent
     }
-    
+
     enum Mutation {
         case setLoading(Bool)
-        
-//        case setAppleLoginResult(Result<ASAuthorizationAppleIDCredential, Error>)
-        case setKakaoSigninSuccess(Bool)
-        case setGoogleSigninSuccess(Bool)
+        case setSigninEvent(SigninEvent?)
     }
     
     let initialState = State()
@@ -51,40 +51,31 @@ final class SigninReactor: Reactor {
             return Observable.concat([
                 .just(.setLoading(true)),
                 loginUseCase.execute(type: .kakao)
-                    .map { Mutation.setKakaoSigninSuccess($0) }
-                    .catch { _ in
-                        .just(.setKakaoSigninSuccess(false))
-                    },
+                    .map { Mutation.setSigninEvent($0 ? .kakaoSuccess : .kakaoFail) }
+                    .catch { _ in .just(.setSigninEvent(.kakaoFail)) },
                 .just(.setLoading(false))
             ])
         case .tapGoogleButton:
             return Observable.concat([
                 .just(.setLoading(true)),
                 loginUseCase.execute(type: .google)
-                    .map { Mutation.setGoogleSigninSuccess($0) }
-                    .catch { _ in
-                        .just(.setGoogleSigninSuccess(false))
-                    },
+                    .map { Mutation.setSigninEvent($0 ? .googleSuccess : .googleFail) }
+                    .catch { _ in .just(.setSigninEvent(.googleFail)) },
                 .just(.setLoading(false))
             ])
+        case .clearEvent:
+            return .just(.setSigninEvent(nil))
         }
     }
     
     func reduce(state: State, mutation: Mutation) -> State {
         var newState = state
-        
         switch mutation {
-            case .setLoading(let isLoading):
-                newState.isLoading = isLoading
-               
-//            case .setAppleLoginResult(let result):
-//                newState.appleLoginResult = result
-            case .setKakaoSigninSuccess(let isSuccess):
-                newState.isKakaoSigninSuccess = isSuccess
-            case .setGoogleSigninSuccess(let isSuccess):
-                newState.isGoogleSigninSuccess = isSuccess
+        case .setLoading(let isLoading):
+            newState.isLoading = isLoading
+        case .setSigninEvent(let event):
+            newState.signinEvent = event
         }
-        
         return newState
     }
 }
