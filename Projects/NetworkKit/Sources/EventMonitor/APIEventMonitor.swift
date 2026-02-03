@@ -12,8 +12,11 @@ public import Alamofire
 public final class APIEventMonitor: EventMonitor {
 
     public let queue = DispatchQueue(label: "APIEventMonitor")
+    private let showAlert: Bool
     
-    public init() { }
+    public init(showAlert: Bool = false) {
+        self.showAlert = showAlert
+    }
 
     public func requestDidFinish(_ request: Request) {
         
@@ -38,44 +41,12 @@ public final class APIEventMonitor: EventMonitor {
         📲 Data: \(response.data?.toPrettyPrintedString ?? "")
 
         """)
-        if response.response?.statusCode ?? 0 >= 300, let prettyPrintedData = response.data?.toPrettyPrintedString, !prettyPrintedData.contains("J003") {
-            DispatchQueue.main.async {
-                self.showAlert(code: response.response?.statusCode ?? 0, message: prettyPrintedData)
-            }
-        }
-    }
-    
-    private func showAlert(code: Int, message: String) {
-        guard let windowScene = UIApplication.shared.connectedScenes
-            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene else {
-            return
-        }
         
-        let alertController = UIAlertController(title: "Network \(code) Error", message: message, preferredStyle: .alert)
-        alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-        
-        if let rootViewController = windowScene.windows.first?.rootViewController {
-            if let presentedViewController = rootViewController.presentedViewController {
-                presentedViewController.dismiss(animated: false) {
-                    rootViewController.present(alertController, animated: true, completion: nil)
+        if showAlert {
+            if response.response?.statusCode ?? 0 >= 300, let prettyPrintedData = response.data?.toPrettyPrintedString {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    self.showAlert(code: response.response?.statusCode ?? 0, message: prettyPrintedData)
                 }
-            } else {
-                rootViewController.present(alertController, animated: true, completion: nil)
-            }
-        }
-    }
-}
-
-public final class APIDebugEventMonitor: EventMonitor {
-
-    public let queue = DispatchQueue(label: "APIDebugEventMonitor")
-    
-    public init() { }
-    
-    public func request<Value>(_ request: DataRequest, didParseResponse response: DataResponse<Value, AFError>) {
-        if response.response?.statusCode ?? 0 >= 300, let prettyPrintedData = response.data?.toPrettyPrintedString, !prettyPrintedData.contains("J003") {
-            DispatchQueue.main.async {
-                self.showAlert(code: response.response?.statusCode ?? 0, message: prettyPrintedData)
             }
         }
     }
