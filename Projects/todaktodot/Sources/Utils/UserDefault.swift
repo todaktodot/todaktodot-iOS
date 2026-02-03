@@ -23,6 +23,15 @@ enum UserdefaultKey {
     @UserDefault(key: "accessToken", defaultValue: "")
     static var accessToken: String
     
+    @UserDefault(key: "connectedDate", defaultValue: Date())
+    static var connectedDate: Date
+    
+    @UserDefault(key: "firstMetDate", defaultValue: Date())
+    static var firstMetDate: Date
+    
+    @UserDefault(key: "coupleStage", defaultValue: CoupleStage.dating)
+    static var coupleStage: CoupleStage
+    
     //탈퇴시 적용
     static func resetUserDefaults() {
         
