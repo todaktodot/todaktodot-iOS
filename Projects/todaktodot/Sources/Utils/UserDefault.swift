@@ -32,6 +32,9 @@ enum UserdefaultKey {
     @UserDefault(key: "coupleStage", defaultValue: CoupleStage.dating)
     static var coupleStage: CoupleStage
     
+    @UserDefault(key: "isInitialLogin", defaultValue: true)
+    static var isInitialLogin: Bool
+    
     //탈퇴시 적용
     static func resetUserDefaults() {
         
