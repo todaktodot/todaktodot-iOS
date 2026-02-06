@@ -112,7 +112,10 @@ final class HomeViewController: BaseViewController, View {
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        showNotificationAlert()
+        if UserdefaultKey.isInitialLogin == true {
+            showNotificationAlert()
+            UserdefaultKey.isInitialLogin = false
+        }
     }
     
     func bind(reactor: HomeReactor) {

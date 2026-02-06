@@ -105,10 +105,14 @@ final class DailyCardDetailViewController: UIViewController {
     
     private var selectedOptionIndex: Int? = nil
     private var optionButtons: [UIButton] = []
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tapGesture.cancelsTouchesInView = false
+        view.addGestureRecognizer(tapGesture)
     }
     
     private func setupUI() {
@@ -321,6 +325,10 @@ final class DailyCardDetailViewController: UIViewController {
 
 // MARK: - FUNC
 extension DailyCardDetailViewController {
+    
+    @objc private func dismissKeyboard() {
+            view.endEditing(true)
+        }
     
     @objc private func backButtonTapped() {
         coordinator?.navigateBack()

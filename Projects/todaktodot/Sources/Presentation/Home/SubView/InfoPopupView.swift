@@ -52,33 +52,33 @@ final class InfoPopupView: UIView {
             .width(332)
             .padding(24)
             .define { flex in
-                flex.addItem(closeButtonContainer).position(.absolute).top(0).right(0).size(60).define { closeFlex in
-                    closeFlex.addItem(closeButton).position(.absolute).top(20).right(20).size(24)
-                }
                 flex.addItem(contentContainer).marginTop(4)
                     .marginBottom(24)
+                flex.addItem(closeButtonContainer).position(.absolute).top(0).right(0).width(80).height(80).define { closeFlex in
+                    closeFlex.addItem(closeButton).position(.absolute).top(20).right(20).size(24)
+                }
             }
     }
     
     private func setSubView() {
         addSubview(popupContainer)
+        popupContainer.addSubview(contentContainer)
         popupContainer.addSubview(closeButtonContainer)
         closeButtonContainer.addSubview(closeButton)
-        popupContainer.addSubview(contentContainer)
     }
     
     private func setupContent() {
-        let section1Title = createTitleLabel(text: "대화 모드를 통해\n대화의 깊이를 선택하세요")
+        let section1Title = createTitleLabel(text: "질문 모드를 통해\n다양한 대화를 경험하세요")
         let section1Item1 = createItemLabel(text: "🍰 디저트 가볍게 웃으며 현실 얘기 시작하기")
         let section1Item2 = createItemLabel(text: "☕ 커피 솔직하게 서로의 다름을 알아가기")
         let section1Item3 = createItemLabel(text: "🥃 위스키 진지하게 핵심 가치관 이야기하기")
         
-        let section2Title = createTitleLabel(text: "카테고리별 깊은 대화를 나누세요")
+        let section2Title = createTitleLabel(text: "질문 주제별 깊은 대화를 나누세요")
         let section2Item1 = createItemLabel(text: "💑 연애관 관계와 결혼 관련 대화")
         let section2Item2 = createItemLabel(text: "💸 경제관 돈, 소비, 계획 등 현실 주제")
         let section2Item3 = createItemLabel(text: "🏡 생활관 라이프스타일과 일상 이야기")
         
-        let section3Title = createTitleLabel(text: "유형을 선택하여\n서로의 생각을 확인해보세요")
+        let section3Title = createTitleLabel(text: "질문 유형을 선택하여\n서로의 생각을 확인해보세요")
         let section3Item1 = createItemLabel(text: "🎭 상황극 상황 속 선택으로 행동·가치관 확인")
         let section3Item2 = createItemLabel(text: "⚖️ 밸런스게임 trade off 선택으로 우선순위 확인")
         
@@ -152,10 +152,21 @@ extension InfoPopupView {
     
     private func createItemLabel(text: String) -> UILabel {
         let label = TDLabel()
-        label.text = text
         label.font = .pretenMedium(14)
         label.textColor = .grayScale800
         label.numberOfLines = 0
+        
+        let boldWords = ["디저트", "커피", "위스키", "연애관", "경제관", "생활관", "상황극", "밸런스게임"]
+        let attributedString = NSMutableAttributedString(string: text, attributes: [.font: UIFont.pretenMedium(14)])
+        
+        for word in boldWords {
+            let range = (text as NSString).range(of: word)
+            if range.location != NSNotFound {
+                attributedString.addAttribute(.font, value: UIFont.pretenBold(14), range: range)
+            }
+        }
+        
+        label.attributedText = attributedString
         return label
     }
     
