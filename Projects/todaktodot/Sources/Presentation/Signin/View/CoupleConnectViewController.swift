@@ -11,14 +11,13 @@ import PinLayout
 import FlexLayout
 import RxSwift
 import RxCocoa
+import ReactorKit
 
-
-final class CoupleConnectViewController: UIViewController {
+final class CoupleConnectViewController: UIViewController, View {
+    var disposeBag = DisposeBag()
     weak var coordinator: SigninCoordinator?
     
     private var flowType: ConnectFlowType
-    private let disposeBag = DisposeBag()
-    private let code: String?
     
     private let background = UIImageView().then {
         $0.image = UIImage(resource: .connectBackground)
@@ -80,8 +79,7 @@ final class CoupleConnectViewController: UIViewController {
         $0.backgroundColor = .white
     }
     
-    private let myCodeTextField: UIView
-    
+    private let myCodeTextField = CodeTextFieldView()
     private let partnerCodeTextField = CodeTextFieldView()
     
     private let copyButton = ImageTextButton(imageSize: 20).then {
@@ -112,10 +110,8 @@ final class CoupleConnectViewController: UIViewController {
         $0.tintColor = .grayScale600
     }
     
-    init(code: [String]? = nil, flowType: ConnectFlowType) {
-        self.code = code?.joined()
+    init(flowType: ConnectFlowType) {
         self.flowType = flowType
-        myCodeTextField = CodeTextFieldView(code: code)
         
         super.init(nibName: nil, bundle: nil)
     }
@@ -128,12 +124,18 @@ final class CoupleConnectViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        bindActions()
         setupViews()
         setupFlexLayout()
         hideKeyboardwhenTappedAround()
-        coordinator?.showTermsModal()
         registerKeyboardNotification()
+        
+        if !UserdefaultKey.couple {
+            reactor?.action.onNext(.issueCoupleCode)
+        } else {
+            showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
+                self.coordinator?.showNickname(flowType: self.flowType)
+            })
+        }
     }
     
     override func viewDidLayoutSubviews() {
@@ -225,11 +227,47 @@ final class CoupleConnectViewController: UIViewController {
         
         scrollview.contentSize = contentsView.frame.size
     }
-    
-    private func bindActions() {
+    func bind(reactor: CoupleReactor) {
+        reactor.state
+            .compactMap { $0.mycode }
+            .distinctUntilChanged()
+            .subscribe(onNext: { [weak self] code in
+                guard let self = self else { return }
+                self.myCodeTextField.setMyCodeStyle(code)
+                self.coordinator?.showTermsModal()
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .map { $0.isCoupleConnectSuccess }
+            .distinctUntilChanged()
+            .filter { $0 }
+            .subscribe(onNext: { [weak self] success in
+                guard let self = self else { return }
+                if success {
+                    showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
+                        self.coordinator?.showNickname(flowType: self.flowType)
+                    })
+                } else {
+                    showAlert(icon: UIImage(resource: .heart), title: "앗, 입력하신 코드가 올바르지 않아요", primaryButtonTitle: "다시 입력하기", primaryButtonAction: {})
+                }
+                     
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .map { $0.isMyCodeIssueFailed }
+            .distinctUntilChanged()
+            .filter { $0 }
+            .subscribe(onNext: { [weak self] _ in
+                guard let self = self else { return }
+                self.coordinator?.navigateBack()
+            })
+            .disposed(by: disposeBag)
+        
         copyButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
-                if let code = self?.code {
+                if let code = self?.myCodeTextField.getCode() {
                     UIPasteboard.general.string = code.uppercased()
                     self?.showToast(message: "복사가 완료되었습니다")
                 }
@@ -237,12 +275,8 @@ final class CoupleConnectViewController: UIViewController {
             .disposed(by: disposeBag)
         
         connectButton.rx.tap
-            .subscribe(onNext: { [weak self] _ in
-                guard let self else { return }
-                showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
-                    self.coordinator?.showNickname(flowType: self.flowType)
-                })
-            })
+            .map { CoupleReactor.Action.tapConnectButton(self.partnerCodeTextField.getCode()) }
+            .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
         partnerCodeTextField.isCodeFull

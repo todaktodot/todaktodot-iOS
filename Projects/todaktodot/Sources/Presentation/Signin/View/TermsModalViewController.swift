@@ -11,9 +11,10 @@ import FlexLayout
 import PinLayout
 import RxSwift
 import RxRelay
+import ReactorKit
 
-final class TermsModalViewController: UIViewController {
-    private var disposeBag = DisposeBag()
+final class TermsModalViewController: UIViewController, View {
+    var disposeBag = DisposeBag()
     private var countRelay = PublishRelay<Set<Int>>()
     private var currentSelected = Set<Int>()
     
@@ -77,7 +78,6 @@ final class TermsModalViewController: UIViewController {
         
         setupViews()
         setupFlexLayout()
-        bindActions()
     }
     
     override func viewDidLayoutSubviews() {
@@ -133,7 +133,7 @@ final class TermsModalViewController: UIViewController {
         modalView.flex.layout()
     }
     
-    private func bindActions() {
+    func bind(reactor: CoupleReactor) {
         
         allCheckButton.icon.rx.tap
             .subscribe(onNext: { [weak self] _ in

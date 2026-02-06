@@ -20,8 +20,11 @@ final class SigninViewController: UIViewController, View {
     
     private let onboardingView = InfiniteSliderView()
     private let buttonContainerView = UIView()
+    private let indicatorView = UIActivityIndicatorView(style: .medium).then {
+        $0.hidesWhenStopped = true
+    }
     
-    let kakaoButton = UIButton().then {
+    private let kakaoButton = UIButton().then {
         $0.backgroundColor = UIColor(hex: "FAE64D")
         $0.setTitle("카카오 로그인", for: .normal)
         $0.setTitleColor(.black, for: .normal)
@@ -30,7 +33,7 @@ final class SigninViewController: UIViewController, View {
         $0.layer.cornerRadius = 8
     }
     
-    let googleButton = UIButton().then {
+    private let googleButton = UIButton().then {
         $0.backgroundColor = .white
         $0.setTitle("구글 로그인", for: .normal)
         $0.setTitleColor(.black, for: .normal)
@@ -39,7 +42,7 @@ final class SigninViewController: UIViewController, View {
         $0.layer.cornerRadius = 8
     }
     
-    let appleButton = UIButton().then {
+    private let appleButton = UIButton().then {
         $0.backgroundColor = .grayScale900
         $0.setTitle("Apple로 로그인", for: .normal)
         $0.setTitleColor(.white, for: .normal)
@@ -48,16 +51,16 @@ final class SigninViewController: UIViewController, View {
         $0.layer.cornerRadius = 8
     }
     
-    let appLogo = UIImageView().then {
+    private let appLogo = UIImageView().then {
         $0.image = UIImage(resource: .appLogo)
     }
-    let kakaoLogo = UIImageView().then {
+    private let kakaoLogo = UIImageView().then {
         $0.image = UIImage(resource: .kakaoLogo)
     }
-    let googleLogo = UIImageView().then {
+    private let googleLogo = UIImageView().then {
         $0.image = UIImage(resource: .googleLogo)
     }
-    let appleLogo = UIImageView().then {
+    private let appleLogo = UIImageView().then {
         $0.image = UIImage(resource: .appleLogo)
     }
     
@@ -75,10 +78,16 @@ final class SigninViewController: UIViewController, View {
         layoutViews()
     }
     
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        indicatorView.stopAnimating()
+    }
+    
     private func setupViews() {
         view.addSubview(onboardingView)
         view.addSubview(appLogo)
         view.addSubview(buttonContainerView)
+        view.addSubview(indicatorView)
     }
     
     private func setupFlexLayout() {
@@ -118,6 +127,9 @@ final class SigninViewController: UIViewController, View {
     }
     
     private func layoutViews() {
+        indicatorView.pin
+            .all()
+        
         onboardingView.pin
             .all()
         
@@ -139,26 +151,46 @@ final class SigninViewController: UIViewController, View {
         appleButton.rx.tap
             .subscribe(onNext: { [weak self] _ in
                 guard let self = self else { return }
-//                coordinator?.showCoupleConnect(code: testCode)
                 coordinator?.navigateToMain()
             })
             .disposed(by: disposeBag)
     }
     
     func bind(reactor: SigninReactor) {
-        kakaoButton.rx.tap
-            .map { SigninReactor.Action.tapKakaoButton }
-            .bind(to: reactor.action)
+        reactor.state
+            .map { $0.isLoading }
+            .distinctUntilChanged()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] isLoading in
+                isLoading
+                ? self?.indicatorView.startAnimating()
+                : self?.indicatorView.stopAnimating()
+            })
             .disposed(by: disposeBag)
         
         reactor.state
-            .map { $0.isKakaoSigninSuccess }
+            .compactMap { $0.signinEvent }
             .distinctUntilChanged()
-            .filter { $0 }
-            .subscribe(onNext: { [weak self] _ in
+            .observe(on: MainScheduler.asyncInstance)
+            .subscribe(onNext: { [weak self] event in
                 guard let self = self else { return }
-                coordinator?.showCoupleConnect()
+                switch event {
+                case .kakaoSuccess, .googleSuccess:
+                    self.moveNext()
+                    
+                case .kakaoFail:
+                    break
+                    
+                case .googleFail:
+                    break
+                }
+                self.reactor?.action.onNext(.clearEvent)
             })
+            .disposed(by: disposeBag)
+        
+        kakaoButton.rx.tap
+            .map { SigninReactor.Action.tapKakaoButton }
+            .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
         
@@ -166,15 +198,13 @@ final class SigninViewController: UIViewController, View {
             .map { SigninReactor.Action.tapGoogleButton }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
-        
-        reactor.state
-            .map { $0.isGoogleSigninSuccess }
-            .distinctUntilChanged()
-            .filter { $0 }
-            .subscribe(onNext: { [weak self] _ in
-                guard let self = self else { return }
-                coordinator?.showCoupleConnect()
-            })
-            .disposed(by: disposeBag)
+    }
+    
+    private func moveNext() {
+        if UserdefaultKey.couple && UserdefaultKey.joined {
+            coordinator?.navigateToMain()
+        } else {
+            coordinator?.showCoupleConnect()
+        }
     }
 }

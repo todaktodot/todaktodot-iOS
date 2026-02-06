@@ -10,22 +10,11 @@ import RxSwift
 public import Alamofire
 
 public final class NetworkManager: Network {
-//    public var session = Session(interceptor: AuthInterceptor(), eventMonitors: [APIEventMonitor()])
-//    
-//    public init()  {
-////        self.session = session
-//    }
-    var session: Session
+    public var session: Session
     
-    #if DEBUG
     public init(session: Session = Session(eventMonitors: [APIEventMonitor()])) {
-        self.session = session // 모든 로그 확인용
+        self.session = session
     }
-    #else
-    public init(session: Session = Session(eventMonitors: [APIDebugEventMonitor()])) {
-        self.session = session // 에러시 알럿창 띄우기용
-    }
-    #endif
     
     public func request<E: Requestable>(with endpoint: E) -> Observable<E.Response> {
         return Observable.create { [weak self] observer in

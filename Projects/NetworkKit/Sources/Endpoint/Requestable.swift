@@ -48,7 +48,7 @@ public extension Requestable {
             }
         } else {
             switch method {
-            case .post, .put:
+            case .post, .put, .patch:
                 return JSONEncoding.default
             default:
                 return URLEncoding.default
