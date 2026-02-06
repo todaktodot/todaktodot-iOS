@@ -36,7 +36,7 @@ final class CoupleRepositoryImpl: CoupleRepository {
             path: "/api/couple-link/connect",
             method: .post,
             headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
-            parameters: ["linkCode": code],
+            parameters: ["linkCode": code]
         )
 
         return networkManager.request(with: endpoint)
@@ -49,7 +49,7 @@ final class CoupleRepositoryImpl: CoupleRepository {
             path: "/api/profile/nickname",
             method: .patch,
             headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
-            parameters: ["nickname": nickname],
+            parameters: ["nickname": nickname]
         )
 
         return networkManager.request(with: endpoint)
@@ -65,7 +65,7 @@ final class CoupleRepositoryImpl: CoupleRepository {
             parameters: [
                 "firstMetDt": date,
                 "relationshipStage": stage,
-            ],
+            ]
         )
 
         return networkManager.request(with: endpoint)
