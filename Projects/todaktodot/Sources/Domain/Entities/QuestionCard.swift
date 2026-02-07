@@ -7,7 +7,7 @@
 
 import UIKit
 
-struct QuestionCard {
+struct QuestionCard: Codable {
     let id: Int
     let coupleCardId: Int
     let title: String
@@ -32,7 +32,7 @@ struct QuestionCard {
     }
 }
 
-struct Question {
+struct Question: Codable {
     let number: Int
     let content: String
     let type: String
@@ -40,12 +40,12 @@ struct Question {
     let options: [QuestionOption]
 }
 
-struct QuestionOption {
+struct QuestionOption: Codable {
     let id: Int
     let text: String
 }
 
-struct CardFeedback {
+struct CardFeedback: Codable {
     let id: Int
     let summary: String
     let score: Int
