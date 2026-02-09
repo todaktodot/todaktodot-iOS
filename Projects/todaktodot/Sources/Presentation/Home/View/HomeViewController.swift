@@ -289,12 +289,10 @@ final class HomeViewController: BaseViewController, View {
     }
     
     private func setupWeekCards() {
-        // 기존 subview 제거
         weekCardsContainer.subviews.forEach { $0.removeFromSuperview() }
         
         weekCardsContainer.flex.define { flex in
             if !weeklyCards.isEmpty {
-                // 날짜 역순 정렬 (최신이 위로)
                 let sortedCards = weeklyCards.sorted { $0.date > $1.date }
                 sortedCards.enumerated().forEach { index, card in
                     let cardView = createWeekCard(card: card, index: index)
@@ -339,7 +337,7 @@ final class HomeViewController: BaseViewController, View {
         dayLabel.textColor = .grayScale900
         
         let topicLabel = TDLabel()
-        topicLabel.text = "\(card.mode) · \(card.subject) · \(card.type.rawValue)"
+        topicLabel.text = "\(card.mode.displayName) · \(card.subject.displayName) · \(card.type.displayName)"
         topicLabel.font = .pretenRegular(14)
         topicLabel.textColor = .grayScale800
         
