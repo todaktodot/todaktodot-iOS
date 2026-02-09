@@ -108,12 +108,18 @@ final class DailyCardDetailViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        setupKeyboardObservers()
         
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tapGesture.cancelsTouchesInView = false
         view.addGestureRecognizer(tapGesture)
     }
     
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        NotificationCenter.default.removeObserver(self)
+    }
+
     private func setupUI() {
         view.backgroundColor = .lightPurple
         navigationController?.navigationBar.isHidden = false
@@ -142,7 +148,7 @@ final class DailyCardDetailViewController: UIViewController {
         rootFlexContainer.flex
             .paddingHorizontal(20)
             .paddingTop(10)
-            .paddingBottom(120)
+            .paddingBottom(80)
             .define { flex in
                 flex.addItem(mainCardContainer)
                 flex.addItem(optionsContainer).marginTop(24)
@@ -452,6 +458,54 @@ extension DailyCardDetailViewController: UITextViewDelegate {
         if textView.textColor == .grayScale900 && !textView.text.isEmpty {
             textView.text =  textView.text
             textView.textColor = .grayScale900
+        }
+    }
+}
+
+// MARK: - Keyboard
+extension DailyCardDetailViewController {
+    private func setupKeyboardObservers() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillShow),
+            name: UIResponder.keyboardWillShowNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillHide),
+            name: UIResponder.keyboardWillHideNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func keyboardWillShow(_ notification: Notification) {
+        guard let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect,
+              let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double else {
+            return
+        }
+        
+        let keyboardHeight = keyboardFrame.height
+        
+        UIView.animate(withDuration: duration) {
+            self.scrollView.contentInset.bottom = keyboardHeight + 30
+            self.scrollView.verticalScrollIndicatorInsets.bottom = keyboardHeight + 30
+            
+            if self.reasonTextView.isFirstResponder {
+                let textViewFrame = self.reasonTextView.convert(self.reasonTextView.bounds, to: self.scrollView)
+                self.scrollView.scrollRectToVisible(textViewFrame, animated: false)
+            }
+        }
+    }
+    
+    @objc private func keyboardWillHide(_ notification: Notification) {
+        guard let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double else {
+            return
+        }
+        
+        UIView.animate(withDuration: duration) {
+            self.scrollView.contentInset.bottom = 0
+            self.scrollView.verticalScrollIndicatorInsets.bottom = 0
         }
     }
 }
