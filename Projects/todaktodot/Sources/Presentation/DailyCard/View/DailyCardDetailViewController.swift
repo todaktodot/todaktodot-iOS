@@ -10,11 +10,10 @@ import FlexLayout
 import PinLayout
 import Then
 
-enum CardType {
-    case situation
-    case balance
-}
-
+import UIKit
+import FlexLayout
+import PinLayout
+import Then
 
 final class DailyCardDetailViewController: UIViewController {
     

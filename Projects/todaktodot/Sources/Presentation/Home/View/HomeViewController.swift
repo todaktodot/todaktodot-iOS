@@ -93,7 +93,7 @@ final class HomeViewController: BaseViewController, View {
     
     private let weekCardsContainer = UIView()
     private let weekdays = ["토", "금", "목", "수", "화", "월"]
-    private var hasWeekCards = true // TODO: 임시 설정. 카드 존재여부 확인
+    private var weeklyCards: [QuestionCard] = []
     
     init(reactor: HomeReactor) {
         super.init(nibName: nil, bundle: nil)
@@ -108,6 +108,7 @@ final class HomeViewController: BaseViewController, View {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        fetchWeeklyCards()
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -119,6 +120,16 @@ final class HomeViewController: BaseViewController, View {
     }
     
     func bind(reactor: HomeReactor) {
+
+        reactor.state.map { $0.historyCards }
+            .distinctUntilChanged { $0.count == $1.count }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] cards in
+                self?.weeklyCards = cards
+                self?.updateWeekCards()
+            })
+            .disposed(by: disposeBag)
+        
         reactor.state.map { $0.answerStatus }
             .distinctUntilChanged()
             .observe(on: MainScheduler.instance)
@@ -175,7 +186,6 @@ final class HomeViewController: BaseViewController, View {
     }
     
     private func setupUI() {
-        // TODO: 그라데이션 정의?
         gradientLayer.colors = [
             UIColor(hex: "F9F2EE").cgColor,
             UIColor(hex: "F1EBF5").cgColor,
@@ -196,7 +206,7 @@ final class HomeViewController: BaseViewController, View {
             .paddingBottom(150)
             .define { flex in
                 flex.addItem(mainCard).marginVertical(20)
-                flex.addItem(weekCardsContainer).marginTop(hasWeekCards ? 36 : 28)
+                flex.addItem(weekCardsContainer).marginTop(!weeklyCards.isEmpty ? 36 : 28)
             }
     }
     
@@ -279,12 +289,17 @@ final class HomeViewController: BaseViewController, View {
     }
     
     private func setupWeekCards() {
+        // 기존 subview 제거
+        weekCardsContainer.subviews.forEach { $0.removeFromSuperview() }
+        
         weekCardsContainer.flex.define { flex in
-            if hasWeekCards {
-                weekdays.enumerated().forEach { index, day in
-                    let card = createWeekCard(day: day, date: "\(27-index)", index: index)
-                    let isLast = index == weekdays.count - 1
-                    flex.addItem(card)
+            if !weeklyCards.isEmpty {
+                // 날짜 역순 정렬 (최신이 위로)
+                let sortedCards = weeklyCards.sorted { $0.date > $1.date }
+                sortedCards.enumerated().forEach { index, card in
+                    let cardView = createWeekCard(card: card, index: index)
+                    let isLast = index == sortedCards.count - 1
+                    flex.addItem(cardView)
                         .height(isLast ? 83 : 83 + 60)
                         .marginTop(index == 0 ? 0 : -60)
                 }
@@ -295,28 +310,36 @@ final class HomeViewController: BaseViewController, View {
         }
     }
     
-    private func createWeekCard(day: String, date: String, index: Int) -> UIView {
-        let card = UIView()
+    private func createWeekCard(card: QuestionCard, index: Int) -> UIView {
+        let cardView = UIView()
         
         if index % 2 == 0 {
-            card.backgroundColor = UIColor.lightCardPurple
+            cardView.backgroundColor = UIColor.lightCardPurple
         } else {
-            card.backgroundColor = UIColor.cardPurple
+            cardView.backgroundColor = UIColor.cardPurple
         }
         
-        card.layer.cornerRadius = 20
-        card.layer.shadowColor = UIColor(hex: "774F92").cgColor
-        card.layer.shadowOpacity = 0.08
-        card.layer.shadowOffset = CGSize(width: 0, height: -8)
-        card.layer.shadowRadius = 15
+        cardView.layer.cornerRadius = 20
+        cardView.layer.shadowColor = UIColor(hex: "774F92").cgColor
+        cardView.layer.shadowOpacity = 0.08
+        cardView.layer.shadowOffset = CGSize(width: 0, height: -8)
+        cardView.layer.shadowRadius = 15
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "M/d"
+        let dateString = dateFormatter.string(from: card.date)
+        
+        dateFormatter.dateFormat = "E"
+        dateFormatter.locale = Locale(identifier: "ko_KR")
+        let weekday = dateFormatter.string(from: card.date)
         
         let dayLabel = TDLabel()
-        dayLabel.text = "\(day) 9/\(date)"
+        dayLabel.text = "\(weekday) \(dateString)"
         dayLabel.font = .pretenSemiBold(16)
         dayLabel.textColor = .grayScale900
         
         let topicLabel = TDLabel()
-        topicLabel.text = "모드 · 대주제 ·소주제"
+        topicLabel.text = "\(card.mode) · \(card.subject) · \(card.type.rawValue)"
         topicLabel.font = .pretenRegular(14)
         topicLabel.textColor = .grayScale800
         
@@ -325,11 +348,11 @@ final class HomeViewController: BaseViewController, View {
         arrowIcon.tintColor = .grayScale800
         arrowIcon.contentMode = .scaleAspectFit
         
-        card.addSubview(dayLabel)
-        card.addSubview(topicLabel)
-        card.addSubview(arrowIcon)
+        cardView.addSubview(dayLabel)
+        cardView.addSubview(topicLabel)
+        cardView.addSubview(arrowIcon)
         
-        card.flex
+        cardView.flex
             .padding(20)
             .define { flex in
                 flex.addItem(arrowIcon).position(.absolute).right(20).top(33.5).size(16)
@@ -337,12 +360,38 @@ final class HomeViewController: BaseViewController, View {
                 flex.addItem(topicLabel).marginTop(8)
             }
         
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(weekCardTapped))
-        card.addGestureRecognizer(tapGesture)
+        cardView.tag = card.id // 카드 ID를 tag에 저장
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(weekCardTapped(_:)))
+        cardView.addGestureRecognizer(tapGesture)
         
-        return card
+        return cardView
     }
     
+    private func fetchWeeklyCards() {
+        let calendar = Calendar.current
+        let today = Date()
+        
+        guard let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)),
+              let endOfWeek = calendar.date(byAdding: .day, value: 6, to: startOfWeek) else {
+            return
+        }
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        
+        let startDate = dateFormatter.string(from: startOfWeek)
+        let endDate = dateFormatter.string(from: endOfWeek)
+        
+        reactor?.action.onNext(.fetchHistoryCards(startDate: startDate, endDate: endDate))
+    }
+    
+    private func updateWeekCards() {
+        weekCardsContainer.flex.markDirty()
+        setupWeekCards()
+        weekCardsContainer.flex.layout()
+        view.setNeedsLayout()
+    }
+       
     private func createEmptyWeekView() -> UIView {
         let container = UIView()
         container.backgroundColor = .clear
@@ -389,8 +438,12 @@ final class HomeViewController: BaseViewController, View {
         return container
     }
     
-    @objc private func weekCardTapped() {
-        coordinator?.showHistoryCardDetail()
+    @objc private func weekCardTapped(_ sender: UITapGestureRecognizer) {
+        guard let tappedView = sender.view,
+              let card = weeklyCards.first(where: { $0.id == tappedView.tag }) else {
+            return
+        }
+        coordinator?.showHistoryCardDetail(card: card)
     }
     
     private func updateButtonForMyAnswered(status: AnswerStatus, isCoupleConnected: Bool) {

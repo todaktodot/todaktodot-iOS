@@ -17,12 +17,19 @@ enum AnswerStatus {
 
 final class HomeReactor: Reactor {
     
+    private let cardUseCase: CardUseCase
+    
+    init(cardUseCase: CardUseCase) {
+        self.cardUseCase = cardUseCase
+    }
+    
     enum Action {
         case updateAnswerStatus(AnswerStatus)
         case tapPokeButton
         case tapConnectCoupleButton
         case checkFirstLaunch
         case dismissNotificationAlert
+        case fetchHistoryCards(startDate: String, endDate: String)
     }
     
     enum Mutation {
@@ -30,6 +37,8 @@ final class HomeReactor: Reactor {
         case setPoked(Bool)
         case setShowNotificationAlert(Bool)
         case setCoupleConnected(Bool)
+        case setHistoryCards([QuestionCard])
+        case setError(Error)
     }
     
     struct State {
@@ -37,6 +46,7 @@ final class HomeReactor: Reactor {
         var isPoked: Bool = false
         var shouldShowNotificationAlert: Bool = true
         var isCoupleConnected: Bool = false
+        var historyCards: [QuestionCard] = []
     }
     
     let initialState = State()
@@ -56,6 +66,17 @@ final class HomeReactor: Reactor {
             return .just(.setShowNotificationAlert(true))
         case .dismissNotificationAlert:
             return .just(.setShowNotificationAlert(false))
+        case .fetchHistoryCards(let startDate, let endDate):
+            return cardUseCase.fetchHistoryCards(startDate: startDate, endDate: endDate)
+                .flatMap { result -> Observable<Mutation> in
+                    switch result {
+                    case .success(let cards):
+                        return .just(.setHistoryCards(cards))
+                    case .failure(let error):
+                        return .just(.setHistoryCards(MockCardData.historyCards))
+//                        return .just(.setError(error))
+                    }
+                }
         }
     }
     
@@ -70,6 +91,10 @@ final class HomeReactor: Reactor {
             newState.shouldShowNotificationAlert = show
         case .setCoupleConnected(let connected):
             newState.isCoupleConnected = connected
+        case .setHistoryCards(let cards):
+            newState.historyCards = cards
+        case .setError:
+            break
         }
         return newState
     }

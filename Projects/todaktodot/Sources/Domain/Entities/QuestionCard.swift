@@ -14,7 +14,7 @@ struct QuestionCard: Codable {
     let date: Date
     let mode: String
     let subject: String
-    let type: String
+    let type: CardType
     let questions: [Question]
     
     // + 히스토리

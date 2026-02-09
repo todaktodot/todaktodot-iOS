@@ -26,11 +26,6 @@ final class DailyCardReactor: Reactor {
         var selectedCardType: CardType?
     }
     
-    enum CardType {
-        case situation
-        case balance
-    }
-    
     let initialState = State()
     
     func mutate(action: Action) -> Observable<Mutation> {

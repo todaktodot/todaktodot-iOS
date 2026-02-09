@@ -16,27 +16,23 @@ final class CardUseCase {
         self.repository = repository
     }
     
-    // 주간 데일리카드(user default 저장)
-    func fetchWeeklyCards(startDate: String, endDate: String) -> Observable<[QuestionCard]> {
+    func fetchWeeklyCards(startDate: String, endDate: String) -> Observable<Result<[QuestionCard], Error>> {
         repository.fetchWeeklyCards(startDate: startDate, endDate: endDate)
     }
-    // 히스토리카드 전체
-    func fetchHistoryCards(startDate: String, endDate: String) -> Observable<[QuestionCard]> {
+    
+    func fetchHistoryCards(startDate: String, endDate: String) -> Observable<Result<[QuestionCard], Error>> {
         repository.fetchHistoryCards(startDate: startDate, endDate: endDate)
     }
     
-    // 카드 유형 선택
-    func selectCardType(coupleCardId: Int) -> Observable<Bool> {
+    func selectCardType(coupleCardId: Int) -> Observable<Result<Void, Error>> {
         repository.selectCardType(coupleCardId: coupleCardId)
     }
     
-    // 새로운 카드 배정하기
-    func assignCards(startDate: String, endDate: String) -> Observable<Bool> {
+    func assignCards(startDate: String, endDate: String) -> Observable<Result<Void, Error>> {
         repository.assignCards(startDate: startDate, endDate: endDate)
     }
     
-    // 답변 제출
-    func submitAnswers(coupleCardId: Int, cardId: Int, answers: [AnswerInput]) -> Observable<Bool> {
+    func submitAnswers(coupleCardId: Int, cardId: Int, answers: [Answer]) -> Observable<Result<SubmitAnswerResult, Error>> {
         repository.submitAnswers(
             coupleCardId: coupleCardId, 
             cardId: cardId, 

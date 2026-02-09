@@ -13,6 +13,7 @@ import Then
 final class HistoryCardDetailViewController: UIViewController {
     
     weak var coordinator: HomeCoordinator?
+    private let card: QuestionCard
     
     private let scrollView = UIScrollView()
     private let rootFlexContainer = UIView()
@@ -50,6 +51,15 @@ final class HistoryCardDetailViewController: UIViewController {
     private let aiFeedbackContainer = UIView()
     
     private let statusContainer = UIView()
+    
+    init(card: QuestionCard) {
+        self.card = card
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()

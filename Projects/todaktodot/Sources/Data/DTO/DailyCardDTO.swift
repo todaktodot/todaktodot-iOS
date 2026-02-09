@@ -21,7 +21,7 @@ struct DailyCardDTO: Decodable {
     let cardTitle: String
     let mode: String
     let subject: String
-    let type: String
+    let type: String //TODO: 타입 물어보기
     let questions: [QuestionDTO]
 }
 
@@ -49,7 +49,7 @@ extension DailyCardResponseDTO {
                 date: ISO8601DateFormatter().date(from: card.issuedDate) ?? Date(),
                 mode: card.mode,
                 subject: card.subject,
-                type: card.type,
+                type: CardType(rawValue: card.type) ?? .situation,
                 questions: card.questions.map { q in
                     Question(
                         number: q.questionNo,

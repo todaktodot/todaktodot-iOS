@@ -5,6 +5,7 @@
 //  Created by daye on 2/7/26.
 //
 
+import Foundation
 import RxSwift
 import NetworkKit
 import Alamofire
@@ -17,7 +18,7 @@ final class CardRepositoryImpl: CardRepository {
         self.networkManager = networkManager
     }
     
-    func selectCardType(coupleCardId: Int) -> Observable<Bool> {
+    func selectCardType(coupleCardId: Int) -> Observable<Result<Void, Error>> {
         let endpoint = Endpoint<Empty>(
             baseURL: .todaktodotAPI,
             path: "/api/daily-card/select-type",
@@ -25,11 +26,13 @@ final class CardRepositoryImpl: CardRepository {
             headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
             parameters: ["coupleCardId": coupleCardId]
         )
-        return networkManager.request(with: endpoint).map { _ in true }
+        
+        return networkManager.request(with: endpoint)
+            .map { _ in Result<Void, Error>.success(()) }
+            .catch { error in .just(.failure(error)) }
     }
 
-    // 배정
-    func assignCards(startDate: String, endDate: String) -> Observable<Bool> {
+    func assignCards(startDate: String, endDate: String) -> Observable<Result<Void, Error>> {
         let endpoint = Endpoint<Empty>(
             baseURL: .todaktodotAPI,
             path: "/api/daily-card/assign/me",
@@ -40,29 +43,35 @@ final class CardRepositoryImpl: CardRepository {
                 "endDate": endDate
             ]
         )
-        return networkManager.request(with: endpoint).map { _ in true }
+        
+        return networkManager.request(with: endpoint)
+            .map { _ in Result<Void, Error>.success(()) }
+            .catch { error in .just(.failure(error)) }
     }
 
-    // 답변제출
-    func submitAnswers(coupleCardId: Int, cardId: Int, answers: [AnswerInput]) -> Observable<Bool> {
-        let params: [String: Any] = [
-            "coupleCardId": coupleCardId,
-            "cardId": cardId,
-            "answers": answers.map { ["questionNo": $0.no, "answerContent": $0.content] }
-        ]
+    func submitAnswers(coupleCardId: Int, cardId: Int, answers: [Answer]) -> Observable<Result<SubmitAnswerResult, Error>> {
+        let request = SubmitAnswerRequestDTO(
+            coupleCardId: coupleCardId,
+            cardId: cardId,
+            answers: answers.map { AnswerDTO(questionNo: $0.questionNo, answerContent: $0.content) }
+        )
         
-        let endpoint = Endpoint<Empty>(
+        let endpoint = Endpoint<SubmitAnswerResponseDTO>(
             baseURL: .todaktodotAPI,
             path: "/api/daily-card/answer",
             method: .post,
             headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
-            parameters: params
+            parameters: request.toDictionary()
         )
-        return networkManager.request(with: endpoint).map { _ in true }
+        
+        return networkManager.request(with: endpoint)
+            .map { responseDTO in
+                Result<SubmitAnswerResult, Error>.success(responseDTO.toEntity())
+            }
+            .catch { error in .just(.failure(error)) }
     }
     
-    // 주간 데일리 카드 조회 (user default 저장)
-    func fetchWeeklyCards(startDate: String, endDate: String) -> Observable<[QuestionCard]> {
+    func fetchWeeklyCards(startDate: String, endDate: String) -> Observable<Result<[QuestionCard], Error>> {
         let endpoint = Endpoint<DailyCardResponseDTO>(
             baseURL: .todaktodotAPI,
             path: "/api/daily-card/weekly",
@@ -76,12 +85,12 @@ final class CardRepositoryImpl: CardRepository {
         
         return networkManager.request(with: endpoint)
             .map { responseDTO in
-                return responseDTO.toEntity()
+                Result<[QuestionCard], Error>.success(responseDTO.toEntity())
             }
+            .catch { error in .just(.failure(error)) }
     }
     
-    // 히스토리 카드 상세 리스트 조회
-    func fetchHistoryCards(startDate: String, endDate: String) -> Observable<[QuestionCard]> {
+    func fetchHistoryCards(startDate: String, endDate: String) -> Observable<Result<[QuestionCard], Error>> {
         let endpoint = Endpoint<CardHistoryResponseDTO>(
             baseURL: .todaktodotAPI,
             path: "/api/daily-card/history/with-details",
@@ -95,13 +104,18 @@ final class CardRepositoryImpl: CardRepository {
         
         return networkManager.request(with: endpoint)
             .map { responseDTO in
-                responseDTO.toEntity()
+                Result<[QuestionCard], Error>.success(responseDTO.toEntity())
             }
+            .catch { error in .just(.failure(error)) }
     }
 }
 
-
-struct AnswerInput {
-    let no: Int
-    let content: String
+extension Encodable {
+    func toDictionary() -> [String: Any] {
+        guard let data = try? JSONEncoder().encode(self),
+              let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return [:]
+        }
+        return dict
+    }
 }

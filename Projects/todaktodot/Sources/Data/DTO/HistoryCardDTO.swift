@@ -59,7 +59,7 @@ extension CardHistoryResponseDTO {
                 date: ISO8601DateFormatter().date(from: card.issuedDate) ?? Date(),
                 mode: card.mode,
                 subject: card.subject,
-                type: card.type,
+                type: CardType(rawValue: card.type) ?? .balance,
                 questions: card.questions.map { q in
                     Question(
                         number: q.questionNo,
@@ -85,3 +85,4 @@ extension CardHistoryResponseDTO {
         }
     }
 }
+
