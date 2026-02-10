@@ -20,7 +20,7 @@ let project = Project(
     targets: [
         .target(
             name: "todaktodot",
-            destinations: .iOS,
+            destinations: [.iPhone],
             product: .app,
             bundleId: "$(PRODUCT_BUNDLE_IDENTIFIER)",
             deploymentTargets: .iOS("15.0"),
