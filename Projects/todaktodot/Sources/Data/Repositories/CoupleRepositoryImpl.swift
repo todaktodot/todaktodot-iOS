@@ -69,6 +69,21 @@ final class CoupleRepositoryImpl: CoupleRepository {
         )
 
         return networkManager.request(with: endpoint)
+            .map { _ in true }
+    }
+    
+    func setTerms(marketingAgree: Bool) -> Observable<Bool> {
+        let endpoint = Endpoint<Empty>(
+            baseURL: .todaktodotAPI,
+            path: "/api/term",
+            method: .post,
+            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
+            parameters: [
+                "marketingAndAlarmYN": marketingAgree ? "Y" : "N"
+            ]
+        )
+
+        return networkManager.request(with: endpoint)
             .do(onNext: { _ in
                 UserdefaultKey.joined = true
             })

@@ -25,7 +25,7 @@ final class CoupleReactor: Reactor {
     
     enum Action {
         case issueCoupleCode
-        //        case tapTemrsAgreeButton
+        case tapTemrsAgreeButtonWithMarketingAgree(Bool)
         case tapConnectButton(String)
         case tapNicknameButton(String)
         case tapJoinButton(String, String)
@@ -71,6 +71,10 @@ final class CoupleReactor: Reactor {
             return coupleUseCase.setCoupleInfo(date: date, stage: stage)
                 .map { Mutation.setJoinSuccess($0) }
                 .catchAndReturn(Mutation.setJoinSuccess(false))
+        case .tapTemrsAgreeButtonWithMarketingAgree(let isMarketing):
+            return coupleUseCase.setTerms(marketingAgree: isMarketing)
+                .map { Mutation.setTermsAgreeSuccess($0) }
+                .catchAndReturn(Mutation.setTermsAgreeSuccess(false))
         }
     }
     
@@ -84,8 +88,8 @@ final class CoupleReactor: Reactor {
         case .setMyCode(let code):
             newState.mycode = code
             
-        case .setTermsAgreeSuccess(_):
-            break
+        case .setTermsAgreeSuccess(let isSuccess):
+            newState.isTermsAgreeSuccess = isSuccess
             
         case .setMyCodeIssueFailed:
             newState.isMyCodeIssueFailed = true
