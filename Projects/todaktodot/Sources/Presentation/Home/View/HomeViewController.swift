@@ -476,9 +476,13 @@ final class HomeViewController: BaseViewController, View {
               let card = HistoryCards.first(where: { $0.id == tappedView.tag }) else {
             return
         }
-        coordinator?.showHistoryCardDetail(card: card)
+        if !card.user1Answered && !card.user1Answered {
+            showNonAnsweredAlert()
+        } else {
+            coordinator?.showHistoryCardDetail(card: card)
+        }
     }
-    
+
     private func updateButtonForMyAnswered(status: AnswerStatus, isCoupleConnected: Bool) {
         guard status == .myAnswered else { return }
         
@@ -512,6 +516,16 @@ final class HomeViewController: BaseViewController, View {
         showAlert(
             icon: UIImage(resource: .poke),
             title: "콕! 상대방에게 알림을 보냈어요\n곧 답변할 거예요",
+            description: nil,
+            primaryButtonTitle: "확인",
+            primaryButtonAction: {}
+        )
+    }
+    
+    private func showNonAnsweredAlert() {
+        showAlert(
+            icon: UIImage(resource: .unsmile),
+            title: "답변 내용이 없어 확인할 수 없어요",
             description: nil,
             primaryButtonTitle: "확인",
             primaryButtonAction: {}

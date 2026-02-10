@@ -344,6 +344,44 @@ struct MockCardData {
             userId1: 1001,
             userId2: 1002,
             feedback: nil
+        ),
+        QuestionCard(
+            id: 17,
+            coupleCardId: 207,
+            title: "선물 받고 싶은 것",
+            date: Date().addingTimeInterval(-4 * 24 * 3600),
+            mode: .coffee,
+            subject: .lifestyle,
+            type: .balance,
+            questions: [
+                Question(
+                    number: 1,
+                    content: "어떤 선물을 받고 싶나요?",
+                    type: .multipleChoice,
+                    isRequired: true,
+                    options: [
+                        QuestionOption(id: 1, text: "실용적인 선물"),
+                        QuestionOption(id: 2, text: "감성적인 선물")
+                    ],
+                    user1Answer: nil,
+                    user2Answer: nil
+                ),
+                Question(
+                    number: 2,
+                    content: "그렇게 생각한 이유는 무엇인가요?",
+                    type: .subjective,
+                    isRequired: false,
+                    options: [],
+                    user1Answer: nil,
+                    user2Answer: nil
+                )
+            ],
+            isSelected: true,
+            user1Answered: false,
+            user2Answered: false,
+            userId1: 1001,
+            userId2: 1002,
+            feedback: nil
         )
     ]
 }
