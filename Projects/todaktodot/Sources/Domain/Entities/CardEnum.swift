@@ -8,19 +8,19 @@
 import Foundation
 
 enum CardType: String, Codable {
-    case situation = "SITUATION"
+    case roleplay = "ROLEPLAY"
     case balance = "BALANCE"
     
     var displayName: String {
         switch self {
-        case .situation: return "상황극"
+        case .roleplay: return "상황극"
         case .balance: return "밸런스게임"
         }
     }
     
     var emoji: String {
         switch self {
-        case .situation: return "🎭"
+        case .roleplay: return "🎭"
         case .balance: return "⚖️"
         }
     }

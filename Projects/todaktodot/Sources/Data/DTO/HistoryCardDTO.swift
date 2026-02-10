@@ -7,22 +7,24 @@
 
 import Foundation
 
+import Foundation
+
 struct CardHistoryResponseDTO: Decodable {
     let startDate: String
     let endDate: String
-    let historyCards: [HistoryCardDTO]
+    let historyCards: [HistoryCardDTO]?
 }
 
 struct HistoryCardDTO: Decodable {
-    let issuedDate: String
-    let mode: CardMode
-    let subject: CardSubject
-    let selected: Bool
+    let issuedDate: String?
+    let mode: CardMode?
+    let subject: CardSubject?
+    let selected: Bool?
     
     let coupleCardId: Int?
     let cardId: Int?
     let cardTitle: String?
-    let type: CardType
+    let type: CardType?
     let user1Answered: Bool?
     let user2Answered: Bool?
     let userId1: Int?
@@ -32,18 +34,18 @@ struct HistoryCardDTO: Decodable {
 }
 
 struct HistoryQuestionDTO: Decodable {
-    let questionNo: Int
-    let questionType: QuestionType
-    let questionContent: String?
-    let answerRequired: Bool?
+    let questionNo: Int?
+    let questionType: String?
+    let questionCnts: String?
+    let answerReqYn: String?
     let options: [HistoryOptionDTO]?
     let user1Answer: String?
     let user2Answer: String?
 }
 
 struct HistoryOptionDTO: Decodable {
-    let optionNo: Int
-    let optionContent: String
+    let optionNo: Int?
+    let optionCnts: String?
 }
 
 struct FeedbackDTO: Decodable {
@@ -63,29 +65,29 @@ extension CardHistoryResponseDTO {
     }()
     
     func toEntity() -> [QuestionCard] {
-        return historyCards.map { card in
+        return historyCards?.map { card in
             QuestionCard(
                 id: card.cardId ?? 0,
                 coupleCardId: card.coupleCardId ?? 0,
                 title: card.cardTitle ?? "미발행 카드",
-                date: Self.dateFormatter.date(from: card.issuedDate) ?? Date(),
-                mode: card.mode,
-                subject: card.subject,
-                type: card.type,
+                date: Self.dateFormatter.date(from: card.issuedDate ?? "") ?? Date(),
+                mode: card.mode ?? .whiskey,
+                subject: card.subject ?? .love,
+                type: card.type ?? .balance,
                 questions: card.questions?.map { q in
                     Question(
-                        number: q.questionNo,
-                        content: q.questionContent ?? "",
-                        type: q.questionType,
-                        isRequired: q.answerRequired ?? false,
+                        number: q.questionNo ?? -1,
+                        content: q.questionCnts ?? "",
+                        type: QuestionType(rawValue: q.questionType ?? "") ?? .subjective ,
+                        isRequired: q.answerReqYn == "Y",
                         options: q.options?.map {
-                            QuestionOption(id: $0.optionNo, text: $0.optionContent)
+                            QuestionOption(id: $0.optionNo ?? -1, text: $0.optionCnts ?? "") // 수정됨
                         } ?? [],
                         user1Answer: q.user1Answer,
                         user2Answer: q.user2Answer
                     )
                 } ?? [],
-                isSelected: card.selected,
+                isSelected: card.selected ?? false,
                 user1Answered: card.user1Answered ?? false,
                 user2Answered: card.user2Answered ?? false,
                 userId1: card.userId1,
@@ -100,6 +102,6 @@ extension CardHistoryResponseDTO {
                     )
                 }
             )
-        }
+        } ?? []
     }
 }

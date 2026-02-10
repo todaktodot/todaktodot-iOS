@@ -57,7 +57,7 @@ struct MockCardData {
             date: Date().addingTimeInterval(-2 * 24 * 3600),
             mode: .dessert,
             subject: .lifestyle,
-            type: .situation,
+            type: .roleplay,
             questions: [
                 Question(
                     number: 1,
@@ -138,7 +138,7 @@ struct MockCardData {
             date: Date().addingTimeInterval(-14 * 24 * 3600),
             mode: .coffee,
             subject: .lifestyle,
-            type: .situation,
+            type: .roleplay,
             questions: [
                 Question(
                     number: 1,
@@ -182,7 +182,7 @@ struct MockCardData {
             date: Date().addingTimeInterval(-12 * 24 * 3600),
             mode: .whiskey,
             subject: .economy,
-            type: .situation,
+            type: .roleplay,
             questions: [
                 Question(
                     number: 1,
@@ -226,7 +226,7 @@ struct MockCardData {
             date: Date().addingTimeInterval(-10 * 24 * 3600),
             mode: .dessert,
             subject: .lifestyle,
-            type: .situation,
+            type: .roleplay,
             questions: [
                 Question(
                     number: 1,
@@ -314,7 +314,7 @@ struct MockCardData {
             date: Date().addingTimeInterval(-6 * 24 * 3600),
             mode: .dessert,
             subject: .lifestyle,
-            type: .situation,
+            type: .roleplay,
             questions: [
                 Question(
                     number: 1,

@@ -92,7 +92,6 @@ final class HomeViewController: BaseViewController, View {
     }
     
     private let weekCardsContainer = UIView()
-    private let weekdays = ["토", "금", "목", "수", "화", "월"]
     private var HistoryCards: [QuestionCard] = []
     
     init(reactor: HomeReactor) {
@@ -382,17 +381,20 @@ final class HomeViewController: BaseViewController, View {
     
     private func fetchHistoryCards() {
         /// 월요일부터 일요일까지
-        let calendar = Calendar.current
-        let today = Date()
-        
-        guard let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)),
-              let endOfWeek = calendar.date(byAdding: .day, value: 6, to: startOfWeek) else {
-            return
-        }
-        
-        let startDate = startOfWeek.toYYYYMMDD()
-        let endDate = endOfWeek.toYYYYMMDD()
-        reactor?.action.onNext(.fetchHistoryCards(startDate: startDate, endDate: endDate))
+        var calendar = Calendar.current
+            calendar.firstWeekday = 2
+            
+            let today = Date()
+            let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)
+            guard let startOfWeek = calendar.date(from: components) else { return }
+            
+            guard let endOfWeek = calendar.date(byAdding: .day, value: 6, to: startOfWeek) else { return }
+            
+            let startDate = startOfWeek.toYYYYMMDD()
+            let endDate = endOfWeek.toYYYYMMDD()
+            
+            print("📅 조회 범위: \(startDate) ~ \(endDate)")
+            reactor?.action.onNext(.fetchHistoryCards(startDate: startDate, endDate: endDate))
     }
     
     private func fetchWeeklyCards() {
@@ -419,8 +421,8 @@ final class HomeViewController: BaseViewController, View {
     private func updateTodayCardUI(_ cards: [QuestionCard]) {
         guard let firstCard = cards.first else { return }
         
-        chip1.updateTitle("\(firstCard.mode.displayName)")
-        chip2.updateTitle("\(firstCard.subject.displayName)")
+        chip1.updateTitle("\(firstCard.mode.emoji)" + " " + "\(firstCard.mode.displayName)")
+        chip2.updateTitle("\(firstCard.subject.emoji)" + " " + "\(firstCard.subject.displayName)")
         
         // TODO: 답변 상태에 따라 answerStatus 업데이트
     }
