@@ -32,10 +32,6 @@ final class ModalButton: UIButton {
         fatalError("init(coder:) has not been implemented")
     }
     
-    override func layoutSubviews() {
-        super.layoutSubviews()
-    }
-    
     private func setupViews() {
         [buttonTitleLabel, chevron].forEach {
             addSubview($0)
@@ -48,10 +44,6 @@ final class ModalButton: UIButton {
             $0.addItem().grow(1)
             $0.addItem(chevron).size(20)
         }
-    }
-    
-    private func layoutViews() {
-        self.flex.layout()
     }
     
     func setTitle(title: String) {
