@@ -167,7 +167,7 @@ final class AlertViewController: UIViewController {
             .width(335)
             .padding(24)
             .define { flex in
-                flex.addItem(iconImageView).size(48).alignSelf(.center)
+                flex.addItem(iconImageView).size(45).alignSelf(.center)
                 flex.addItem(titleLabel).marginTop(16)
                 
                 if config.description != nil || config.tintedDescription != nil {

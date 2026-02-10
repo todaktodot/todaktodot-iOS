@@ -267,7 +267,7 @@ final class MypageViewController: CustomBackViewController {
             })
             .disposed(by: disposeBag)
         
-        settingSectionView.arrowButton.rx.tap
+        settingSectionView.serviceTermButton.rx.tap
             .subscribe(onNext: { [weak self] in
                 self?.coordinator?.showTerms()
             })
