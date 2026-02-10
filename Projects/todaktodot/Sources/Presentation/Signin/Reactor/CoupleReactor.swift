@@ -14,6 +14,7 @@ final class CoupleReactor: Reactor {
     struct State {
         var mycode: String?
         var isLoading: Bool = false
+        var isJoined: Bool?
         
         var isTermsAgreeSuccess: Bool = false
         var isCoupleConnectSuccess: Bool = false
@@ -25,6 +26,7 @@ final class CoupleReactor: Reactor {
     
     enum Action {
         case issueCoupleCode
+        case checkIsJoined
         case tapTemrsAgreeButtonWithMarketingAgree(Bool)
         case tapConnectButton(String)
         case tapNicknameButton(String)
@@ -35,6 +37,7 @@ final class CoupleReactor: Reactor {
         case setLoading(Bool)
         
         case setMyCode(String)
+        case setIsJoined(Bool)
         case setTermsAgreeSuccess(Bool)
         case setCoupleConnectSuccess(Bool)
         case setNicknameSuccess(Bool)
@@ -75,6 +78,8 @@ final class CoupleReactor: Reactor {
             return coupleUseCase.setTerms(marketingAgree: isMarketing)
                 .map { Mutation.setTermsAgreeSuccess($0) }
                 .catchAndReturn(Mutation.setTermsAgreeSuccess(false))
+        case .checkIsJoined:
+            return .just(.setIsJoined(UserdefaultKey.joined))
         }
     }
     
@@ -102,6 +107,9 @@ final class CoupleReactor: Reactor {
             
         case .setJoinSuccess(let isSuccess):
             newState.isJoinSuccess = isSuccess
+            
+        case .setIsJoined(let isJoined):
+            newState.isJoined = isJoined
         }
         
         return newState

@@ -131,6 +131,7 @@ final class CoupleConnectViewController: UIViewController, View {
         
         if !UserdefaultKey.couple {
             reactor?.action.onNext(.issueCoupleCode)
+            reactor?.action.onNext(.checkIsJoined)
         } else {
             showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
                 self.coordinator?.showNickname(flowType: self.flowType)
@@ -227,6 +228,7 @@ final class CoupleConnectViewController: UIViewController, View {
         
         scrollview.contentSize = contentsView.frame.size
     }
+    
     func bind(reactor: CoupleReactor) {
         reactor.state
             .compactMap { $0.mycode }
@@ -234,7 +236,17 @@ final class CoupleConnectViewController: UIViewController, View {
             .subscribe(onNext: { [weak self] code in
                 guard let self = self else { return }
                 self.myCodeTextField.setMyCodeStyle(code)
-                self.coordinator?.showTermsModal()
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .compactMap { $0.isJoined }
+            .distinctUntilChanged()
+            .subscribe(onNext: { [weak self] joined in
+                guard let self = self else { return }
+                if !joined {
+                    self.coordinator?.showTermsModal()
+                }
             })
             .disposed(by: disposeBag)
         
