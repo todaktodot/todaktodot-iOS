@@ -7,6 +7,7 @@
 
 import ReactorKit
 import RxSwift
+import Foundation
 
 enum AnswerStatus {
     case bothUnanswered
@@ -30,6 +31,8 @@ final class HomeReactor: Reactor {
         case checkFirstLaunch
         case dismissNotificationAlert
         case fetchHistoryCards(startDate: String, endDate: String)
+        case fetchWeeklyCards(startDate: String, endDate: String)
+        case loadTodayCards
     }
     
     enum Mutation {
@@ -38,6 +41,7 @@ final class HomeReactor: Reactor {
         case setShowNotificationAlert(Bool)
         case setCoupleConnected(Bool)
         case setHistoryCards([QuestionCard])
+        case setTodayCards([QuestionCard])
         case setError(Error)
     }
     
@@ -47,6 +51,7 @@ final class HomeReactor: Reactor {
         var shouldShowNotificationAlert: Bool = true
         var isCoupleConnected: Bool = false
         var historyCards: [QuestionCard] = []
+        var todayCards: [QuestionCard] = []
     }
     
     let initialState = State()
@@ -77,6 +82,31 @@ final class HomeReactor: Reactor {
 //                        return .just(.setError(error))
                     }
                 }
+        case .fetchWeeklyCards(let startDate, let endDate):
+            return cardUseCase.fetchWeeklyCards(startDate: startDate, endDate: endDate)
+                .flatMap { result -> Observable<Mutation> in
+                    switch result {
+                    case .success(let cards):
+                        CardStorageService.shared.saveWeeklyCards(cards)
+                        UserdefaultKey.lastWeeklyCardDate = endDate.toDate()
+                        let todayCards = CardStorageService.shared.getTodayCards()
+                        return .just(.setTodayCards(todayCards))
+                    case .failure(let error):
+                        return .just(.setError(error))
+                    }
+                }
+        case .loadTodayCards:
+            let todayString = Date().toYYYYMMDD()
+            return cardUseCase.fetchWeeklyCards(startDate: todayString, endDate: todayString)
+                .flatMap { result -> Observable<Mutation> in
+                    switch result {
+                    case .success(let cards):
+                        return .just(.setTodayCards(cards))
+                    case .failure:
+                        let savedTodayCards = CardStorageService.shared.getTodayCards()
+                        return .just(.setTodayCards(savedTodayCards))
+                    }
+                }
         }
     }
     
@@ -93,6 +123,8 @@ final class HomeReactor: Reactor {
             newState.isCoupleConnected = connected
         case .setHistoryCards(let cards):
             newState.historyCards = cards
+        case .setTodayCards(let cards):
+            newState.todayCards = cards
         case .setError:
             break
         }

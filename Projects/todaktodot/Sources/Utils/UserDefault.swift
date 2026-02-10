@@ -38,6 +38,9 @@ enum UserdefaultKey {
     @UserDefaultCodable(key: "weeklyCards", defaultValue: [])
     static var weeklyCards: [QuestionCard]
     
+    @UserDefault(key: "lastWeeklyCardDate", defaultValue: nil)
+    static var lastWeeklyCardDate: Date?
+    
     //탈퇴시 적용
     static func resetUserDefaults() {
         

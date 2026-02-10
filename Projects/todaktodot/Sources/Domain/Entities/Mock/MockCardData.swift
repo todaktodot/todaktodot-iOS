@@ -17,7 +17,7 @@ struct MockCardData {
             title: "데이트 비용 분담",
             date: Date().addingTimeInterval(-3 * 24 * 3600),
             mode: .coffee,
-            subject: .economy,
+            subject: .economy,  
             type: .balance,
             questions: [
                 Question(
@@ -36,6 +36,7 @@ struct MockCardData {
             user2Answered: false,
             feedback: nil
         ),
+
         QuestionCard(
             id: 2,
             coupleCardId: 102,
@@ -61,6 +62,7 @@ struct MockCardData {
             user2Answered: false,
             feedback: nil
         ),
+        // 오늘 - 밸런스게임
         QuestionCard(
             id: 7,
             coupleCardId: 107,
@@ -88,6 +90,7 @@ struct MockCardData {
         )
     ]
 
+    // MARK: - History Cards (답변 완료된 카드)
     static let historyCards: [QuestionCard] = [
         QuestionCard(
             id: 11,

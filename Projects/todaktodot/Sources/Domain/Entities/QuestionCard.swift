@@ -39,7 +39,6 @@ struct Question: Codable {
     let isRequired: Bool
     let options: [QuestionOption]
 }
-}
 
 struct QuestionOption: Codable {
     let id: Int

@@ -93,7 +93,7 @@ final class HomeViewController: BaseViewController, View {
     
     private let weekCardsContainer = UIView()
     private let weekdays = ["토", "금", "목", "수", "화", "월"]
-    private var weeklyCards: [QuestionCard] = []
+    private var HistoryCards: [QuestionCard] = []
     
     init(reactor: HomeReactor) {
         super.init(nibName: nil, bundle: nil)
@@ -108,7 +108,14 @@ final class HomeViewController: BaseViewController, View {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        fetchWeeklyCards()
+        fetchHistoryCards()
+        
+        if let lastWeeklyDate = UserdefaultKey.lastWeeklyCardDate,
+           lastWeeklyDate >= Date() {
+            reactor?.action.onNext(.loadTodayCards)
+        } else {
+            fetchWeeklyCards()
+        }
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -121,11 +128,19 @@ final class HomeViewController: BaseViewController, View {
     
     func bind(reactor: HomeReactor) {
 
+        reactor.state.map { $0.todayCards }
+            .distinctUntilChanged { $0.count == $1.count }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] cards in
+                self?.updateTodayCardUI(cards)
+            })
+            .disposed(by: disposeBag)
+
         reactor.state.map { $0.historyCards }
             .distinctUntilChanged { $0.count == $1.count }
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] cards in
-                self?.weeklyCards = cards
+                self?.HistoryCards = cards
                 self?.updateWeekCards()
             })
             .disposed(by: disposeBag)
@@ -199,14 +214,14 @@ final class HomeViewController: BaseViewController, View {
         scrollView.addSubview(contentContainer)
         
         setupMainCard()
-        setupWeekCards()
+        setupHistoryCards()
         
         contentContainer.flex
             .paddingHorizontal(20)
             .paddingBottom(150)
             .define { flex in
                 flex.addItem(mainCard).marginVertical(20)
-                flex.addItem(weekCardsContainer).marginTop(!weeklyCards.isEmpty ? 36 : 28)
+                flex.addItem(weekCardsContainer).marginTop(!HistoryCards.isEmpty ? 36 : 28)
             }
     }
     
@@ -288,12 +303,12 @@ final class HomeViewController: BaseViewController, View {
         scrollView.contentSize = contentContainer.frame.size
     }
     
-    private func setupWeekCards() {
+    private func setupHistoryCards() {
         weekCardsContainer.subviews.forEach { $0.removeFromSuperview() }
         
         weekCardsContainer.flex.define { flex in
-            if !weeklyCards.isEmpty {
-                let sortedCards = weeklyCards.sorted { $0.date > $1.date }
+            if !HistoryCards.isEmpty {
+                let sortedCards = HistoryCards.sorted { $0.date > $1.date }
                 sortedCards.enumerated().forEach { index, card in
                     let cardView = createWeekCard(card: card, index: index)
                     let isLast = index == sortedCards.count - 1
@@ -365,7 +380,8 @@ final class HomeViewController: BaseViewController, View {
         return cardView
     }
     
-    private func fetchWeeklyCards() {
+    private func fetchHistoryCards() {
+        /// 월요일부터 일요일까지
         let calendar = Calendar.current
         let today = Date()
         
@@ -374,20 +390,39 @@ final class HomeViewController: BaseViewController, View {
             return
         }
         
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        
-        let startDate = dateFormatter.string(from: startOfWeek)
-        let endDate = dateFormatter.string(from: endOfWeek)
-        
+        let startDate = startOfWeek.toYYYYMMDD()
+        let endDate = endOfWeek.toYYYYMMDD()
         reactor?.action.onNext(.fetchHistoryCards(startDate: startDate, endDate: endDate))
+    }
+    
+    private func fetchWeeklyCards() {
+        /// 오늘부터 다음 일요일까지
+        let calendar = Calendar.current
+        let today = Date()
+        
+        guard let nextSunday = calendar.nextDate(after: today, matching: DateComponents(weekday: 1), matchingPolicy: .nextTime) else {
+            return
+        }
+        
+        let startDate = today.toYYYYMMDD()
+        let endDate = nextSunday.toYYYYMMDD()
+        reactor?.action.onNext(.fetchWeeklyCards(startDate: startDate, endDate: endDate))
     }
     
     private func updateWeekCards() {
         weekCardsContainer.flex.markDirty()
-        setupWeekCards()
+        setupHistoryCards()
         weekCardsContainer.flex.layout()
         view.setNeedsLayout()
+    }
+    
+    private func updateTodayCardUI(_ cards: [QuestionCard]) {
+        guard let firstCard = cards.first else { return }
+        
+        chip1.updateTitle("\(firstCard.mode.displayName)")
+        chip2.updateTitle("\(firstCard.subject.displayName)")
+        
+        // TODO: 답변 상태에 따라 answerStatus 업데이트
     }
        
     private func createEmptyWeekView() -> UIView {
@@ -438,7 +473,7 @@ final class HomeViewController: BaseViewController, View {
     
     @objc private func weekCardTapped(_ sender: UITapGestureRecognizer) {
         guard let tappedView = sender.view,
-              let card = weeklyCards.first(where: { $0.id == tappedView.tag }) else {
+              let card = HistoryCards.first(where: { $0.id == tappedView.tag }) else {
             return
         }
         coordinator?.showHistoryCardDetail(card: card)
@@ -560,6 +595,14 @@ private final class ChipView: UIView {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    func updateTitle(_ title: String) {
+        label.text = title
+        label.sizeToFit()
+        calculatedWidth = label.frame.width + 28
+        invalidateIntrinsicContentSize()
+        setNeedsLayout()
     }
     
     override func layoutSubviews() {
