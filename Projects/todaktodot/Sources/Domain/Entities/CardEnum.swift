@@ -1,5 +1,5 @@
 //
-//  CardType.swift
+//  CardEnum.swift
 //  todaktodot
 //
 //  Created by daye on 2/9/26.
@@ -19,18 +19,17 @@ enum CardType: String, Codable {
     }
 }
 
+// TODO: 이모지 추가
 enum CardMode: String, Codable, CaseIterable {
     case whiskey = "WHISKEY"
     case dessert = "DESSERT"
     case coffee = "COFFEE"
-    case unknown = "UNKNOWN"
 
     var displayName: String {
         switch self {
         case .whiskey: return "위스키"
         case .dessert: return "디저트"
         case .coffee:  return "커피"
-        case .unknown: return "기타"
         }
     }
 }
@@ -45,6 +44,18 @@ enum CardSubject: String, Codable, CaseIterable {
         case .love:      return "사랑"
         case .lifestyle: return "라이프스타일"
         case .economy:   return "경제"
+        }
+    }
+}
+
+enum QuestionType: String, Codable {
+    case multipleChoice = "MULTIPLE_CHOICE"
+    case subjective = "SUBJECTIVE"
+    
+    var displayName: String {
+        switch self {
+        case .multipleChoice: return "객관식"
+        case .subjective: return "주관식"
         }
     }
 }

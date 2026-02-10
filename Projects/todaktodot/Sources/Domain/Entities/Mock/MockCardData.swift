@@ -11,20 +11,19 @@ struct MockCardData {
     
     // MARK: - Daily Cards (답변 안 한 카드들)
     static let dailyCards: [QuestionCard] = [
-        // 3일 전 - 밸런스게임
         QuestionCard(
             id: 1,
             coupleCardId: 101,
             title: "데이트 비용 분담",
             date: Date().addingTimeInterval(-3 * 24 * 3600),
-            mode: .coffee,       // 깔끔-
-            subject: .economy,    // 깔끔-
+            mode: .coffee,
+            subject: .economy,
             type: .balance,
             questions: [
                 Question(
                     number: 1,
                     content: "데이트 비용을 어떻게 분담하시나요?",
-                    type: "객관식",
+                    type: .multipleChoice,
                     isRequired: true,
                     options: [
                         QuestionOption(id: 1, text: "완전히 반반"),
@@ -37,12 +36,11 @@ struct MockCardData {
             user2Answered: false,
             feedback: nil
         ),
-        // 3일 전 - 상황극
         QuestionCard(
             id: 2,
             coupleCardId: 102,
             title: "주말 약속 생겼을 때",
-            date: Date().addingTimeInterval(-3 * 24 * 3600),
+            date: Date().addingTimeInterval(-2 * 24 * 3600),
             mode: .dessert,
             subject: .lifestyle,
             type: .situation,
@@ -50,7 +48,7 @@ struct MockCardData {
                 Question(
                     number: 1,
                     content: "갑자기 주말에 약속이 생겼다면?",
-                    type: "객관식",
+                    type: .multipleChoice,
                     isRequired: true,
                     options: [
                         QuestionOption(id: 1, text: "연인과 먼저 상의한다"),
@@ -63,7 +61,6 @@ struct MockCardData {
             user2Answered: false,
             feedback: nil
         ),
-        // 오늘 - 밸런스게임
         QuestionCard(
             id: 7,
             coupleCardId: 107,
@@ -76,7 +73,7 @@ struct MockCardData {
                 Question(
                     number: 1,
                     content: "여행 갈 때 선호하는 스타일은?",
-                    type: "객관식",
+                    type: .multipleChoice,
                     isRequired: true,
                     options: [
                         QuestionOption(id: 1, text: "계획적으로 일정 짜기"),
@@ -91,7 +88,6 @@ struct MockCardData {
         )
     ]
 
-    // MARK: - History Cards (답변 완료된 카드)
     static let historyCards: [QuestionCard] = [
         QuestionCard(
             id: 11,
@@ -105,7 +101,7 @@ struct MockCardData {
                 Question(
                     number: 1,
                     content: "첫 데이트로 어디가 좋을까요?",
-                    type: "객관식",
+                    type: .multipleChoice,
                     isRequired: true,
                     options: [
                         QuestionOption(id: 1, text: "카페"),
@@ -136,7 +132,7 @@ struct MockCardData {
                 Question(
                     number: 1,
                     content: "여유 자금이 생긴다면?",
-                    type: "객관식",
+                    type: .multipleChoice,
                     isRequired: true,
                     options: [
                         QuestionOption(id: 1, text: "저축/투자"),

@@ -12,8 +12,8 @@ struct QuestionCard: Codable {
     let coupleCardId: Int
     let title: String
     let date: Date
-    let mode: String
-    let subject: String
+    let mode: CardMode
+    let subject: CardSubject
     let type: CardType
     let questions: [Question]
     
@@ -35,9 +35,10 @@ struct QuestionCard: Codable {
 struct Question: Codable {
     let number: Int
     let content: String
-    let type: String
+    let type: QuestionType
     let isRequired: Bool
     let options: [QuestionOption]
+}
 }
 
 struct QuestionOption: Codable {
