@@ -17,9 +17,16 @@ enum CardType: String, Codable {
         case .balance: return "밸런스게임"
         }
     }
+    
+    var emoji: String {
+        switch self {
+        case .situation: return "🎭"
+        case .balance: return "⚖️"
+        }
+    }
 }
 
-// TODO: 이모지 추가
+// TODO: 이모지
 enum CardMode: String, Codable, CaseIterable {
     case whiskey = "WHISKEY"
     case dessert = "DESSERT"
@@ -30,6 +37,14 @@ enum CardMode: String, Codable, CaseIterable {
         case .whiskey: return "위스키"
         case .dessert: return "디저트"
         case .coffee:  return "커피"
+        }
+    }
+    
+    var emoji: String {
+        switch self {
+        case .whiskey: return "🥃"
+        case .dessert: return "🍰"
+        case .coffee:  return "☕️"
         }
     }
 }
@@ -44,6 +59,14 @@ enum CardSubject: String, Codable, CaseIterable {
         case .love:      return "사랑"
         case .lifestyle: return "라이프스타일"
         case .economy:   return "경제"
+        }
+    }
+    
+    var emoji: String {
+        switch self {
+        case .love:      return "❤️"
+        case .lifestyle: return "❤️"
+        case .economy:   return "❤️"
         }
     }
 }

@@ -62,12 +62,16 @@ extension DailyCardResponseDTO {
                         isRequired: q.answerReqYn == "Y",
                         options: q.options?.map {
                             QuestionOption(id: $0.optionNo, text: $0.optionCnts)
-                        } ?? []
+                        } ?? [],
+                        user1Answer: nil,
+                        user2Answer: nil
                     )
                 },
                 isSelected: false,
                 user1Answered: false,
                 user2Answered: false,
+                userId1: nil,
+                userId2: nil,
                 feedback: nil
             )
         }

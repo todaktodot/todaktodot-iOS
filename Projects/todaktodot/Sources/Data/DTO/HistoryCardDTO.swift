@@ -80,12 +80,16 @@ extension CardHistoryResponseDTO {
                         isRequired: q.answerRequired ?? false,
                         options: q.options?.map {
                             QuestionOption(id: $0.optionNo, text: $0.optionContent)
-                        } ?? []
+                        } ?? [],
+                        user1Answer: q.user1Answer,
+                        user2Answer: q.user2Answer
                     )
                 } ?? [],
                 isSelected: card.selected,
                 user1Answered: card.user1Answered ?? false,
                 user2Answered: card.user2Answered ?? false,
+                userId1: card.userId1,
+                userId2: card.userId2,
                 feedback: card.feedback.map { f in
                     CardFeedback(
                         id: f.feedbackId,

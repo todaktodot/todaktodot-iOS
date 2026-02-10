@@ -21,6 +21,8 @@ struct QuestionCard: Codable {
     let isSelected: Bool
     let user1Answered: Bool
     let user2Answered: Bool
+    let userId1: Int?
+    let userId2: Int?
     let feedback: CardFeedback?
 
     var isBothAnswered: Bool {
@@ -38,6 +40,8 @@ struct Question: Codable {
     let type: QuestionType
     let isRequired: Bool
     let options: [QuestionOption]
+    let user1Answer: String?
+    let user2Answer: String?
 }
 
 struct QuestionOption: Codable {
