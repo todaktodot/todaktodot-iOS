@@ -20,7 +20,7 @@ final class DailyCardDetailViewController: UIViewController {
     weak var coordinator: HomeCoordinator?
     private let cardType: CardType
     
-    init(cardType: CardType = .situation) {
+    init(cardType: CardType = .roleplay) {
         self.cardType = cardType
         super.init(nibName: nil, bundle: nil)
         hidesBottomBarWhenPushed = true
