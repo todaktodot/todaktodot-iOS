@@ -71,6 +71,29 @@ final class AlertViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        setupInitialState()
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        animateIn()
+    }
+    
+    private func setupInitialState() {
+        dimmedView.alpha = 0
+        alertContainer.alpha = 0
+        alertContainer.transform = CGAffineTransform(translationX: 0, y: 100)
+    }
+    
+    private func animateIn() {
+        UIView.animate(withDuration: 0.2, delay: 0, options: .curveEaseOut) {
+            self.dimmedView.alpha = 1
+        }
+        
+        UIView.animate(withDuration: 0.4, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.8, options: .curveEaseOut) {
+            self.alertContainer.alpha = 1
+            self.alertContainer.transform = .identity
+        }
     }
     
     override func viewDidLayoutSubviews() {
@@ -210,14 +233,28 @@ final class AlertViewController: UIViewController {
     }
     
     @objc private func primaryButtonTapped() {
-        dismiss(animated: true) { [weak self] in
-            self?.config.primaryButtonAction()
+        animateOut { [weak self] in
+            self?.dismiss(animated: false) {
+                self?.config.primaryButtonAction()
+            }
         }
     }
     
     @objc private func secondaryButtonTapped() {
-        dismiss(animated: true) { [weak self] in
-            self?.config.secondaryButtonAction?()
+        animateOut { [weak self] in
+            self?.dismiss(animated: false) {
+                self?.config.secondaryButtonAction?()
+            }
+        }
+    }
+    
+    private func animateOut(completion: @escaping () -> Void) {
+        UIView.animate(withDuration: 0.2, delay: 0, options: .curveEaseIn) {
+            self.dimmedView.alpha = 0
+            self.alertContainer.alpha = 0
+            self.alertContainer.transform = CGAffineTransform(translationX: 0, y: 100)
+        } completion: { _ in
+            completion()
         }
     }
 }
