@@ -96,7 +96,7 @@ final class HomeCoordinator: Coordinator {
     }
     
     func showDailyCardDetail() {
-        let dailyCardDetailViewController = DailyCardDetailViewController(cardType: .situation)
+        let dailyCardDetailViewController = DailyCardDetailViewController(cardType: .roleplay)
         dailyCardDetailViewController.coordinator = self
         dailyCardDetailViewController.hidesBottomBarWhenPushed = true
         navigationController.pushViewController(dailyCardDetailViewController, animated: true)

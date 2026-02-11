@@ -42,6 +42,7 @@ struct MockCardData {
                     user2Answer: nil
                 )
             ],
+            situation: "비용",
             isSelected: false,
             user1Answered: false,
             user2Answered: false,
@@ -81,6 +82,7 @@ struct MockCardData {
                     user2Answer: nil
                 )
             ],
+            situation: "약속",
             isSelected: false,
             user1Answered: false,
             user2Answered: false,
@@ -120,6 +122,7 @@ struct MockCardData {
                     user2Answer: nil
                 )
             ],
+            situation: "여행",
             isSelected: false,
             user1Answered: false,
             user2Answered: false,
@@ -162,6 +165,7 @@ struct MockCardData {
                     user2Answer: "조용하고 분위기 좋아서"
                 )
             ],
+            situation: "데이트",
             isSelected: true,
             user1Answered: true,
             user2Answered: true,
@@ -206,6 +210,7 @@ struct MockCardData {
                     user2Answer: "지금 이 순간을 즐기고 싶어서"
                 )
             ],
+            situation: "가치관",
             isSelected: true,
             user1Answered: true,
             user2Answered: true,
@@ -250,6 +255,7 @@ struct MockCardData {
                     user2Answer: nil
                 )
             ],
+            situation: "갈등",
             isSelected: true,
             user1Answered: true,
             user2Answered: true,
@@ -294,6 +300,7 @@ struct MockCardData {
                     user2Answer: "각자 시간도 필요해서"
                 )
             ],
+            situation: "빈도",
             isSelected: true,
             user1Answered: true,
             user2Answered: true,
@@ -338,6 +345,7 @@ struct MockCardData {
                     user2Answer: nil
                 )
             ],
+            situation: "주말",
             isSelected: true,
             user1Answered: true,
             user2Answered: false,
@@ -376,6 +384,7 @@ struct MockCardData {
                     user2Answer: nil
                 )
             ],
+            situation: "선물",
             isSelected: true,
             user1Answered: false,
             user2Answered: false,

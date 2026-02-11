@@ -33,7 +33,7 @@ final class DailyCardReactor: Reactor {
         case .tapBackButton:
             return .just(.setDismiss(true))
         case .tapSituationButton:
-            return .just(.navigateToDetail(.situation))
+            return .just(.navigateToDetail(.roleplay))
         case .tapBalanceButton:
             return .just(.navigateToDetail(.balance))
         }

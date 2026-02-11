@@ -16,6 +16,7 @@ struct QuestionCard: Codable {
     let subject: CardSubject
     let type: CardType
     let questions: [Question]
+    let situation: String
     
     // + 히스토리
     let isSelected: Bool

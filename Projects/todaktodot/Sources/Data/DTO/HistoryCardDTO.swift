@@ -20,7 +20,7 @@ struct HistoryCardDTO: Decodable {
     let mode: CardMode?
     let subject: CardSubject?
     let selected: Bool?
-    
+    let situation: String?
     let coupleCardId: Int?
     let cardId: Int?
     let cardTitle: String?
@@ -87,6 +87,7 @@ extension CardHistoryResponseDTO {
                         user2Answer: q.user2Answer
                     )
                 } ?? [],
+                situation: card.situation ?? "",
                 isSelected: card.selected ?? false,
                 user1Answered: card.user1Answered ?? false,
                 user2Answered: card.user2Answered ?? false,

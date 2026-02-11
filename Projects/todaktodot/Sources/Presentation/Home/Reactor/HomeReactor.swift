@@ -46,7 +46,7 @@ final class HomeReactor: Reactor {
     }
     
     struct State {
-        var answerStatus: AnswerStatus = .myAnswered
+        var answerStatus: AnswerStatus = .bothUnanswered
         var isPoked: Bool = false
         var shouldShowNotificationAlert: Bool = true
         var isCoupleConnected: Bool = false

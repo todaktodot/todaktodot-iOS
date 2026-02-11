@@ -184,7 +184,7 @@ final class DailyCardDetailViewController: UIViewController {
     private func createModeLabel(_ text: String) -> UILabel {
         return TDLabel().then {
             $0.text = text
-            $0.font = .pretenMedium(14)
+            $0.font = .pretenMedium(12)
             $0.textColor = .white
             $0.backgroundColor = .clear
             $0.layer.cornerRadius = 18
@@ -199,7 +199,7 @@ final class DailyCardDetailViewController: UIViewController {
     private func setupSituation() {
         let situationTitle = TDLabel().then {
             $0.text = "🍽️ 레스토랑 데이트"
-            $0.font = .pretenSemiBold(18)
+            $0.font = .pretenSemiBold(14)
             $0.textColor = .mainPurple
         }
         

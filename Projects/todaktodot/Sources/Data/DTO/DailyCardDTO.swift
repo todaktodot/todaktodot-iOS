@@ -18,6 +18,7 @@ struct DailyCardDTO: Decodable {
     let cardId: Int
     let issuedDate: String
     let cardTitle: String
+    let situation: String?
     let mode: CardMode
     let subject: CardSubject
     let type: CardType
@@ -67,6 +68,7 @@ extension DailyCardResponseDTO {
                         user2Answer: nil
                     )
                 },
+                situation: card.situation ?? "",
                 isSelected: false,
                 user1Answered: false,
                 user2Answered: false,
