@@ -124,25 +124,6 @@ final class HomeViewController: BaseViewController, View {
             showNotificationAlert()
             UserdefaultKey.isInitialLogin = false
         }
-        
-        // TODO: 테스트용 - 확인 후 삭제
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-            self.updateTodayCardUI(MockCardData.dailyCards)
-        }
-        
-        // TODO: 테스트용 answerStatus 변경 - 확인 후 삭제
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-            self.reactor?.action.onNext(.updateAnswerStatus(.bothUnanswered))
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) {
-            self.reactor?.action.onNext(.updateAnswerStatus(.partnerAnswered))
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) {
-            self.reactor?.action.onNext(.updateAnswerStatus(.myAnswered))
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 10.0) {
-            self.reactor?.action.onNext(.updateAnswerStatus(.bothAnswered))
-        }
     }
     
     func bind(reactor: HomeReactor) {
@@ -151,10 +132,7 @@ final class HomeViewController: BaseViewController, View {
             .distinctUntilChanged { $0.count == $1.count }
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] cards in
-                // TODO: 테스트용 딜레이 - 나중에 제거
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    self?.updateTodayCardUI(cards)
-                }
+                self?.updateTodayCardUI(cards)
             })
             .disposed(by: disposeBag)
         
@@ -171,12 +149,9 @@ final class HomeViewController: BaseViewController, View {
             .distinctUntilChanged { $0.count == $1.count }
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] cards in
-                // TODO: 테스트용 딜레이 - 나중에 제거
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    self?.isLoadingHistoryCards = false
-                    self?.HistoryCards = cards
-                    self?.updateWeekCards()
-                }
+                self?.isLoadingHistoryCards = false
+                self?.HistoryCards = cards
+                self?.updateWeekCards()
             })
             .disposed(by: disposeBag)
         
@@ -430,7 +405,7 @@ extension HomeViewController {
         chip2.flex.width(chip2.intrinsicContentSize.width)
         chip1.superview?.flex.layout(mode: .adjustWidth)
         
-        // TODO: 답변 상태에 따라 answerStatus 업데이트
+        // TODO: 카드 모드 선택 완료시 다음줄에 칩뷰 1개 추가
     }
        
     private func updateButtonForMyAnswered(status: AnswerStatus, isCoupleConnected: Bool) {

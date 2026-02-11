@@ -26,6 +26,7 @@ final class HistoryCardDetailViewController: UIViewController {
     }
 
     private let questionLabel = TDLabel().then {
+        $0.text = "이런 상황에서\n나는 어떻게 행동할까요?"
         $0.font = .pretenSemiBold(24)
         $0.textColor = .grayScale900
         $0.numberOfLines = 0
@@ -68,13 +69,8 @@ final class HistoryCardDetailViewController: UIViewController {
         super.viewDidLoad()
         hidesBottomBarWhenPushed = true
         setupUI()
-        configureContent()
     }
-    
-    private func configureContent() {
-        questionLabel.text = multipleChoice?.content
-    }
-    
+
     private func setupUI() {
         view.backgroundColor = .lightPurple
         
@@ -388,7 +384,7 @@ final class HistoryCardDetailViewController: UIViewController {
         }
         
         let statusLabel = TDLabel().then {
-            $0.text = "🔄 답변 공개 완료!"
+            $0.text = "답변 공개 완료!"
             $0.font = .pretenMedium(16)
             $0.textColor = .grayScale900
         }
