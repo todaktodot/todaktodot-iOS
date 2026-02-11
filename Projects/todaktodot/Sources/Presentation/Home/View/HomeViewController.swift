@@ -55,7 +55,6 @@ final class HomeViewController: BaseViewController, View {
             attributes: [.paragraphStyle: paragraphStyle]
         )
     }
-//    private let chipContainer = UIView()
     private let chip1 = ChipView(title: "🍰 디저트모드")
     private let chip2 = ChipView(title: "💸 경제관")
     private let arrowButton = UIButton().then {
@@ -93,6 +92,8 @@ final class HomeViewController: BaseViewController, View {
     
     private let weekCardsContainer = UIView()
     private var HistoryCards: [QuestionCard] = []
+    private var isLoadingHistoryCards = true
+    private let shimmerLayer = CAGradientLayer()
     
     init(reactor: HomeReactor) {
         super.init(nibName: nil, bundle: nil)
@@ -123,6 +124,25 @@ final class HomeViewController: BaseViewController, View {
             showNotificationAlert()
             UserdefaultKey.isInitialLogin = false
         }
+        
+        // TODO: 테스트용 - 확인 후 삭제
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            self.updateTodayCardUI(MockCardData.dailyCards)
+        }
+        
+        // TODO: 테스트용 answerStatus 변경 - 확인 후 삭제
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+            self.reactor?.action.onNext(.updateAnswerStatus(.bothUnanswered))
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) {
+            self.reactor?.action.onNext(.updateAnswerStatus(.partnerAnswered))
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) {
+            self.reactor?.action.onNext(.updateAnswerStatus(.myAnswered))
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10.0) {
+            self.reactor?.action.onNext(.updateAnswerStatus(.bothAnswered))
+        }
     }
     
     func bind(reactor: HomeReactor) {
@@ -131,21 +151,39 @@ final class HomeViewController: BaseViewController, View {
             .distinctUntilChanged { $0.count == $1.count }
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] cards in
-                self?.updateTodayCardUI(cards)
-            })
-            .disposed(by: disposeBag)
-
-        reactor.state.map { $0.historyCards }
-            .distinctUntilChanged { $0.count == $1.count }
-            .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] cards in
-                self?.HistoryCards = cards
-                self?.updateWeekCards()
+                // TODO: 테스트용 딜레이 - 나중에 제거
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    self?.updateTodayCardUI(cards)
+                }
             })
             .disposed(by: disposeBag)
         
         reactor.state.map { $0.answerStatus }
             .distinctUntilChanged()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] status in
+                self?.updateMainCard(for: status)
+            })
+            .disposed(by: disposeBag)
+
+        reactor.state.map { $0.historyCards }
+            .skip(1)
+            .distinctUntilChanged { $0.count == $1.count }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] cards in
+                // TODO: 테스트용 딜레이 - 나중에 제거
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    self?.isLoadingHistoryCards = false
+                    self?.HistoryCards = cards
+                    self?.updateWeekCards()
+                }
+            })
+            .disposed(by: disposeBag)
+        
+        let answerStatusStream = reactor.state.map { $0.answerStatus }.distinctUntilChanged()
+        let coupleConnectedStream = reactor.state.map { $0.isCoupleConnected }.distinctUntilChanged()
+        
+        answerStatusStream
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] status in
                 self?.updateMainCard(for: status)
@@ -159,9 +197,6 @@ final class HomeViewController: BaseViewController, View {
                 self?.updatePokeButton(isPoked: isPoked)
             })
             .disposed(by: disposeBag)
-        
-        let answerStatusStream = reactor.state.map { $0.answerStatus }.distinctUntilChanged()
-        let coupleConnectedStream = reactor.state.map { $0.isCoupleConnected }.distinctUntilChanged()
         
         Observable.combineLatest(answerStatusStream, coupleConnectedStream)
             .observe(on: MainScheduler.instance)
@@ -213,16 +248,93 @@ final class HomeViewController: BaseViewController, View {
         scrollView.addSubview(contentContainer)
         
         setupMainCard()
-        setupHistoryCards()
         
         contentContainer.flex
             .paddingHorizontal(20)
             .paddingBottom(150)
             .define { flex in
                 flex.addItem(mainCard).marginVertical(20)
-                flex.addItem(weekCardsContainer).marginTop(!HistoryCards.isEmpty ? 36 : 28)
+                flex.addItem(weekCardsContainer).marginTop(36)
             }
     }
+    
+    private func updateWeekCards() {
+        weekCardsContainer.flex.markDirty()
+        setupHistoryCards()
+        weekCardsContainer.flex.layout()
+        view.setNeedsLayout()
+    }
+    
+    private func fetchHistoryCards() {
+        /// 월요일부터 오늘까지
+        setupHistoryCards()
+        
+        var calendar = Calendar.current
+            calendar.firstWeekday = 2
+            
+            let today = Date()
+            let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)
+            guard let startOfWeek = calendar.date(from: components) else { return }
+            
+            let startDate = startOfWeek.toYYYYMMDD()
+            let endDate = today.toYYYYMMDD()
+            
+            print("📅 조회 범위: \(startDate) ~ \(endDate)")
+            reactor?.action.onNext(.fetchHistoryCards(startDate: startDate, endDate: endDate))
+    }
+    
+    private func fetchWeeklyCards() {
+        /// 오늘부터 다음 일요일까지
+        let calendar = Calendar.current
+        let today = Date()
+        
+        guard let nextSunday = calendar.nextDate(after: today, matching: DateComponents(weekday: 1), matchingPolicy: .nextTime) else {
+            return
+        }
+        
+        let startDate = today.toYYYYMMDD()
+        let endDate = nextSunday.toYYYYMMDD()
+        reactor?.action.onNext(.fetchWeeklyCards(startDate: startDate, endDate: endDate))
+    }
+    
+    @objc private func showInfoPopup() {
+        let popupView = InfoPopupView()
+        popupView.show(in: view, alignedWith: mainCard)
+    }
+    
+    private func updatePokeButton(isPoked: Bool) {
+        if isPoked {
+            pokeButton.backgroundColor = .grayScale300
+            pokeButton.isEnabled = false
+        } else {
+            pokeButton.backgroundColor = TodotColors.Button.purpleButton1
+            pokeButton.isEnabled = true
+        }
+    }
+    
+    private func openAppSettings() {
+        if let appSettings = URL(string: UIApplication.openSettingsURLString) {
+            if UIApplication.shared.canOpenURL(appSettings) {
+                UIApplication.shared.open(appSettings)
+            }
+        }
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        
+        gradientLayer.frame = view.bounds
+        
+        scrollView.pin.all(view.pin.safeArea)
+        contentContainer.pin.top().left().right()
+        
+        contentContainer.flex.layout(mode: .adjustHeight)
+        scrollView.contentSize = contentContainer.frame.size
+    }
+}
+
+// MARK: - MainCard UI
+extension HomeViewController {
     
     private func setupMainCard() {
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(showInfoPopup))
@@ -247,8 +359,8 @@ final class HomeViewController: BaseViewController, View {
                 flex.addItem(titleLabel).marginTop(8)
                 flex.addItem().direction(.row).justifyContent(.spaceBetween).alignItems(.end).marginTop(16).marginRight(22).define { rowFlex in
                     rowFlex.addItem().direction(.row).define { chipFlex in
-                        chipFlex.addItem(chip1).height(37)
-                        chipFlex.addItem(chip2).height(37).marginLeft(4)
+                        chipFlex.addItem(chip1).height(37).width(chip1.intrinsicContentSize.width)
+                        chipFlex.addItem(chip2).height(37).width(chip2.intrinsicContentSize.width).marginLeft(4)
                     }
                     rowFlex.addItem(arrowButton).marginLeft(47).size(48)
                 }
@@ -276,7 +388,7 @@ final class HomeViewController: BaseViewController, View {
             
         case .partnerAnswered:
             titleLabel.attributedText = NSAttributedString(
-                string: "연인이 벌써 답했어요! 내가 답하면 바로\n확인할 수 있어요",
+                string: "연인이 벌써 답했어요!\n내가 답하면 바로\n확인할 수 있어요",
                 attributes: [.paragraphStyle: paragraphStyle]
             )
             pokeButton.isHidden = true
@@ -297,136 +409,53 @@ final class HomeViewController: BaseViewController, View {
             pokeButton.isHidden = true
         }
         
-        mainCard.flex.layout(mode: .adjustHeight)
+        titleLabel.flex.markDirty()
+        mainCard.flex.markDirty()
         contentContainer.flex.layout(mode: .adjustHeight)
         scrollView.contentSize = contentContainer.frame.size
-    }
-    
-    private func setupHistoryCards() {
-        weekCardsContainer.subviews.forEach { $0.removeFromSuperview() }
-        
-        weekCardsContainer.flex.define { flex in
-            if !HistoryCards.isEmpty {
-                let sortedCards = HistoryCards.sorted { $0.date > $1.date }
-                sortedCards.enumerated().forEach { index, card in
-                    let cardView = createWeekCard(card: card, index: index)
-                    let isLast = index == sortedCards.count - 1
-                    flex.addItem(cardView)
-                        .height(isLast ? 83 : 83 + 60)
-                        .marginTop(index == 0 ? 0 : -60)
-                }
-            } else {
-                let emptyView = createEmptyWeekView()
-                flex.addItem(emptyView)
-            }
-        }
-    }
-    
-    private func createWeekCard(card: QuestionCard, index: Int) -> UIView {
-        let cardView = UIView()
-        
-        if index % 2 == 0 {
-            cardView.backgroundColor = UIColor.lightCardPurple
-        } else {
-            cardView.backgroundColor = UIColor.cardPurple
-        }
-        
-        cardView.layer.cornerRadius = 20
-        cardView.layer.shadowColor = UIColor(hex: "774F92").cgColor
-        cardView.layer.shadowOpacity = 0.08
-        cardView.layer.shadowOffset = CGSize(width: 0, height: -8)
-        cardView.layer.shadowRadius = 15
-        
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "M/d"
-        let dateString = dateFormatter.string(from: card.date)
-        
-        dateFormatter.dateFormat = "E"
-        dateFormatter.locale = Locale(identifier: "ko_KR")
-        let weekday = dateFormatter.string(from: card.date)
-        
-        let dayLabel = TDLabel()
-        dayLabel.text = "\(weekday) \(dateString)"
-        dayLabel.font = .pretenSemiBold(16)
-        dayLabel.textColor = .grayScale900
-        
-        let topicLabel = TDLabel()
-        topicLabel.text = "\(card.mode.displayName) · \(card.subject.displayName) · \(card.type.displayName)"
-        topicLabel.font = .pretenRegular(14)
-        topicLabel.textColor = .grayScale800
-        
-        let arrowIcon = UIImageView()
-        arrowIcon.image = UIImage(systemName: "chevron.right")
-        arrowIcon.tintColor = .grayScale800
-        arrowIcon.contentMode = .scaleAspectFit
-        
-        cardView.addSubview(dayLabel)
-        cardView.addSubview(topicLabel)
-        cardView.addSubview(arrowIcon)
-        
-        cardView.flex
-            .padding(20)
-            .define { flex in
-                flex.addItem(arrowIcon).position(.absolute).right(20).top(33.5).size(16)
-                flex.addItem(dayLabel)
-                flex.addItem(topicLabel).marginTop(8)
-            }
-        
-        cardView.tag = card.id // 카드 ID를 tag에 저장
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(weekCardTapped(_:)))
-        cardView.addGestureRecognizer(tapGesture)
-        
-        return cardView
-    }
-    
-    private func fetchHistoryCards() {
-        /// 월요일부터 일요일까지
-        var calendar = Calendar.current
-            calendar.firstWeekday = 2
-            
-            let today = Date()
-            let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)
-            guard let startOfWeek = calendar.date(from: components) else { return }
-            
-            guard let endOfWeek = calendar.date(byAdding: .day, value: 6, to: startOfWeek) else { return }
-            
-            let startDate = startOfWeek.toYYYYMMDD()
-            let endDate = endOfWeek.toYYYYMMDD()
-            
-            print("📅 조회 범위: \(startDate) ~ \(endDate)")
-            reactor?.action.onNext(.fetchHistoryCards(startDate: startDate, endDate: endDate))
-    }
-    
-    private func fetchWeeklyCards() {
-        /// 오늘부터 다음 일요일까지
-        let calendar = Calendar.current
-        let today = Date()
-        
-        guard let nextSunday = calendar.nextDate(after: today, matching: DateComponents(weekday: 1), matchingPolicy: .nextTime) else {
-            return
-        }
-        
-        let startDate = today.toYYYYMMDD()
-        let endDate = nextSunday.toYYYYMMDD()
-        reactor?.action.onNext(.fetchWeeklyCards(startDate: startDate, endDate: endDate))
-    }
-    
-    private func updateWeekCards() {
-        weekCardsContainer.flex.markDirty()
-        setupHistoryCards()
-        weekCardsContainer.flex.layout()
-        view.setNeedsLayout()
     }
     
     private func updateTodayCardUI(_ cards: [QuestionCard]) {
         guard let firstCard = cards.first else { return }
         
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "ko_KR")
+        dateFormatter.dateFormat = "yyyy년 M월 d일 EEEE"
+        yearLabel.text = dateFormatter.string(from: firstCard.date)
+        
         chip1.updateTitle("\(firstCard.mode.emoji)" + " " + "\(firstCard.mode.displayName)")
         chip2.updateTitle("\(firstCard.subject.emoji)" + " " + "\(firstCard.subject.displayName)")
+        
+        chip1.flex.width(chip1.intrinsicContentSize.width)
+        chip2.flex.width(chip2.intrinsicContentSize.width)
+        chip1.superview?.flex.layout(mode: .adjustWidth)
         
         // TODO: 답변 상태에 따라 answerStatus 업데이트
     }
        
+    private func updateButtonForMyAnswered(status: AnswerStatus, isCoupleConnected: Bool) {
+        guard status == .myAnswered else { return }
+        
+        if isCoupleConnected {
+            pokeButton.setTitle("콕 찌르기", for: .normal)
+            pokeButton.setImage(nil, for: .normal)
+            pokeButton.imageEdgeInsets = .zero
+            pokeButton.titleEdgeInsets = .zero
+        } else {
+            pokeButton.setTitle("커플 연결하기", for: .normal)
+            if let heartLinkImage = UIImage(named: "heart_link") {
+                let resizedImage = heartLinkImage.resizedWithBetterQuality(to: CGSize(width: 28, height: 28))
+                pokeButton.setImage(resizedImage, for: .normal)
+                pokeButton.imageEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 8)
+                pokeButton.titleEdgeInsets = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 0)
+            }
+        }
+    }
+}
+
+// MARK: - HistoryCard UI
+extension HomeViewController {
+    
     private func createEmptyWeekView() -> UIView {
         let container = UIView()
         container.backgroundColor = .clear
@@ -484,26 +513,165 @@ final class HomeViewController: BaseViewController, View {
             coordinator?.showHistoryCardDetail(card: card)
         }
     }
-
-    private func updateButtonForMyAnswered(status: AnswerStatus, isCoupleConnected: Bool) {
-        guard status == .myAnswered else { return }
+    
+    private func setupHistoryCards() {
+        weekCardsContainer.subviews.forEach { $0.removeFromSuperview() }
+        weekCardsContainer.layer.sublayers?.removeAll(where: { $0 is CAGradientLayer })
         
-        if isCoupleConnected {
-            pokeButton.setTitle("콕 찌르기", for: .normal)
-            pokeButton.setImage(nil, for: .normal)
-            pokeButton.imageEdgeInsets = .zero
-            pokeButton.titleEdgeInsets = .zero
-        } else {
-            pokeButton.setTitle("커플 연결하기", for: .normal)
-            if let heartLinkImage = UIImage(named: "heart_link") {
-                let resizedImage = heartLinkImage.resizedWithBetterQuality(to: CGSize(width: 28, height: 28))
-                pokeButton.setImage(resizedImage, for: .normal)
-                pokeButton.imageEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 8)
-                pokeButton.titleEdgeInsets = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 0)
+        if isLoadingHistoryCards {
+            showSkeletonCard()
+            return
+        }
+        
+        weekCardsContainer.flex.define { flex in
+            if !HistoryCards.isEmpty {
+                let sortedCards = HistoryCards.sorted { $0.date > $1.date }
+                sortedCards.enumerated().forEach { index, card in
+                    let cardView = createWeekCard(card: card, index: index)
+                    let isLast = index == sortedCards.count - 1
+                    flex.addItem(cardView)
+                        .height(isLast ? 83 : 83 + 60)
+                        .marginTop(index == 0 ? 0 : -60)
+                }
+            } else {
+                let emptyView = createEmptyWeekView()
+                flex.addItem(emptyView)
+            }
+        }
+        
+        weekCardsContainer.flex.layout()
+        weekCardsContainer.pin.width(view.frame.width - 40)
+        
+        weekCardsContainer.subviews.enumerated().forEach { index, view in
+            view.transform = CGAffineTransform(translationX: 0, y: -50)
+            view.alpha = 0
+            
+            UIView.animate(
+                withDuration: 0.6,
+                delay: Double(index) * 0.1,
+                usingSpringWithDamping: 0.8,
+                initialSpringVelocity: 0.3,
+                options: .curveEaseOut
+            ) {
+                view.transform = .identity
+                view.alpha = 1
             }
         }
     }
     
+    private func createWeekCard(card: QuestionCard, index: Int) -> UIView {
+        let cardView = UIView()
+        
+        let calendar = Calendar.current
+        let isToday = calendar.isDateInToday(card.date)
+    
+        if isToday {
+            cardView.backgroundColor = UIColor.mainPurple
+        } else {
+            let weekday = calendar.component(.weekday, from: card.date)
+            if weekday == 1 || weekday == 2 || weekday == 4 || weekday == 6 {
+                cardView.backgroundColor = UIColor.cardPurple
+            } else {
+                cardView.backgroundColor = UIColor.lightCardPurple
+            }
+        }
+        
+        cardView.layer.cornerRadius = 20
+        cardView.layer.shadowColor = UIColor(hex: "774F92").cgColor
+        cardView.layer.shadowOpacity = 0.08
+        cardView.layer.shadowOffset = CGSize(width: 0, height: -8)
+        cardView.layer.shadowRadius = 15
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "M/d"
+        let dateString = dateFormatter.string(from: card.date)
+        
+        dateFormatter.dateFormat = "E"
+        dateFormatter.locale = Locale(identifier: "ko_KR")
+        let weekday = dateFormatter.string(from: card.date)
+        
+        let dayLabel = TDLabel()
+        dayLabel.text = "\(weekday) \(dateString)"
+        dayLabel.font = .pretenSemiBold(16)
+        dayLabel.textColor = isToday ? .white : .grayScale900
+        
+        let topicLabel = TDLabel()
+        topicLabel.text = "\(card.mode.displayName) · \(card.subject.displayName) · \(card.type.displayName)"
+        topicLabel.font = .pretenRegular(14)
+        topicLabel.textColor = isToday ? .white : .grayScale800
+        
+        let arrowIcon = UIImageView()
+        arrowIcon.image = UIImage(systemName: "chevron.right")
+        arrowIcon.tintColor = isToday ? .white : .grayScale800
+        arrowIcon.contentMode = .scaleAspectFit
+        
+        cardView.addSubview(dayLabel)
+        cardView.addSubview(topicLabel)
+        cardView.addSubview(arrowIcon)
+        
+        cardView.flex
+            .padding(20)
+            .define { flex in
+                flex.addItem(arrowIcon).position(.absolute).right(20).top(33.5).size(16)
+                flex.addItem(dayLabel)
+                flex.addItem(topicLabel).marginTop(8)
+            }
+        
+        cardView.tag = card.id
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(weekCardTapped(_:)))
+        cardView.addGestureRecognizer(tapGesture)
+        
+        return cardView
+    }
+    
+    private func showSkeletonCard() {
+        let skeletonCard = createBlurredSkeletonCard()
+        
+        weekCardsContainer.flex.define { flex in
+            flex.addItem(skeletonCard).height(83)
+        }
+        
+        weekCardsContainer.flex.layout()
+        weekCardsContainer.pin.width(view.frame.width - 40)
+        
+        DispatchQueue.main.async {
+            self.addShimmerToCard(skeletonCard)
+        }
+    }
+    
+    private func createBlurredSkeletonCard() -> UIView {
+        let cardView = UIView()
+        cardView.backgroundColor = UIColor.lightCardPurple
+        cardView.layer.cornerRadius = 20
+        cardView.layer.shadowColor = UIColor(hex: "774F92").cgColor
+        cardView.layer.shadowOpacity = 0.08
+        cardView.layer.shadowOffset = CGSize(width: 0, height: -8)
+        cardView.layer.shadowRadius = 15
+        
+        return cardView
+    }
+    
+    private func addShimmerToCard(_ cardView: UIView) {
+        let overlay = UIView()
+        overlay.backgroundColor = .white
+        overlay.layer.cornerRadius = 20
+        overlay.frame = cardView.bounds
+        overlay.alpha = 0
+        
+        cardView.addSubview(overlay)
+        
+        let waveAnimation = CAKeyframeAnimation(keyPath: "opacity")
+        waveAnimation.values = [0.0, 0.25, 0.5, 0.25, 0.0]
+        waveAnimation.keyTimes = [0.0, 0.25, 0.5, 0.75, 1.0]
+        waveAnimation.duration = 2.0
+        waveAnimation.repeatCount = .infinity
+        waveAnimation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        overlay.layer.add(waveAnimation, forKey: "wave")
+    }
+}
+
+// MARK: - Alert
+extension HomeViewController {
     private func showConnectCoupleAlert() {
         showAlert(
             icon: UIImage(named: "heart_link"),
@@ -548,90 +716,6 @@ final class HomeViewController: BaseViewController, View {
                 self?.reactor?.action.onNext(.dismissNotificationAlert)
             }
         )
-    }
-    
-    private func openAppSettings() {
-        if let appSettings = URL(string: UIApplication.openSettingsURLString) {
-            if UIApplication.shared.canOpenURL(appSettings) {
-                UIApplication.shared.open(appSettings)
-            }
-        }
-    }
-    
-    @objc private func showInfoPopup() {
-        let popupView = InfoPopupView()
-        popupView.show(in: view, alignedWith: mainCard)
-    }
-    
-    private func updatePokeButton(isPoked: Bool) {
-        if isPoked {
-            pokeButton.backgroundColor = .grayScale300
-            pokeButton.isEnabled = false
-        } else {
-            pokeButton.backgroundColor = TodotColors.Button.purpleButton1
-            pokeButton.isEnabled = true
-        }
-    }
-    
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        
-        gradientLayer.frame = view.bounds
-        
-        scrollView.pin.all(view.pin.safeArea)
-        contentContainer.pin.top().left().right()
-        
-        contentContainer.flex.layout(mode: .adjustHeight)
-        scrollView.contentSize = contentContainer.frame.size
-    }
-}
-
-private final class ChipView: UIView {
-    
-    private let label = TDLabel()
-    private var calculatedWidth: CGFloat = 0
-    
-    init(title: String) {
-        super.init(frame: .zero)
-        
-        backgroundColor = .white
-        layer.borderWidth = 1
-        layer.borderColor = UIColor.grayScale200.cgColor
-        layer.cornerRadius = 20
-        
-        label.text = title
-        label.font = .pretenMedium(14)
-        label.textColor = .grayScale800
-        label.sizeToFit()
-        
-        calculatedWidth = label.frame.width + 28
-        
-        addSubview(label)
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    func updateTitle(_ title: String) {
-        label.text = title
-        label.sizeToFit()
-        calculatedWidth = label.frame.width + 28
-        invalidateIntrinsicContentSize()
-        setNeedsLayout()
-    }
-    
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        label.pin.center()
-    }
-    
-    override var intrinsicContentSize: CGSize {
-        return CGSize(width: calculatedWidth, height: 37)
-    }
-    
-    override func sizeThatFits(_ size: CGSize) -> CGSize {
-        return CGSize(width: calculatedWidth, height: 37)
     }
 }
 
