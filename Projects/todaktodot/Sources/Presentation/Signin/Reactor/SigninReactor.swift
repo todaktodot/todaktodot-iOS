@@ -20,13 +20,16 @@ final class SigninReactor: Reactor {
     enum SigninEvent {
         case kakaoSuccess
         case googleSuccess
+        case appleSuccess
         case kakaoFail
         case googleFail
+        case appleFail
     }
     
     enum Action {
         case tapKakaoButton
         case tapGoogleButton
+        case tapAppleButton
         case clearEvent
     }
 
@@ -61,6 +64,14 @@ final class SigninReactor: Reactor {
                 loginUseCase.execute(type: .google)
                     .map { Mutation.setSigninEvent($0 ? .googleSuccess : .googleFail) }
                     .catch { _ in .just(.setSigninEvent(.googleFail)) },
+                .just(.setLoading(false))
+            ])
+        case .tapAppleButton:
+            return Observable.concat([
+                .just(.setLoading(true)),
+                loginUseCase.execute(type: .apple)
+                    .map { Mutation.setSigninEvent($0 ? .appleSuccess : .appleFail) }
+                    .catch { _ in .just(.setSigninEvent(.appleFail)) },
                 .just(.setLoading(false))
             ])
         case .clearEvent:
