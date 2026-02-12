@@ -74,6 +74,7 @@ let project = Project(
                 "Resources/**",
                 "Sources/App/LaunchScreen.storyboard",
             ],
+            entitlements: "todaktodot.entitlements",
             scripts: [googleServiceInfoScript],
             dependencies: [
                 .external(name: "Alamofire"),
@@ -95,7 +96,10 @@ let project = Project(
                 .target(name: "SharedLibraries")
             ],
             settings: .settings(
-                base: ["OTHER_LDFLAGS":["-all_load -Objc"]],
+                base: [
+                    "OTHER_LDFLAGS":["-all_load -Objc"],
+                    "DEVELOPMENT_TEAM": "5HY2NNF4HY"
+                ],
                 configurations: [
                     .debug(name: "Debug", xcconfig: "Config/Debug.xcconfig"),
                     .release(name: "Release", xcconfig: "Config/Release.xcconfig")
