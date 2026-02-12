@@ -82,23 +82,40 @@ extension CodeTextFieldView: UITextFieldDelegate {
         guard uppercased.rangeOfCharacter(from: allowedSet.inverted) == nil else {
             return false
         }
-        
-        textField.text = String(uppercased.prefix(1))
-        
-        if textField.text != "" {
-            if (textField as? CodeTextField)?.nextTextField == nil {
-                endEditing(true)
-            } else {
-                (textField as? CodeTextField)?.nextTextField?.becomeFirstResponder()
+
+        // 붙여넣기 처리 (여러 글자)
+        if uppercased.count > 1 {
+            let chars = Array(uppercased)
+            guard let startIndex = codeTextFields.firstIndex(where: { $0 === textField }) else {
+                return false
+            }
+
+            for (offset, char) in chars.enumerated() {
+                let index = startIndex + offset
+                guard index < codeTextFields.count else { break }
+                codeTextFields[index].text = String(char)
+            }
+
+            endEditing(true)
+        } else {
+            // 한 글자 입력
+            textField.text = String(uppercased.prefix(1))
+
+            if textField.text != "" {
+                if (textField as? CodeTextField)?.nextTextField == nil {
+                    endEditing(true)
+                } else {
+                    (textField as? CodeTextField)?.nextTextField?.becomeFirstResponder()
+                }
             }
         }
-        
+
         if codeTextFields.filter({ $0.text != "" }).count >= 6 {
             isCodeFull.accept(true)
         } else {
             isCodeFull.accept(false)
         }
-        
+
         return false
     }
     

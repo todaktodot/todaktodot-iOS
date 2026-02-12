@@ -23,6 +23,16 @@ class CustomBackViewController: UIViewController {
         navigationController?.interactivePopGestureRecognizer?.delegate = nil
     }
     
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+
+        transitionCoordinator?.notifyWhenInteractionChanges { context in
+            if context.isCancelled {
+                self.navigationController?.isNavigationBarHidden = true
+            }
+        }
+    }
+    
     private func setup() {
         let backButton = UIBarButtonItem(
             image: UIImage(resource: .back),
