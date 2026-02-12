@@ -122,16 +122,31 @@ final class HomeViewController: BaseViewController, View {
         super.viewDidLoad()
         setupUI()
         showMainCardSkeleton()
-        fetchHistoryCards()
-        
+        fetchAllCards()
+    }
+    
+    private func fetchAllCards() {
+        let todayCardAction: Observable<Void>
         if let lastWeeklyDate = UserdefaultKey.lastWeeklyCardDate,
            lastWeeklyDate >= Date() {
             print("오늘 카드가 주간 카드에 저장 돼 있음, 로컬 패치")
-            reactor?.action.onNext(.loadTodayCards)
+            todayCardAction = Observable.just(()).do(onNext: { [weak self] in
+                self?.reactor?.action.onNext(.loadTodayCards)
+            })
         } else {
             print("저장한 주간 카드에 오늘 없음, 서버 패치")
-            fetchWeeklyCards()
+            todayCardAction = Observable.just(()).do(onNext: { [weak self] in
+                self?.fetchWeeklyCards()
+            })
         }
+        
+        let historyCardAction = Observable.just(()).do(onNext: { [weak self] in
+            self?.fetchHistoryCards()
+        })
+        
+        Observable.zip(todayCardAction, historyCardAction)
+            .subscribe()
+            .disposed(by: disposeBag)
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -144,11 +159,22 @@ final class HomeViewController: BaseViewController, View {
     
     func bind(reactor: HomeReactor) {
 
-        reactor.state.map { $0.todayCards }
+        let todayCardsStream = reactor.state.map { $0.todayCards }
             .distinctUntilChanged { $0.count == $1.count }
+            .skip(1)
+        
+        let historyCardsStream = reactor.state.map { $0.historyCards }
+            .distinctUntilChanged { $0.count == $1.count }
+            .skip(1)
+        
+        Observable.combineLatest(todayCardsStream, historyCardsStream)
+            .take(1)
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] cards in
-                self?.updateTodayCardUI(cards)
+            .subscribe(onNext: { [weak self] todayCards, historyCards in
+                self?.updateTodayCardUI(todayCards)
+                self?.isLoadingHistoryCards = false
+                self?.HistoryCards = historyCards
+                self?.updateWeekCards()
             })
             .disposed(by: disposeBag)
         
@@ -157,17 +183,6 @@ final class HomeViewController: BaseViewController, View {
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] status in
                 self?.updateMainCard(for: status)
-            })
-            .disposed(by: disposeBag)
-
-        reactor.state.map { $0.historyCards }
-            .skip(1)
-            .distinctUntilChanged { $0.count == $1.count }
-            .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] cards in
-                self?.isLoadingHistoryCards = false
-                self?.HistoryCards = cards
-                self?.updateWeekCards()
             })
             .disposed(by: disposeBag)
         
@@ -783,3 +798,6 @@ extension HomeViewController: BaseViewControllerDelegate {
         coordinator?.navigateToMyPage(self.navigationController, tabBarCoordinator: coordinator?.tabBarCoordinator)
     }
 }
+
+
+
