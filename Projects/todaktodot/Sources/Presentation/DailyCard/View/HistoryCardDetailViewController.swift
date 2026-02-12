@@ -135,7 +135,7 @@ final class HistoryCardDetailViewController: UIViewController {
     private func createModeLabel(_ text: String) -> UILabel {
         return TDLabel().then {
             $0.text = text
-            $0.font = .pretenMedium(12)
+            $0.font = .pretenMedium(14)
             $0.textColor = .mainPurple
             $0.backgroundColor = .cardPurple
             $0.layer.cornerRadius = 18
@@ -149,7 +149,7 @@ final class HistoryCardDetailViewController: UIViewController {
     
     private func setupSituation() {
         let situationTitle = TDLabel().then {
-            $0.text = card.situation
+            $0.text = "🍽️ 레스토랑 데이트"
             $0.font = .pretenMedium(14)
             $0.textColor = .mainPurple
         }
@@ -361,10 +361,9 @@ final class HistoryCardDetailViewController: UIViewController {
             $0.textColor = .mainPurple
         }
         
-        let feedbackText = TDLabel().then {
+        let feedbackText =  MaskingLabel(textColor: .grayScale900).then {
             $0.text = (card.feedback?.summary ?? "") + " " + (card.feedback?.differences ?? "") + " " +  (card.feedback?.tip ?? "")
             $0.font = .pretenRegular(16)
-            $0.textColor = .grayScale900
             $0.numberOfLines = 0
         }
         
