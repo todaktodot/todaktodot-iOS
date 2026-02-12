@@ -15,8 +15,9 @@ import ReactorKit
 
 final class TermsModalViewController: UIViewController, View {
     var disposeBag = DisposeBag()
-    private var countRelay = PublishRelay<Set<Int>>()
-    private var currentSelected = Set<Int>()
+    private var selectedTerms = BehaviorRelay<Set<Int>>(value: [])
+    private var isAcceptable = BehaviorRelay<Bool>(value: false)
+//    private var currentSelected = Set<Int>()
     
     private let dimView = UIView().then {
         $0.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.2)
@@ -62,7 +63,6 @@ final class TermsModalViewController: UIViewController, View {
         $0.setTitleColor(.white, for: .disabled)
         $0.backgroundColor = .grayScale400
         $0.layer.cornerRadius = 6
-        $0.isEnabled = false
     }
     
     
@@ -103,19 +103,19 @@ final class TermsModalViewController: UIViewController, View {
                 .height(52)
             
             $0.addItem(termsButton)
-                .marginTop(24)
-                .height(20)
+                .marginTop(14)
+                .height(40)
             
             $0.addItem(personalInfoButton)
-                .marginTop(24)
-                .height(20)
+                .marginTop(4)
+                .height(40)
             
             $0.addItem(marketingButton)
-                .marginTop(24)
-                .height(20)
+                .marginTop(4)
+                .height(40)
             
             $0.addItem(acceptButton)
-                .marginTop(40)
+                .marginTop(30)
                 .height(52)
                 .marginBottom(14)
         }
@@ -135,65 +135,36 @@ final class TermsModalViewController: UIViewController, View {
     
     func bind(reactor: CoupleReactor) {
         
-        allCheckButton.icon.rx.tap
-            .subscribe(onNext: { [weak self] _ in
-                guard let self else { return }
-                if currentSelected.count == 3 {
-                    currentSelected = []
-                    buttonProcessing(select: false)
-                    allCheckButton.setState(isSelected: false)
-                } else {
-                    currentSelected = [0,1,2]
-                    buttonProcessing(select: true)
-                    allCheckButton.setState(isSelected: true)
-                }
-                countRelay.accept(currentSelected)
-            })
+        allCheckButton.rx.tap
+            .withLatestFrom(selectedTerms)
+            .map { selected -> Set<Int> in
+                selected.count == 3 ? [] : [0, 1, 2]
+            }
+            .bind(to: selectedTerms)
+            .disposed(by: disposeBag)
+    
+        termsButton.rx.tap
+            .withLatestFrom(selectedTerms)
+            .map { selected -> Set<Int> in
+                self.setSelectedTerms(selected: selected, termsIndex: 0)
+            }
+            .bind(to: selectedTerms)
             .disposed(by: disposeBag)
         
-        termsButton.icon.rx.tap
-            .subscribe(onNext: { [weak self] _ in
-                guard let self else { return }
-                
-                if currentSelected.contains(0) {
-                    currentSelected.remove(0)
-                    termsButton.setState(isSelected: false)
-                } else {
-                    currentSelected.insert(0)
-                    termsButton.setState(isSelected: true)
-                }
-                countRelay.accept(currentSelected)
-            })
+        personalInfoButton.rx.tap
+            .withLatestFrom(selectedTerms)
+            .map { selected -> Set<Int> in
+                self.setSelectedTerms(selected: selected, termsIndex: 1)
+            }
+            .bind(to: selectedTerms)
             .disposed(by: disposeBag)
         
-        personalInfoButton.icon.rx.tap
-            .subscribe(onNext: { [weak self] _ in
-                guard let self else { return }
-                
-                if currentSelected.contains(1) {
-                    currentSelected.remove(1)
-                    personalInfoButton.setState(isSelected: false)
-                } else {
-                    currentSelected.insert(1)
-                    personalInfoButton.setState(isSelected: true)
-                }
-                countRelay.accept(currentSelected)
-            })
-            .disposed(by: disposeBag)
-        
-        marketingButton.icon.rx.tap
-            .subscribe(onNext: { [weak self] _ in
-                guard let self else { return }
-                
-                if currentSelected.contains(2) {
-                    currentSelected.remove(2)
-                    marketingButton.setState(isSelected: false)
-                } else {
-                    currentSelected.insert(2)
-                    marketingButton.setState(isSelected: true)
-                }
-                countRelay.accept(currentSelected)
-            })
+        marketingButton.rx.tap
+            .withLatestFrom(selectedTerms)
+            .map { selected -> Set<Int> in
+                self.setSelectedTerms(selected: selected, termsIndex: 2)
+            }
+            .bind(to: selectedTerms)
             .disposed(by: disposeBag)
         
         termsButton.chevronButton.rx.tap
@@ -227,34 +198,58 @@ final class TermsModalViewController: UIViewController, View {
             .disposed(by: disposeBag)
         
         acceptButton.rx.tap
-            .subscribe(with: self, onNext: { owner, _ in
-                owner.dismiss(animated: true, completion: nil)
+            .withLatestFrom(isAcceptable)
+            .subscribe(with: self, onNext: { owner, isAcceptable in
+                if isAcceptable {
+                    owner.reactor?.action.onNext(.tapTemrsAgreeButtonWithMarketingAgree(owner.selectedTerms.value.contains(2)))
+                } else {
+                    owner.isAcceptable.accept(true)
+                    owner.setAllEnable(true)
+                }
             })
             .disposed(by: disposeBag)
         
-        countRelay
+        reactor.state
+            .map { $0.isTermsAgreeSuccess }
+            .distinctUntilChanged()
+            .subscribe(onNext: { [weak self] success in
+                if success {
+                    self?.dismiss(animated: true, completion: nil)
+                }
+            })
+            .disposed(by: disposeBag)
+        
+        selectedTerms
             .subscribe(onNext: { [weak self] arr in
                 guard let self else { return }
-                if  arr == [0, 1] {
-                    acceptButton.isEnabled = true
-                    acceptButton.backgroundColor = .mainPurple
-                    allCheckButton.setState(isSelected: false)
-                } else if arr.count == 3 {
-                    acceptButton.isEnabled = true
-                    acceptButton.backgroundColor = .mainPurple
-                    allCheckButton.setState(isSelected: true)
-                } else {
-                    acceptButton.isEnabled = false
-                    acceptButton.backgroundColor = .grayScale400
-                    allCheckButton.setState(isSelected: false)
-                }
+
+                termsButton.setState(isSelected: arr.contains(0))
+                personalInfoButton.setState(isSelected: arr.contains(1))
+                marketingButton.setState(isSelected: arr.contains(2))
+
+                let requiredAccepted = arr.contains(0) && arr.contains(1)
+                isAcceptable.accept(requiredAccepted)
+
+                allCheckButton.setState(isSelected: arr.count == 3)
+                acceptButton.backgroundColor = requiredAccepted ? .mainPurple : .grayScale400
             })
             .disposed(by: disposeBag)
     }
     
-    private func buttonProcessing(select: Bool) {
-        [termsButton, personalInfoButton, marketingButton].forEach {
-            $0.setState(isSelected: select)
+    private func setAllEnable(_ selected: Bool) {
+        [termsButton, personalInfoButton, marketingButton, allCheckButton].forEach {
+            $0.setState(isSelected: selected)
         }
+        acceptButton.backgroundColor = .mainPurple
+    }
+    
+    private func setSelectedTerms(selected: Set<Int>, termsIndex: Int) -> Set<Int> {
+        var next = selected
+        if next.contains(termsIndex) {
+            next.remove(termsIndex)
+        } else {
+            next.insert(termsIndex)
+        }
+        return next
     }
 }

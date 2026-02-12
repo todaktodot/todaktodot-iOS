@@ -36,9 +36,12 @@ final class AuthRepositoryImpl: AuthRepository {
                 }
         case .google:
             return googleAuthProvider.login()
-                .flatMap { signInResult in
+                .compactMap {
+                    $0.user.idToken?.tokenString
+                }
+                .flatMap {
                     return self.requestLogin(
-                        accessToken: signInResult.user.accessToken.tokenString,
+                        accessToken: $0,
                         loginType: .google
                     )
                 }

@@ -49,7 +49,7 @@ final class HomeReactor: Reactor {
         var answerStatus: AnswerStatus = .bothUnanswered
         var isPoked: Bool = false
         var shouldShowNotificationAlert: Bool = true
-        var isCoupleConnected: Bool = false
+        var isCoupleConnected: Bool = UserdefaultKey.couple // TODO: 커플 여부 임시로 여기에 넣어둘게영
         var historyCards: [QuestionCard] = []
         var todayCards: [QuestionCard] = []
     }
