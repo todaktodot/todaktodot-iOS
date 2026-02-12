@@ -12,4 +12,5 @@ protocol CoupleRepository {
     func connectCouple(code: String) -> Observable<Bool>
     func setNickname(nickname: String) -> Observable<Bool>
     func setCoupleInfo(date: String, stage: String) -> Observable<Bool>
+    func setTerms(marketingAgree: Bool) -> Observable<Bool>
 }

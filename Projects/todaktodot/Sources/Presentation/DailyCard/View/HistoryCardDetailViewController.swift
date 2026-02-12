@@ -13,6 +13,9 @@ import Then
 final class HistoryCardDetailViewController: UIViewController {
     
     weak var coordinator: HomeCoordinator?
+    private let card: QuestionCard
+    private var multipleChoice: Question?
+    private var subjectiveChoice: Question?
     
     private let scrollView = UIScrollView()
     private let rootFlexContainer = UIView()
@@ -51,12 +54,23 @@ final class HistoryCardDetailViewController: UIViewController {
     
     private let statusContainer = UIView()
     
+    init(card: QuestionCard) {
+        self.card = card
+        self.multipleChoice = card.questions.first(where: { $0.type == .multipleChoice })
+        self.subjectiveChoice = card.questions.first(where: { $0.type == .subjective })
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         hidesBottomBarWhenPushed = true
         setupUI()
     }
-    
+
     private func setupUI() {
         view.backgroundColor = .lightPurple
         
@@ -75,7 +89,9 @@ final class HistoryCardDetailViewController: UIViewController {
         setupModeIndicators()
         setupSituation()
         setupAnswerSections()
-        setupAIFeedback()
+        if card.user1Answered && card.user2Answered {
+            setupAIFeedback()
+        }
         
         rootFlexContainer.flex
             .paddingHorizontal(20)
@@ -100,7 +116,9 @@ final class HistoryCardDetailViewController: UIViewController {
     }
     
     private func setupModeIndicators() {
-        let modes = ["🍰 디저트 모드", "💸 경제관", "🎭 상황극"]
+        let modes = [card.mode.emoji + " " + card.mode.displayName,
+                     card.subject.emoji + " " + card.subject.displayName,
+                     card.type.emoji + " " + card.type.displayName]
         
         modeContainer.flex
             .direction(.row)
@@ -136,7 +154,7 @@ final class HistoryCardDetailViewController: UIViewController {
             $0.textColor = .mainPurple
         }
         
-        let situationText = "둘이 처음 가는 고급 레스토랑에서 식사를 마쳤습니다. 계산서가 15만원이 나왔는데, 마침 둘 다 지갑을 꺼내려고 하는 상황이에요!"
+        let situationText = card.title
         
         let situationLabel = TDLabel().then {
             $0.font = .pretenRegular(16)
@@ -169,6 +187,22 @@ final class HistoryCardDetailViewController: UIViewController {
             $0.textColor = .mainPurple
         }
         
+        // user1이 답변하지 않은 경우
+        guard card.user1Answered else {
+            let notAnsweredLabel = TDLabel().then {
+                $0.text = "답변하지 않았어요 🥲"
+                $0.font = .pretenRegular(16)
+                $0.textColor = .grayScale600
+                $0.numberOfLines = 0
+            }
+            
+            myAnswerContainer.flex.padding(20).define { flex in
+                flex.addItem(nicknameLabel)
+                flex.addItem(notAnsweredLabel).marginTop(12)
+            }
+            return
+        }
+        
         let answerLabel = TDLabel().then {
             $0.text = "답변"
             $0.font = .pretenMedium(14)
@@ -181,7 +215,7 @@ final class HistoryCardDetailViewController: UIViewController {
         }
         
         let answerText = TDLabel().then {
-            $0.text = "상대방이 내려고 하면 '고마워, 다음엔 내가 낼게' 한다."
+            $0.text = multipleChoice?.user1Answer
             $0.font = .pretenRegular(16)
             $0.textColor = .grayScale800
             $0.numberOfLines = 0
@@ -205,16 +239,16 @@ final class HistoryCardDetailViewController: UIViewController {
         }
         
         let reasonText = TDLabel().then {
-            $0.text = "딱 5:5 구분해서 내기보다 한 번은 내가 사고, 한 번은 상대가 사는 방식이 좋아서 계산적으로 하기보다 자연스러운 계산 방식이 좋다고 생각"
+            $0.text = subjectiveChoice?.user1Answer ?? "답변하지 않았어요 🥲"
             $0.font = .pretenRegular(16)
             $0.baselineAdjustment = .alignCenters
-            $0.textColor = .grayScale800
+            $0.textColor = subjectiveChoice?.user1Answer == nil ? .grayScale600 : .grayScale800
             $0.numberOfLines = 0
         }
         
         let reasonRow = UIView()
         reasonRow.flex.direction(.row).alignItems(.start).define { flex in
-            flex.addItem(reasonLabel).marginTop(5)
+            flex.addItem(reasonLabel)
             flex.addItem(reasonText).marginLeft(8).grow(1).shrink(1)
         }
         
@@ -231,7 +265,23 @@ final class HistoryCardDetailViewController: UIViewController {
             $0.font = .pretenSemiBold(16)
             $0.textColor = .mainPurple
         }
-        
+
+        // user2가 답변하지 않은 경우
+        guard card.user2Answered else {
+            let notAnsweredLabel = TDLabel().then {
+                $0.text = "답변하지 않았어요 🥲"
+                $0.font = .pretenRegular(16)
+                $0.textColor = .grayScale600
+                $0.numberOfLines = 0
+            }
+            
+            partnerAnswerContainer.flex.padding(20).define { flex in
+                flex.addItem(nicknameLabel)
+                flex.addItem(notAnsweredLabel).marginTop(12)
+            }
+            return
+        }
+
         let answerLabel = TDLabel().then {
             $0.text = "답변"
             $0.font = .pretenMedium(14)
@@ -244,7 +294,7 @@ final class HistoryCardDetailViewController: UIViewController {
         }
         
         let answerText = TDLabel().then {
-            $0.text = "상대방이 내려고 하면 '고마워, 다음엔 내가 낼게' 한다."
+            $0.text = multipleChoice?.user2Answer
             $0.font = .pretenRegular(16)
             $0.textColor = .grayScale800
             $0.numberOfLines = 0
@@ -268,17 +318,16 @@ final class HistoryCardDetailViewController: UIViewController {
             $0.flex.paddingHorizontal(10).paddingVertical(2)
         }
         
-        // TODO: nil값일떄 처리하도록
         let reasonText = TDLabel().then {
-            $0.text = "답변하지 않았어요 🥲"
+            $0.text = subjectiveChoice?.user2Answer ?? "답변하지 않았어요 🥲"
             $0.font = .pretenRegular(16)
-            $0.textColor = .grayScale600
+            $0.textColor = subjectiveChoice?.user2Answer == nil ? .grayScale600 : .grayScale800
             $0.numberOfLines = 0
         }
         
         let reasonRow = UIView()
         reasonRow.flex.direction(.row).alignItems(.start).define { flex in
-            flex.addItem(reasonLabel).marginTop(2)
+            flex.addItem(reasonLabel)
             flex.addItem(reasonText).marginLeft(8).grow(1).shrink(1)
         }
         
@@ -312,10 +361,9 @@ final class HistoryCardDetailViewController: UIViewController {
             $0.textColor = .mainPurple
         }
         
-        let feedbackText = TDLabel().then {
-            $0.text = "차이가 있다는 건 우리가 서로의 세계를 넓힐 수 있다는 뜻이지. 각자 어떤 경험에서 이런 생각을 하게 됐는지 나눠볼까?"
+        let feedbackText =  MaskingLabel(textColor: .grayScale900).then {
+            $0.text = (card.feedback?.summary ?? "") + " " + (card.feedback?.differences ?? "") + " " +  (card.feedback?.tip ?? "")
             $0.font = .pretenRegular(16)
-            $0.textColor = .grayScale900
             $0.numberOfLines = 0
         }
         
@@ -335,7 +383,7 @@ final class HistoryCardDetailViewController: UIViewController {
         }
         
         let statusLabel = TDLabel().then {
-            $0.text = "🔄 답변 공개 완료!"
+            $0.text = "답변 공개 완료!"
             $0.font = .pretenMedium(16)
             $0.textColor = .grayScale900
         }

@@ -43,12 +43,18 @@ final class SigninCoordinator: Coordinator {
         let coupleConnectViewController = CoupleConnectViewController(flowType: .create)
         coupleConnectViewController.coordinator = self
         coupleConnectViewController.reactor = CoupleReactor(coupleUseCase: useCase)
-        navigationController.pushViewController(coupleConnectViewController, animated: true)
+        navigationController.setViewControllers([coupleConnectViewController], animated: true)
     }
     
     func showCoupleConnectOnly() {
+        let useCase = CoupleUseCase(
+            repository: CoupleRepositoryImpl(
+                networkManager: networkManager
+                )
+        )
         let coupleConnectViewController = CoupleConnectViewController(flowType: .join)
         coupleConnectViewController.coordinator = self
+        coupleConnectViewController.reactor = CoupleReactor(coupleUseCase: useCase)
         navigationController.setViewControllers([coupleConnectViewController], animated: true)
     }
     

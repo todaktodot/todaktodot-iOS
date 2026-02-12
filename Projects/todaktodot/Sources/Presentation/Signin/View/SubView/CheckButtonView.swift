@@ -17,7 +17,7 @@ import Then
 // agreeButton.configure(isBackground: true, title: "유의사항을 모두 확인했으며, 이에 동의합니다.")
 // agreeButton.setState(isSelected: self.onTabCheckButton)
 
-final class CheckButtonView: UIView {
+final class CheckButtonView: UIButton {
     
     private var isBackground = false
     private let disposeBag = DisposeBag()
@@ -25,8 +25,8 @@ final class CheckButtonView: UIView {
         $0.textColor = .grayScale900
     }
     
-    let icon = UIButton().then {
-        $0.setImage(UIImage(systemName: "checkmark.circle"), for: .normal)
+    let icon = UIImageView().then {
+        $0.image = UIImage(systemName: "checkmark.circle")
         $0.tintColor = .grayScale400
     }
     
@@ -78,11 +78,11 @@ final class CheckButtonView: UIView {
         UIView.animate(withDuration: 0.1) {
             switch isSelected {
             case true:
-                self.icon.setImage(UIImage(systemName: "checkmark.circle.fill"), for: .normal)
+                self.icon.image = UIImage(systemName: "checkmark.circle.fill")
                 self.icon.tintColor = .mainPurple
             case false:
-                self.icon.setImage(UIImage(systemName: "checkmark.circle"), for: .normal)
-                self.icon.tintColor = .grayScale200
+                self.icon.image = UIImage(systemName: "checkmark.circle")
+                self.icon.tintColor = .grayScale400
             }
         }
     }

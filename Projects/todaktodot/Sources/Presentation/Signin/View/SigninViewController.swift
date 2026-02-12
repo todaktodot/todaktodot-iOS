@@ -193,10 +193,11 @@ final class SigninViewController: UIViewController, View {
     }
     
     private func moveNext() {
-        if UserdefaultKey.couple && UserdefaultKey.joined {
-            coordinator?.navigateToMain()
-        } else {
-            coordinator?.showCoupleConnect()
-        }
+//        if UserdefaultKey.couple && UserdefaultKey.joined {
+//            coordinator?.navigateToMain()
+//        } else {
+//            coordinator?.showCoupleConnect()
+//        }
+        coordinator?.showCoupleConnect() // TODO: 임시 처리
     }
 }

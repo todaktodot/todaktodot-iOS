@@ -14,12 +14,6 @@ import RxSwift
 final class SettingSectionView: UIView {
     private var disposeBag = DisposeBag()
 
-    private let serviceTermTitleLabel = TDLabel().then {
-        $0.text = "서비스 이용 약관"
-        $0.font = .pretenMedium(16)
-        $0.textColor = .grayScale900
-    }
-
     private let pushTitleLabel = TDLabel().then {
         $0.text = "푸시 알림"
         $0.font = .pretenMedium(16)
@@ -38,13 +32,10 @@ final class SettingSectionView: UIView {
         $0.textColor = .grayScale400
     }
     
-    let arrowButton = UIButton().then {
-        $0.setImage(UIImage(systemName: "chevron.right"), for: .normal)
-        $0.tintColor = .grayScale800
-        $0.contentMode = .scaleAspectFit
-    }
-    
     let notiSwitch = CustomSwitch()
+    let serviceTermButton = ModalButton().then {
+        $0.setTitle(title: "서비스 이용 약관")
+    }
 
     private func divider() -> UIView {
         UIView().then {
@@ -75,15 +66,8 @@ final class SettingSectionView: UIView {
             .paddingVertical(16)
             .gap(16)
             .define {
-
-                $0.addItem()
-                    .direction(.row)
-                    .alignItems(.center)
-                    .define {
-                        $0.addItem(serviceTermTitleLabel)
-                        $0.addItem().grow(1)
-                        $0.addItem(arrowButton).size(20)
-                    }
+                
+                $0.addItem(serviceTermButton)
 
                 $0.addItem(divider())
                     .height(1)

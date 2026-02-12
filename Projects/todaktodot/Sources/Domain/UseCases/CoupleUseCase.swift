@@ -23,6 +23,10 @@ final class CoupleUseCase {
         repository.connectCouple(code: code)
     }
     
+    func setTerms(marketingAgree: Bool) -> Observable<Bool> {
+        repository.setTerms(marketingAgree: marketingAgree)
+    }
+    
     func setNickname(nickname: String) -> Observable<Bool> {
         repository.setNickname(nickname: nickname)
     }

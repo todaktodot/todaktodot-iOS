@@ -23,28 +23,12 @@ final class TermsViewController: CustomBackViewController {
     private let backgroundView = UIImageView().then {
         $0.image = UIImage(resource: .mypageSubBackground)
     }
-    private let personalTermTitleLabel = TDLabel().then {
-        $0.text = "개인정보 수집 및 이용"
-        $0.font = .pretenMedium(16)
-        $0.textColor = .grayScale900
+    private let personalTermButton = ModalButton().then {
+        $0.setTitle(title: "개인정보 수집 및 이용")
     }
     
-    private let usedTermTitleLabel = TDLabel().then {
-        $0.text = "이용 약관"
-        $0.font = .pretenMedium(16)
-        $0.textColor = .grayScale900
-    }
-    
-    private let personalTermArrow = UIButton().then {
-        $0.setImage(UIImage(systemName: "chevron.right"), for: .normal)
-        $0.tintColor = .grayScale800
-        $0.contentMode = .scaleAspectFit
-    }
-    
-    private let usedTermArrow = UIButton().then {
-        $0.setImage(UIImage(systemName: "chevron.right"), for: .normal)
-        $0.tintColor = .grayScale800
-        $0.contentMode = .scaleAspectFit
+    private let usedTermButton = ModalButton().then {
+        $0.setTitle(title: "이용 약관")
     }
     
     private let divider = UIView().then {
@@ -79,27 +63,13 @@ final class TermsViewController: CustomBackViewController {
             .paddingVertical(16)
             .gap(16)
             .define {
-                $0.addItem()
-                    .direction(.row)
-                    .alignItems(.center)
-                    .define {
-                        $0.addItem(personalTermTitleLabel)
-                        $0.addItem().grow(1)
-                        $0.addItem(personalTermArrow).size(20)
-                    }
+                $0.addItem(personalTermButton)
                 
                 $0.addItem(divider)
                     .height(1)
                     .marginHorizontal(-20)
                 
-                $0.addItem()
-                    .direction(.row)
-                    .alignItems(.center)
-                    .define {
-                        $0.addItem(usedTermTitleLabel)
-                        $0.addItem().grow(1)
-                        $0.addItem(usedTermArrow).size(20)
-                    }
+                $0.addItem(usedTermButton)
             }
     }
     
@@ -115,13 +85,13 @@ final class TermsViewController: CustomBackViewController {
     }
     
     private func bindActions() {
-        personalTermArrow.rx.tap
+        personalTermButton.rx.tap
             .subscribe(onNext: { [weak self] in
                 self?.coordinator?.showDetailPersonalTerms()
             })
             .disposed(by: disposeBag)
         
-        usedTermArrow.rx.tap
+        usedTermButton.rx.tap
             .subscribe(onNext: { [weak self] in
                 self?.coordinator?.showDetailTerms()
             })
