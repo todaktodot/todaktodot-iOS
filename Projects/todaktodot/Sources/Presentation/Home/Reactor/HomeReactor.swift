@@ -125,12 +125,18 @@ final class HomeReactor: Reactor {
                 .flatMap { result -> Observable<Mutation> in
                     switch result {
                     case .success(let cards):
+                        print("주간 카드 패치 완료")
                         CardStorageService.shared.saveWeeklyCards(cards)
                         UserdefaultKey.lastWeeklyCardDate = endDate.toDate()
                         let todayCards = CardStorageService.shared.getTodayCards()
                         return .just(.setTodayCards(todayCards))
-                    case .failure(let error):
-                        return .just(.setError(error))
+                    case .failure:
+                        let mockCards = MockCardData.dailyCards
+                        let today = Date()
+                        let calendar = Calendar.current
+                        let todayCards = mockCards.filter { calendar.isDate($0.date, inSameDayAs: today) }
+                        return .just(.setTodayCards(todayCards))
+//                        return .just(.setError(error))
                     }
                 }
             
@@ -140,9 +146,23 @@ final class HomeReactor: Reactor {
                 .flatMap { result -> Observable<Mutation> in
                     switch result {
                     case .success(let cards):
+                        print("✅ 오늘 카드 패치 완료: \(cards.count)개")
                         return .just(.setTodayCards(cards))
                     case .failure:
+                        print("⚠️ 서버 실패 - 저장된 카드 확인")
                         let savedTodayCards = CardStorageService.shared.getTodayCards()
+                        print("💾 저장된 카드: \(savedTodayCards.count)개")
+                        
+                        if savedTodayCards.isEmpty {
+                            print("🔄 Mock 데이터 사용")
+                            let mockCards = MockCardData.dailyCards
+                            let today = Date()
+                            let calendar = Calendar.current
+                            let todayCards = mockCards.filter { calendar.isDate($0.date, inSameDayAs: today) }
+                            print("📦 Mock 오늘 카드: \(todayCards.count)개")
+                            return .just(.setTodayCards(todayCards))
+                        }
+                        
                         return .just(.setTodayCards(savedTodayCards))
                     }
                 }

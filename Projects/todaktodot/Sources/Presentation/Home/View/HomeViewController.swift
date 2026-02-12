@@ -32,6 +32,19 @@ final class HomeViewController: BaseViewController, View {
         $0.layer.shadowOffset = CGSize(width: 0, height: 2)
         $0.layer.shadowRadius = 8
     }
+    
+    private let mainCardSkeleton = UIView().then {
+        $0.backgroundColor = .white
+        $0.layer.cornerRadius = 20
+        $0.layer.shadowColor = UIColor.black.cgColor
+        $0.layer.shadowOpacity = 0.05
+        $0.layer.shadowOffset = CGSize(width: 0, height: 2)
+        $0.layer.shadowRadius = 8
+        $0.isHidden = true
+    }
+    
+    private let skeletonShimmerLayer = CAGradientLayer()
+    
     private let yearLabel = TDLabel().then {
         $0.text = "2025년 9월 14일 일요일"
         $0.font = .pretenMedium(14)
@@ -108,12 +121,15 @@ final class HomeViewController: BaseViewController, View {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        showMainCardSkeleton()
         fetchHistoryCards()
         
         if let lastWeeklyDate = UserdefaultKey.lastWeeklyCardDate,
            lastWeeklyDate >= Date() {
+            print("오늘 카드가 주간 카드에 저장 돼 있음, 로컬 패치")
             reactor?.action.onNext(.loadTodayCards)
         } else {
+            print("저장한 주간 카드에 오늘 없음, 서버 패치")
             fetchWeeklyCards()
         }
     }
@@ -229,6 +245,7 @@ final class HomeViewController: BaseViewController, View {
             .paddingBottom(150)
             .define { flex in
                 flex.addItem(mainCard).marginVertical(20)
+                flex.addItem(mainCardSkeleton).marginVertical(20).position(.absolute).top(0).left(20).right(20)
                 flex.addItem(weekCardsContainer).marginTop(36)
             }
     }
@@ -345,6 +362,68 @@ extension HomeViewController {
                 }
                 flex.addItem(pokeButton).height(48).marginTop(16)
             }
+        
+        setupMainCardSkeleton()
+    }
+    
+    private func setupMainCardSkeleton() {
+        let skeletonBoxes = (0..<5).map { _ in
+            UIView().then {
+                $0.backgroundColor = .grayScale200
+                $0.layer.cornerRadius = 4
+            }
+        }
+        
+        skeletonBoxes.forEach { mainCardSkeleton.addSubview($0) }
+        
+        mainCardSkeleton.flex
+            .padding(24)
+            .define { flex in
+                flex.addItem(skeletonBoxes[0]).height(20).width(180)
+                flex.addItem(skeletonBoxes[1]).height(70).marginTop(8)
+                flex.addItem(skeletonBoxes[2]).height(37).width(240).marginTop(16)
+                flex.addItem(skeletonBoxes[3]).height(90).marginTop(20)
+                flex.addItem(skeletonBoxes[4]).height(48).marginTop(16)
+            }
+        
+        skeletonBoxes.forEach { addWaveToBox($0) }
+    }
+    
+    private func addWaveToBox(_ box: UIView) {
+        let overlay = UIView()
+        overlay.backgroundColor = .white
+        overlay.layer.cornerRadius = 4
+        overlay.alpha = 0
+        
+        box.addSubview(overlay)
+        overlay.frame = box.bounds
+        overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        
+        let waveAnimation = CAKeyframeAnimation(keyPath: "opacity")
+        waveAnimation.values = [0.0, 0.3, 0.6, 0.3, 0.0]
+        waveAnimation.keyTimes = [0.0, 0.25, 0.5, 0.75, 1.0]
+        waveAnimation.duration = 1.5
+        waveAnimation.repeatCount = .infinity
+        waveAnimation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        overlay.layer.add(waveAnimation, forKey: "wave")
+    }
+    
+    private func showMainCardSkeleton() {
+        mainCard.alpha = 0
+        mainCard.isHidden = true
+        mainCardSkeleton.isHidden = false
+    }
+    
+    private func hideMainCardSkeleton() {
+        mainCard.isHidden = false
+        
+        UIView.animate(withDuration: 0.4, delay: 0, options: [.curveEaseInOut], animations: {
+            self.mainCardSkeleton.alpha = 0
+            self.mainCard.alpha = 1
+        }) { _ in
+            self.mainCardSkeleton.isHidden = true
+            self.mainCardSkeleton.alpha = 1
+        }
     }
     
     private func updateMainCard(for status: AnswerStatus) {
@@ -391,7 +470,12 @@ extension HomeViewController {
     }
     
     private func updateTodayCardUI(_ cards: [QuestionCard]) {
-        guard let firstCard = cards.first else { return }
+        hideMainCardSkeleton()
+        
+        guard let firstCard = cards.first else { 
+            print("⚠️ 표시 가능한 오늘 카드 없음")
+            return
+        }
         
         let dateFormatter = DateFormatter()
         dateFormatter.locale = Locale(identifier: "ko_KR")

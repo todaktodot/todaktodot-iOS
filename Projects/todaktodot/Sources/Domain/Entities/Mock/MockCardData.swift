@@ -9,13 +9,22 @@ import Foundation
 
 struct MockCardData {
     
+    // 이번 주 월요일 계산
+    private static var thisWeekMonday: Date {
+        let calendar = Calendar.current
+        let today = Date()
+        let weekday = calendar.component(.weekday, from: today)
+        let daysFromMonday = (weekday == 1) ? -6 : (2 - weekday)
+        return calendar.date(byAdding: .day, value: daysFromMonday, to: today)!
+    }
+    
     // MARK: - Daily Cards (답변 안 한 카드들)
     static let dailyCards: [QuestionCard] = [
         QuestionCard(
             id: 1,
             coupleCardId: 101,
             title: "데이트 비용 분담",
-            date: Date().addingTimeInterval(-3 * 24 * 3600),
+            date: Calendar.current.date(byAdding: .day, value: 0, to: thisWeekMonday)!,  // 월요일
             mode: .coffee,
             subject: .economy,  
             type: .balance,
@@ -55,7 +64,7 @@ struct MockCardData {
             id: 2,
             coupleCardId: 102,
             title: "주말 약속 생겼을 때",
-            date: Date().addingTimeInterval(-2 * 24 * 3600),
+            date: Calendar.current.date(byAdding: .day, value: 1, to: thisWeekMonday)!,  // 화요일
             mode: .dessert,
             subject: .lifestyle,
             type: .roleplay,
@@ -95,7 +104,7 @@ struct MockCardData {
             id: 7,
             coupleCardId: 107,
             title: "여행 스타일",
-            date: Date(),
+            date: Date(),  // 오늘
             mode: .coffee,
             subject: .lifestyle,
             type: .balance,
@@ -138,7 +147,7 @@ struct MockCardData {
             id: 11,
             coupleCardId: 201,
             title: "첫 데이트 장소",
-            date: Date().addingTimeInterval(-14 * 24 * 3600),
+            date: Calendar.current.date(byAdding: .day, value: 0, to: thisWeekMonday)!,  // 월요일
             mode: .coffee,
             subject: .lifestyle,
             type: .roleplay,
@@ -183,7 +192,7 @@ struct MockCardData {
             id: 13,
             coupleCardId: 203,
             title: "금전 가치관",
-            date: Date().addingTimeInterval(-12 * 24 * 3600),
+            date: Calendar.current.date(byAdding: .day, value: 1, to: thisWeekMonday)!,  // 화요일
             mode: .whiskey,
             subject: .economy,
             type: .roleplay,
@@ -228,7 +237,7 @@ struct MockCardData {
             id: 14,
             coupleCardId: 204,
             title: "갈등 해결 방식",
-            date: Date().addingTimeInterval(-10 * 24 * 3600),
+            date: Calendar.current.date(byAdding: .day, value: 2, to: thisWeekMonday)!,  // 수요일
             mode: .dessert,
             subject: .lifestyle,
             type: .roleplay,
@@ -273,7 +282,7 @@ struct MockCardData {
             id: 15,
             coupleCardId: 205,
             title: "연락 빈도",
-            date: Date().addingTimeInterval(-8 * 24 * 3600),
+            date: Calendar.current.date(byAdding: .day, value: 3, to: thisWeekMonday)!,  // 목요일
             mode: .coffee,
             subject: .lifestyle,
             type: .balance,
@@ -318,7 +327,7 @@ struct MockCardData {
             id: 16,
             coupleCardId: 206,
             title: "주말 계획",
-            date: Date().addingTimeInterval(-6 * 24 * 3600),
+            date: Calendar.current.date(byAdding: .day, value: 4, to: thisWeekMonday)!,  // 금요일
             mode: .dessert,
             subject: .lifestyle,
             type: .roleplay,
@@ -357,7 +366,7 @@ struct MockCardData {
             id: 17,
             coupleCardId: 207,
             title: "선물 받고 싶은 것",
-            date: Date().addingTimeInterval(-4 * 24 * 3600),
+            date: Calendar.current.date(byAdding: .day, value: 5, to: thisWeekMonday)!,  // 토요일
             mode: .coffee,
             subject: .lifestyle,
             type: .balance,
