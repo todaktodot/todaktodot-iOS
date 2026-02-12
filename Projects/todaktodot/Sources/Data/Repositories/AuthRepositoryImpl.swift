@@ -13,15 +13,18 @@ final class AuthRepositoryImpl: AuthRepository {
     private let networkManager: NetworkManager
     private let kakaoAuthProvider: KakaoAuthProvider
     private let googleAuthProvider: GoogleAuthProvider
-//    private let appleService: AppleLoginService
+    private let appleAuthProvider: AppleAuthProvider
+    
     init(
         kakaoAuthProvider: KakaoAuthProvider,
         googleAuthProvider: GoogleAuthProvider,
+        appleAuthProvider: AppleAuthProvider,
         networkManager: NetworkManager
     ) {
         self.networkManager = networkManager
         self.kakaoAuthProvider = kakaoAuthProvider
         self.googleAuthProvider = googleAuthProvider
+        self.appleAuthProvider = appleAuthProvider
     }
     
     func login(type: LoginType) -> Observable<Bool> {
@@ -43,8 +46,13 @@ final class AuthRepositoryImpl: AuthRepository {
                     )
                 }
         case .apple:
-//            return appleService.login()
-            return .just(false)
+            return appleAuthProvider.login()
+                .flatMap { authorizationCode in
+                    return self.requestLogin(
+                        accessToken: authorizationCode,
+                        loginType: .apple
+                    )
+                }
         }
     }
 

@@ -70,7 +70,6 @@ final class SigninViewController: UIViewController, View {
         
         setupViews()
         setupFlexLayout()
-        bindActions()
     }
     
     override func viewDidLayoutSubviews() {
@@ -147,15 +146,6 @@ final class SigninViewController: UIViewController, View {
         buttonContainerView.flex.layout()
     }
     
-    private func bindActions() {
-        appleButton.rx.tap
-            .subscribe(onNext: { [weak self] _ in
-                guard let self = self else { return }
-                coordinator?.navigateToMain()
-            })
-            .disposed(by: disposeBag)
-    }
-    
     func bind(reactor: SigninReactor) {
         reactor.state
             .map { $0.isLoading }
@@ -175,13 +165,10 @@ final class SigninViewController: UIViewController, View {
             .subscribe(onNext: { [weak self] event in
                 guard let self = self else { return }
                 switch event {
-                case .kakaoSuccess, .googleSuccess:
+                case .kakaoSuccess, .googleSuccess, .appleSuccess:
                     self.moveNext()
                     
-                case .kakaoFail:
-                    break
-                    
-                case .googleFail:
+                case .kakaoFail, .googleFail, .appleFail:
                     break
                 }
                 self.reactor?.action.onNext(.clearEvent)
@@ -196,6 +183,11 @@ final class SigninViewController: UIViewController, View {
         
         googleButton.rx.tap
             .map { SigninReactor.Action.tapGoogleButton }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        appleButton.rx.tap
+            .map { SigninReactor.Action.tapAppleButton }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
     }

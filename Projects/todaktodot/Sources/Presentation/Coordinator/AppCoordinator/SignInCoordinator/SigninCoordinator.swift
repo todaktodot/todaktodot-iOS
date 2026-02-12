@@ -24,6 +24,7 @@ final class SigninCoordinator: Coordinator {
             repository: AuthRepositoryImpl(
                 kakaoAuthProvider: KakaoAuthProvider(),
                 googleAuthProvider: GoogleAuthProvider(),
+                appleAuthProvider: AppleAuthProvider(),
                 networkManager: networkManager
             )
         )
