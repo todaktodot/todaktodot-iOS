@@ -35,6 +35,12 @@ enum UserdefaultKey {
     @UserDefault(key: "isInitialLogin", defaultValue: true)
     static var isInitialLogin: Bool
     
+    @UserDefaultCodable(key: "weeklyCards", defaultValue: [])
+    static var weeklyCards: [QuestionCard]
+    
+    @UserDefault(key: "lastWeeklyCardDate", defaultValue: nil)
+    static var lastWeeklyCardDate: Date?
+    
     //탈퇴시 적용
     static func resetUserDefaults() {
         
@@ -54,6 +60,23 @@ struct UserDefault<T> {
         }
         set {
             UserDefaults.standard.set(newValue, forKey: key)
+        }
+    }
+}
+
+@propertyWrapper
+struct UserDefaultCodable<T: Codable> {
+    let key: String
+    let defaultValue: T
+
+    var wrappedValue: T {
+        get {
+            guard let data = UserDefaults.standard.data(forKey: key) else { return defaultValue }
+            return (try? JSONDecoder().decode(T.self, from: data)) ?? defaultValue
+        }
+        set {
+            let data = try? JSONEncoder().encode(newValue)
+            UserDefaults.standard.set(data, forKey: key)
         }
     }
 }

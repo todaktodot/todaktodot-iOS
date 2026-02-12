@@ -7,6 +7,7 @@
 
 import UIKit
 import RxSwift
+import NetworkKit
 
 final class TabBarCoordinator: Coordinator {
     var childCoordinators: [Coordinator] = []
@@ -64,6 +65,8 @@ final class TabBarCoordinator: Coordinator {
 }
 
 final class HomeCoordinator: Coordinator {
+    let networkManager = NetworkManager()
+    
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
     weak var tabBarCoordinator: TabBarCoordinator?
@@ -73,7 +76,10 @@ final class HomeCoordinator: Coordinator {
     }
     
     func start() {
-        let reactor = HomeReactor()
+        let cardRepository = CardRepositoryImpl(networkManager: networkManager)
+        let cardUseCase = CardUseCase(repository: cardRepository)
+        
+        let reactor = HomeReactor(cardUseCase: cardUseCase)
         let homeViewController = HomeViewController(reactor: reactor)
         homeViewController.coordinator = self
         homeViewController.view.backgroundColor = TodotColors.Background.primary
@@ -90,7 +96,7 @@ final class HomeCoordinator: Coordinator {
     }
     
     func showDailyCardDetail() {
-        let dailyCardDetailViewController = DailyCardDetailViewController(cardType: .situation)
+        let dailyCardDetailViewController = DailyCardDetailViewController(cardType: .roleplay)
         dailyCardDetailViewController.coordinator = self
         dailyCardDetailViewController.hidesBottomBarWhenPushed = true
         navigationController.pushViewController(dailyCardDetailViewController, animated: true)
@@ -103,8 +109,8 @@ final class HomeCoordinator: Coordinator {
         navigationController.pushViewController(dailyCardDetailViewController, animated: true)
     }
     
-    func showHistoryCardDetail() {
-        let dailyCardDetailViewController = HistoryCardDetailViewController()
+    func showHistoryCardDetail(card: QuestionCard) {
+        let dailyCardDetailViewController = HistoryCardDetailViewController(card: card)
         dailyCardDetailViewController.coordinator = self
         dailyCardDetailViewController.hidesBottomBarWhenPushed = true
         navigationController.pushViewController(dailyCardDetailViewController, animated: true)

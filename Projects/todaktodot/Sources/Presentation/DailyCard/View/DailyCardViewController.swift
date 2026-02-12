@@ -68,7 +68,7 @@ final class DailyCardViewController: UIViewController, View {
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] cardType in
                 switch cardType {
-                case .situation:
+                case .roleplay :
                     self?.coordinator?.showDailyCardDetail()
                 case .balance:
                     self?.coordinator?.showBalanceCardDetail()

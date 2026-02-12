@@ -51,10 +51,12 @@ class CustomBackViewController: UIViewController {
             .foregroundColor: UIColor.grayScale900
         ]
         
-        navigationController?.navigationBar.isHidden = false
-        navigationController?.navigationBar.standardAppearance = appearance
-        navigationController?.navigationBar.scrollEdgeAppearance = appearance
-        navigationController?.navigationBar.compactAppearance = appearance
+        guard let navigationController = navigationController else { return }
+        
+        navigationController.navigationBar.isHidden = false
+        navigationController.navigationBar.standardAppearance = appearance
+        navigationController.navigationBar.scrollEdgeAppearance = appearance
+        navigationController.navigationBar.compactAppearance = appearance
         
         disableGlassStyle()
     }

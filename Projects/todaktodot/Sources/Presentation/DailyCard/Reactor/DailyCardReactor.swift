@@ -26,11 +26,6 @@ final class DailyCardReactor: Reactor {
         var selectedCardType: CardType?
     }
     
-    enum CardType {
-        case situation
-        case balance
-    }
-    
     let initialState = State()
     
     func mutate(action: Action) -> Observable<Mutation> {
@@ -38,7 +33,7 @@ final class DailyCardReactor: Reactor {
         case .tapBackButton:
             return .just(.setDismiss(true))
         case .tapSituationButton:
-            return .just(.navigateToDetail(.situation))
+            return .just(.navigateToDetail(.roleplay))
         case .tapBalanceButton:
             return .just(.navigateToDetail(.balance))
         }
