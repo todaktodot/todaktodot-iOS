@@ -8,7 +8,7 @@
 import Foundation
 import UIKit
 
-// TODO: 라인 간격 적용 안되는것같음
+// TODO: 라인 간격 적용 안되는것같음. 카드 API 연결 후 최적화 + UI 수정 예정, 투명도 대신 크기 줄어들게하기 고민
 
 /// 사용방법
 /// let maskingText =  MaskingLabel(textColor: .grayScale900)
@@ -143,6 +143,9 @@ final class MaskingLabel: UILabel {
     @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
         guard isMasked else { return }
         
+        let haptic = UIImpactFeedbackGenerator(style: .soft)
+        haptic.impactOccurred()
+        
         lastTouchPoint = gesture.location(in: self)
         isMasked = false
         bubbleGenerationWorkItem?.cancel()
@@ -153,7 +156,7 @@ final class MaskingLabel: UILabel {
             let mutableAttr = NSMutableAttributedString(attributedString: currentText)
             mutableAttr.addAttribute(.foregroundColor, value: originalTextColor, range: NSRange(location: 0, length: mutableAttr.length))
             
-            UIView.transition(with: self, duration: 1.5, options: .transitionCrossDissolve) {
+            UIView.transition(with: self, duration: 1.0, options: .transitionCrossDissolve) {
                 self.attributedText = mutableAttr
             }
         }
@@ -309,21 +312,21 @@ extension MaskingLabel {
 extension MaskingLabel {
     struct TuningSet {
         // Start
-        let bubblesPerBatch: Int = 80 /// 타임(bubbleBatchInterval)당 생성할 버블. 근데 글자 전체에서 70개라서 글자수 당 몇개  생성할지 바꿔야할지도
+        let bubblesPerBatch: Int = 80 /// 타임(bubbleBatchInterval)당 생성할 버블. 근데 글자 전체에서 80개라서 글자수 당 몇개  생성할지 바꿔야할지도
         let bubbleBatchInterval: TimeInterval = 0.05  /// 버블 생성 간격
         let bubbleStartOffsetXRange: CGFloat = 5 /// 한 글자 중심 랜덤 버블 생성 반경.
-        let bubbleStartOffsetYRange: CGFloat = 5
+        let bubbleStartOffsetYRange: CGFloat = 4
         
         // During
         let bubbleAnimateMinDuration: Double = 1.2 /// 버블 직선 운동 최소 지속시간
         let bubbleAnimateMaxDuration: Double = 1.5 /// 버블 직선 운동 최대 지속시간
-        let minBubbleDistance: CGFloat = 15 /// 버블 직선 운동 최소 거리
-        let maxBubbleDistance: CGFloat = 15/// 버블 직선 운동 최대 거리
+        let minBubbleDistance: CGFloat = 7 /// 버블 직선 운동 최소 거리
+        let maxBubbleDistance: CGFloat = 10/// 버블 직선 운동 최대 거리
         let bubbleStartOpacity: Double = 1.0/// 버블 시작 투명도
-        let bubbleEndOpacity: Double = 0.0 /// 버블 마지막 투명도
+        let bubbleEndOpacity: Double = 0.4 /// 버블 마지막 투명도
         
         // End
-        let bubbleExplosionDistance: CGFloat = 30  /// 터치부근 버블 파동반경
-        let bubbleExplosionDuration: Double = 1.5 /// 터치시 버블 파동 애니메이션 지속시간
+        let bubbleExplosionDistance: CGFloat = 15  /// 터치부근 버블 파동반경
+        let bubbleExplosionDuration: Double = 1.0 /// 터치시 버블 파동 애니메이션 지속시간
     }
 }
