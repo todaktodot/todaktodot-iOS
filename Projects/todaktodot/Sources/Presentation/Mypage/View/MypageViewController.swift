@@ -237,7 +237,9 @@ final class MypageViewController: CustomBackViewController {
         logoutButton.rx.tap
             .subscribe(onNext: { [weak self] in
                 self?.showAlert(icon: UIImage(resource: .warning), title: "로그아웃 시 서비스 사용이\n제한돼요. 그래도 로그아웃할까요?", primaryButtonTitle: "로그아웃", primaryButtonAction: {
-                    self?.showAlert(icon: UIImage(resource: .check), title: "정상적으로 로그아웃 되었어요", primaryButtonTitle: "확인", primaryButtonAction: {})
+                    self?.showAlert(icon: UIImage(resource: .check), title: "정상적으로 로그아웃 되었어요", primaryButtonTitle: "확인", primaryButtonAction: {
+                        UserdefaultKey.isSiginedIn = false
+                    })
                     self?.coordinator?.showSigninFlow()
                 }, secondaryButtonTitle: "취소")
                 
