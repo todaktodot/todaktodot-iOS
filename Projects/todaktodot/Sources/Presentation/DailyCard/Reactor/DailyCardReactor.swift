@@ -10,6 +10,20 @@ import RxSwift
 
 final class DailyCardReactor: Reactor {
     
+    private let cardUseCase: CardUseCase
+    private let dailyCards: [QuestionCard]
+    
+    init(cardUseCase: CardUseCase, dailyCards: [QuestionCard]) {
+        self.cardUseCase = cardUseCase
+        self.dailyCards = dailyCards
+        
+        if dailyCards.count == 1 {
+            self.initialState = State(selectedCardType: dailyCards.first?.type)
+        } else {
+            self.initialState = State()
+        }
+    }
+    
     enum Action {
         case tapBackButton
         case tapSituationButton
@@ -26,7 +40,7 @@ final class DailyCardReactor: Reactor {
         var selectedCardType: CardType?
     }
     
-    let initialState = State()
+    let initialState: State
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {

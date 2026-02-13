@@ -45,13 +45,25 @@ final class DailyCardViewController: UIViewController, View {
     
     func bind(reactor: DailyCardReactor) {
         situationButton.rx.tap
-            .map { Reactor.Action.tapSituationButton }
-            .bind(to: reactor.action)
+            .withLatestFrom(reactor.state.map { $0.selectedCardType })
+            .subscribe(onNext: { [weak self] selectedCardType in
+                if let selectedCardType = selectedCardType, selectedCardType != .roleplay {
+                    self?.showNotificationAlert()
+                } else {
+                    reactor.action.onNext(.tapSituationButton)
+                }
+            })
             .disposed(by: disposeBag)
         
         balanceButton.rx.tap
-            .map { Reactor.Action.tapBalanceButton }
-            .bind(to: reactor.action)
+            .withLatestFrom(reactor.state.map { $0.selectedCardType })
+            .subscribe(onNext: { [weak self] selectedCardType in
+                if let selectedCardType = selectedCardType, selectedCardType != .balance {
+                    self?.showNotificationAlert()
+                } else {
+                    reactor.action.onNext(.tapBalanceButton)
+                }
+            })
             .disposed(by: disposeBag)
         
         reactor.state.map { $0.shouldDismiss }
@@ -64,14 +76,21 @@ final class DailyCardViewController: UIViewController, View {
             .disposed(by: disposeBag)
         
         reactor.state.map { $0.selectedCardType }
-            .compactMap { $0 }
+            .distinctUntilChanged()
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] cardType in
-                switch cardType {
-                case .roleplay :
-                    self?.coordinator?.showDailyCardDetail()
-                case .balance:
-                    self?.coordinator?.showBalanceCardDetail()
+                guard let self = self else { return }
+                
+                self.updateButtonStyle(self.situationButton, isSelected: cardType == .roleplay)
+                self.updateButtonStyle(self.balanceButton, isSelected: cardType == .balance)
+                
+                if let cardType = cardType {
+                    switch cardType {
+                    case .roleplay:
+                        self.coordinator?.showDailyCardDetail()
+                    case .balance:
+                        self.coordinator?.showBalanceCardDetail()
+                    }
                 }
             })
             .disposed(by: disposeBag)
@@ -114,12 +133,48 @@ final class DailyCardViewController: UIViewController, View {
         rootFlexContainer.pin.all(view.pin.safeArea)
         rootFlexContainer.flex.layout()
     }
+    
+    private func showNotificationAlert() {
+        guard let cardType = reactor?.currentState.selectedCardType else { return }
+        
+        showAlert(
+            icon: UIImage(resource: .warning),
+            title: "연인이 이미 유형을 선택했어요!",
+            description: "다음에는 먼저 질문에 답변하여 유형을 선정해보세요.",
+            primaryButtonTitle: "카드 작성하러 가기",
+            primaryButtonAction: { [weak self] in
+                switch cardType {
+                case .roleplay:
+                    self?.coordinator?.showDailyCardDetail()
+                case .balance:
+                    self?.coordinator?.showBalanceCardDetail()
+                }
+            }
+        )
+    }
 }
 
 // MARK: - FUNC
 extension DailyCardViewController {
     @objc private func backButtonTapped() {
         coordinator?.navigateBack()
+    }
+    
+    private func updateButtonStyle(_ button: UIButton, isSelected: Bool) {
+        if isSelected {
+            button.layer.borderWidth = 1
+            button.layer.borderColor = UIColor.mainPurple.cgColor
+            button.layer.shadowColor = UIColor.mainPurple.withAlphaComponent(0.2).cgColor
+            button.layer.shadowOpacity = 1
+            button.layer.shadowOffset = CGSize(width: 0, height: 2)
+            button.layer.shadowRadius = 8
+        } else {
+            button.layer.borderWidth = 0
+            button.layer.shadowColor = UIColor.black.cgColor
+            button.layer.shadowOpacity = 0.05
+            button.layer.shadowOffset = CGSize(width: 0, height: 2)
+            button.layer.shadowRadius = 8
+        }
     }
 }
 
