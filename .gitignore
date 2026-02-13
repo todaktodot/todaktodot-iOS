@@ -107,5 +107,3 @@ Derived/
 
 ### Tuist managed dependencies ###
 Tuist/.build
-Projects/todaktodot/Resources/GoogleService-Info-Release.plist
-Projects/todaktodot/Resources/GoogleService-Info-Debug.plist
