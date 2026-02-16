@@ -43,8 +43,8 @@ final class CoupleRepositoryImpl: CoupleRepository {
             .map { _ in true }
     }
     
-    func setNickname(nickname: String) -> Observable<Bool> {
-        let endpoint = Endpoint<Empty>(
+    func updateNickname(nickname: String) -> Observable<String> {
+        let endpoint = Endpoint<NicknameDTO>(
             baseURL: .todaktodotAPI,
             path: "/api/profile/nickname",
             method: .patch,
@@ -53,11 +53,11 @@ final class CoupleRepositoryImpl: CoupleRepository {
         )
 
         return networkManager.request(with: endpoint)
-            .map { _ in true }
+            .map { $0.toNickname() }
     }
     
-    func setCoupleInfo(date: String, stage: String) -> Observable<Bool> {
-        let endpoint = Endpoint<Empty>(
+    func updateCoupleInfo(date: String, stage: String) -> Observable<CoupleInfo> {
+        let endpoint = Endpoint<CoupleInfoDto>(
             baseURL: .todaktodotAPI,
             path: "/api/couple/info",
             method: .patch,
@@ -69,7 +69,7 @@ final class CoupleRepositoryImpl: CoupleRepository {
         )
 
         return networkManager.request(with: endpoint)
-            .map { _ in true }
+            .map { $0.toCoupleInfo() }
     }
     
     func setTerms(marketingAgree: Bool) -> Observable<Bool> {

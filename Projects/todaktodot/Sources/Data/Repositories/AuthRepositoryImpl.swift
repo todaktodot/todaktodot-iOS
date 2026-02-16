@@ -7,6 +7,7 @@
 
 import RxSwift
 import NetworkKit
+import Foundation
 
 final class AuthRepositoryImpl: AuthRepository {
     
@@ -67,16 +68,16 @@ final class AuthRepositoryImpl: AuthRepository {
 
         let endpoint = Endpoint<LoginInfo>(
             baseURL: .todaktodotAPI,
-            path: "/login",
+            path: "/api/login",
             method: .post,
             parameters: parameters
         )
-
+        
         return networkManager.request(with: endpoint)
             .do(onNext: { result in
                 UserdefaultKey.accessToken = result.accessToken
-                UserdefaultKey.couple = result.couple
-                UserdefaultKey.joined = result.joined
+                UserdefaultKey.refreshToken = result.refreshToken
+                UserdefaultKey.loginProvider = loginType.rawValue.uppercased()
             })
             .map { _ in true }
             .catchAndReturn(false)

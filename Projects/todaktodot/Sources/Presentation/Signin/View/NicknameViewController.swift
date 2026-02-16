@@ -122,12 +122,12 @@ final class NicknameViewController: UIViewController, View {
     
     func bind(reactor: CoupleReactor) {
         reactor.state
-            .map { $0.isNicknameSetSuccess }
-            .distinctUntilChanged()
-            .filter { $0 }
-            .subscribe(onNext: { [weak self] _ in
+            .compactMap { $0.updateNickname }
+            .subscribe(onNext: { [weak self] nickname in
                 guard let self = self else { return }
-                print(flowType.value)
+                
+                coordinator?.onNicknameUpdated?(nickname)
+                
                 switch flowType.value {
                 case .create:
                     self.coordinator?.showCoupleInfo()

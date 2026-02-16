@@ -18,10 +18,10 @@ final class CoupleReactor: Reactor {
         
         var isTermsAgreeSuccess: Bool = false
         var isCoupleConnectSuccess: Bool = false
-        var isNicknameSetSuccess: Bool = false
-        var isJoinSuccess: Bool = false
-        
         var isMyCodeIssueFailed: Bool = false
+        
+        var updateNickname: String?
+        var updateCoupleInfo: CoupleInfo?
     }
     
     enum Action {
@@ -30,19 +30,17 @@ final class CoupleReactor: Reactor {
         case tapTemrsAgreeButtonWithMarketingAgree(Bool)
         case tapConnectButton(String)
         case tapNicknameButton(String)
-        case tapJoinButton(String, String)
+        case tapStartButton(String, String)
     }
     
     enum Mutation {
         case setLoading(Bool)
-        
         case setMyCode(String)
         case setIsJoined(Bool)
         case setTermsAgreeSuccess(Bool)
         case setCoupleConnectSuccess(Bool)
-        case setNicknameSuccess(Bool)
-        case setJoinSuccess(Bool)
-        
+        case setNickname(String)
+        case setCoupleInfo(CoupleInfo)
         case setMyCodeIssueFailed
     }
     
@@ -67,13 +65,11 @@ final class CoupleReactor: Reactor {
                 .catchAndReturn(Mutation.setCoupleConnectSuccess(false))
             
         case .tapNicknameButton(let nickname):
-            return coupleUseCase.setNickname(nickname: nickname)
-                .map { Mutation.setNicknameSuccess($0) }
-                .catchAndReturn(Mutation.setNicknameSuccess(false))
-        case .tapJoinButton(let date, let stage):
-            return coupleUseCase.setCoupleInfo(date: date, stage: stage)
-                .map { Mutation.setJoinSuccess($0) }
-                .catchAndReturn(Mutation.setJoinSuccess(false))
+            return coupleUseCase.updateNickname(nickname: nickname)
+                .map { Mutation.setNickname($0) }
+        case .tapStartButton(let date, let stage):
+            return coupleUseCase.updateCoupleInfo(date: date, stage: stage)
+                .map { Mutation.setCoupleInfo($0) }
         case .tapTemrsAgreeButtonWithMarketingAgree(let isMarketing):
             return coupleUseCase.setTerms(marketingAgree: isMarketing)
                 .map { Mutation.setTermsAgreeSuccess($0) }
@@ -102,11 +98,11 @@ final class CoupleReactor: Reactor {
         case .setCoupleConnectSuccess(let isSuccess):
             newState.isCoupleConnectSuccess = isSuccess
             
-        case .setNicknameSuccess(let isSuccess):
-            newState.isNicknameSetSuccess = isSuccess
+        case .setNickname(let nickname):
+            newState.updateNickname = nickname
             
-        case .setJoinSuccess(let isSuccess):
-            newState.isJoinSuccess = isSuccess
+        case .setCoupleInfo(let info):
+            newState.updateCoupleInfo = info
             
         case .setIsJoined(let isJoined):
             newState.isJoined = isJoined

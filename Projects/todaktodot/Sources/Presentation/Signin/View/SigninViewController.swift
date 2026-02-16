@@ -171,7 +171,8 @@ final class SigninViewController: UIViewController, View {
                 case .kakaoFail, .googleFail, .appleFail:
                     break
                 }
-                self.reactor?.action.onNext(.clearEvent)
+                reactor.action.onNext(.stopLoading)
+                reactor.action.onNext(.clearEvent)
             })
             .disposed(by: disposeBag)
         

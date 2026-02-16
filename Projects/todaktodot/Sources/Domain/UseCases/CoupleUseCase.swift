@@ -27,11 +27,11 @@ final class CoupleUseCase {
         repository.setTerms(marketingAgree: marketingAgree)
     }
     
-    func setNickname(nickname: String) -> Observable<Bool> {
-        repository.setNickname(nickname: nickname)
+    func updateNickname(nickname: String) -> Observable<String> {
+        repository.updateNickname(nickname: nickname)
     }
     
-    func setCoupleInfo(date: String, stage: String) -> Observable<Bool> {
-        repository.setCoupleInfo(date: date, stage: stage)
+    func updateCoupleInfo(date: String, stage: String) -> Observable<CoupleInfo> {
+        repository.updateCoupleInfo(date: date, stage: stage)
     }
 }

@@ -10,16 +10,20 @@ import Then
 import FlexLayout
 import PinLayout
 import RxSwift
+import RxRelay
 import UserNotifications
+import ReactorKit
 
-final class MypageViewController: CustomBackViewController {
+final class MypageViewController: CustomBackViewController, View {
+    var disposeBag = DisposeBag()
     weak var coordinator: MypageCoordinator?
-    private var disposeBag = DisposeBag()
-    private var connected = true
+    private var isCouple = PublishRelay<Bool>()
     
     private let contentView = UIView()
     
-    private let backgroundView = UIImageView()
+    private let backgroundView = UIImageView().then {
+        $0.image = UIImage(resource: .mypageSubBackground)
+    }
     
     private let myImageView = UIImageView().then {
         $0.image = UIImage(resource: .me)
@@ -36,12 +40,20 @@ final class MypageViewController: CustomBackViewController {
         $0.contentMode = .scaleAspectFit
     }
     
+    private let indicatorView = UIActivityIndicatorView(style: .medium).then {
+        $0.backgroundColor = .white
+        $0.hidesWhenStopped = true
+    }
+    
+    private let profileView = UIView().then {
+        $0.flex.display(.none)
+    }
+    
     private let notYetConnectedView = DashedBorderView()
     private let ourInfoView = OurInfoView()
     private let settingSectionView = SettingSectionView()
     
     private let myNicknameLabel = TDLabel().then {
-        $0.text = "내닉네임"
         $0.font = .pretenSemiBold(18)
         $0.textColor = .grayScale900
         $0.textAlignment = .center
@@ -49,7 +61,6 @@ final class MypageViewController: CustomBackViewController {
     }
     
     private let partherNinameLabel = TDLabel().then {
-        $0.text = "연인닉네임들어갑니다"
         $0.font = .pretenSemiBold(18)
         $0.textColor = .grayScale900
         $0.textAlignment = .center
@@ -106,6 +117,10 @@ final class MypageViewController: CustomBackViewController {
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        
+        updateNicknameOrCoupleInfo()
+        
+        self.navigationController?.interactivePopGestureRecognizer?.isEnabled = false
         navigationController?.isNavigationBarHidden = false
         
         NotificationCenter.default.addObserver(
@@ -118,7 +133,14 @@ final class MypageViewController: CustomBackViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        self.syncNotificationSwitch()
+        syncNotificationSwitch()
+    }
+    
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        
+        self.navigationController?.interactivePopGestureRecognizer?.isEnabled = true
     }
     
     override func viewDidLayoutSubviews() {
@@ -130,48 +152,15 @@ final class MypageViewController: CustomBackViewController {
         view.addSubview(backgroundView)
         view.addSubview(contentView)
         view.addSubview(heartImageView)
-        
-        backgroundView.image = UIImage(resource: connected ? .mypageBackground : .mypageSubBackground)
+        view.addSubview(indicatorView)
     }
     
     private func setupFlexLayout() {
         contentView.flex.define {
-            if connected {
-                $0.addItem()
-                    .marginTop(28)
-                    .gap(11)
-                    .direction(.row)
-                    .alignItems(.start)
-                    .justifyContent(.center)
-                    .define {
-                        $0.addItem()
-                            .width(140)
-                            .alignItems(.center)
-                            .define {
-                                $0.addItem(myImageView)
-                                $0.addItem(myNicknameLabel)
-                                    .marginTop(4)
-                                $0.addItem(nicknameEditButton)
-                                    .marginTop(4)
-                            }
-                        
-                        $0.addItem()
-                            .width(140)
-                            .alignItems(.center)
-                            .define {
-                                $0.addItem(partnerImageView)
-                                $0.addItem(partherNinameLabel)
-                                    .marginTop(4)
-                            }
-                    }
-                $0.addItem(ourInfoView)
-                    .marginTop(24)
-                    .marginHorizontal(20)
-            } else {
-                $0.addItem(notYetConnectedView)
-                    .marginTop(28)
-                    .marginHorizontal(20)
-            }
+            $0.addItem(profileView)
+            $0.addItem(notYetConnectedView)
+                .marginTop(28)
+                .marginHorizontal(20)
             
             $0.addItem(settingSectionView)
                 .marginTop(20)
@@ -201,6 +190,39 @@ final class MypageViewController: CustomBackViewController {
                     $0.addItem(withdrawalButton)
                 }
         }
+        
+        profileView.flex.define {
+            $0.addItem()
+                .marginTop(28)
+                .gap(11)
+                .direction(.row)
+                .alignItems(.start)
+                .justifyContent(.center)
+                .define {
+                    $0.addItem()
+                        .width(140)
+                        .alignItems(.center)
+                        .define {
+                            $0.addItem(myImageView)
+                            $0.addItem(myNicknameLabel)
+                                .marginTop(4)
+                            $0.addItem(nicknameEditButton)
+                                .marginTop(4)
+                        }
+                    
+                    $0.addItem()
+                        .width(140)
+                        .alignItems(.center)
+                        .define {
+                            $0.addItem(partnerImageView)
+                            $0.addItem(partherNinameLabel)
+                                .marginTop(4)
+                        }
+                }
+            $0.addItem(ourInfoView)
+                .marginTop(24)
+                .marginHorizontal(20)
+        }
     }
     
     private func layoutViews() {
@@ -212,23 +234,90 @@ final class MypageViewController: CustomBackViewController {
             .horizontally()
             .bottom()
         
-        if connected {
-            heartImageView.pin
-                .top(view.pin.safeArea + 52)
-                .hCenter()
-                .height(24)
-                .width(64)
-        }
+        indicatorView.pin
+            .all()
         
-        contentView.flex.layout()
+        contentView.flex.layout(mode: .adjustHeight)
     }
     
-    private func bindActions() {
+    func bind(reactor: MyPageReactor) {
+        reactor.action.onNext(.fetchInfo)
+        
+        reactor.state
+            .map { $0.isLoading }
+            .distinctUntilChanged()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] isLoading in
+                guard let self = self else { return }
+                
+                if isLoading {
+                    self.indicatorView.startAnimating()
+                } else {
+                    UIView.animate(withDuration: 0.25, animations: {
+                        self.indicatorView.alpha = 0
+                    }, completion: { _ in
+                        self.indicatorView.stopAnimating()
+                    })
+                }
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .compactMap { $0.info }
+            .subscribe(onNext: { [weak self] info in
+                guard let self = self else { return }
+                
+                self.setMypageInfo(info)
+                self.isCouple.accept(info.isCouple)
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .compactMap { $0.isLogout }
+            .filter { $0 }
+            .distinctUntilChanged()
+            .subscribe(onNext: { [weak self] state in
+                guard let self = self else { return }
+                self.showAlert(icon: UIImage(resource: .check), title: "정상적으로 로그아웃 되었어요", primaryButtonTitle: "확인", primaryButtonAction: {
+                    UserdefaultKey.isSiginedIn = false
+                })
+                self.coordinator?.showSigninFlow()
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .compactMap { $0.isDisconnectCouple }
+            .filter { $0 }
+            .distinctUntilChanged()
+            .subscribe(onNext: { [weak self] state in
+                guard let self = self else { return }
+                self.showAlert(icon: UIImage(resource: .check), title: "정상적으로 커플 연결이 해제됐어요\n다시 로그인이 필요해요", primaryButtonTitle: "확인", primaryButtonAction: {})
+                self.coordinator?.showSigninFlow()
+            })
+            .disposed(by: disposeBag)
+        
+        isCouple
+            .subscribe(onNext: { [weak self] in
+                guard let self = self else { return }
+                
+                profileView.flex.display($0 ? .flex : .none)
+                notYetConnectedView.flex.display($0 ? .none : .flex)
+                backgroundView.image = UIImage(resource: $0 ? .mypageBackground : .mypageSubBackground)
+                
+                if $0 {
+                    heartImageView.pin
+                        .top(view.pin.safeArea + 52)
+                        .hCenter()
+                        .height(24)
+                        .width(64)
+                }
+            })
+            .disposed(by: disposeBag)
+        
         coupleDisconnectButton.rx.tap
             .subscribe(onNext: { [weak self] in
                 self?.showAlert(icon: UIImage(resource: .warning), title: "정말 커플 연결을 해제하시겠어요?", description: "즉시 연결이 해제되며\n그동안 작성하신 기록은 모두 삭제되어\n되돌릴 수 없으니 신중히 결정해주세요",primaryButtonTitle: "커플 해제", primaryButtonAction: {
-                    self?.showAlert(icon: UIImage(resource: .check), title: "정상적으로 커플 연결이 해제됐어요\n다시 로그인이 필요해요", primaryButtonTitle: "확인", primaryButtonAction: {})
-                    self?.coordinator?.showSigninFlow()
+                    reactor.action.onNext(.tapDisconnectCouple)
                 }, secondaryButtonTitle: "취소")
                 
             })
@@ -237,21 +326,15 @@ final class MypageViewController: CustomBackViewController {
         logoutButton.rx.tap
             .subscribe(onNext: { [weak self] in
                 self?.showAlert(icon: UIImage(resource: .warning), title: "로그아웃 시 서비스 사용이\n제한돼요. 그래도 로그아웃할까요?", primaryButtonTitle: "로그아웃", primaryButtonAction: {
-                    self?.showAlert(icon: UIImage(resource: .check), title: "정상적으로 로그아웃 되었어요", primaryButtonTitle: "확인", primaryButtonAction: {})
-                    self?.coordinator?.showSigninFlow()
+                    reactor.action.onNext(.tapLogout)
                 }, secondaryButtonTitle: "취소")
                 
             })
             .disposed(by: disposeBag)
         
-        withdrawalButton.rx.tap
+        notYetConnectedView.connectButton.rx.tap
             .subscribe(onNext: { [weak self] in
-                
-                self?.showAlert(icon: UIImage(resource: .warning), title: "계정 탈퇴 시 서비스 사용이\n제한돼요. 그래도 탈퇴할까요?", primaryButtonTitle: "탈퇴", primaryButtonAction: {
-                    self?.showAlert(icon: UIImage(resource: .check), title: "정상적으로 탈퇴 되었어요", primaryButtonTitle: "확인", primaryButtonAction: {})
-                    self?.coordinator?.showSigninFlow()
-                }, secondaryButtonTitle: "취소")
-                
+                self?.coordinator?.showCoupleConnect()
             })
             .disposed(by: disposeBag)
         
@@ -264,6 +347,20 @@ final class MypageViewController: CustomBackViewController {
         ourInfoView.settingButton.rx.tap
             .subscribe(onNext: { [weak self] in
                 self?.coordinator?.showCoupleInfo()
+            })
+            .disposed(by: disposeBag)
+    }
+    
+    private func bindActions() {
+        
+        withdrawalButton.rx.tap
+            .subscribe(onNext: { [weak self] in
+                
+                self?.showAlert(icon: UIImage(resource: .warning), title: "계정 탈퇴 시 서비스 사용이\n제한돼요. 그래도 탈퇴할까요?", primaryButtonTitle: "탈퇴", primaryButtonAction: {
+                    self?.showAlert(icon: UIImage(resource: .check), title: "정상적으로 탈퇴 되었어요", primaryButtonTitle: "확인", primaryButtonAction: {})
+                    self?.coordinator?.showSigninFlow()
+                }, secondaryButtonTitle: "취소")
+                
             })
             .disposed(by: disposeBag)
         
@@ -290,6 +387,29 @@ final class MypageViewController: CustomBackViewController {
         UIApplication.shared.open(url)
     }
     
+    func setMypageInfo(_ info: MypageInfo) {
+        myNicknameLabel.text = info.myNickname
+        partherNinameLabel.text = info.partnerNickname
+        ourInfoView.setOurInfo(info: info.coupleInfo)
+        
+        myNicknameLabel.flex.markDirty()
+        partherNinameLabel.flex.markDirty()
+        
+        contentView.flex.layout()
+    }
+    
+    func updateNicknameOrCoupleInfo() {
+        coordinator?.onNicknameUpdated = { [weak self] newNickname in
+            self?.myNicknameLabel.text = newNickname
+            self?.myNicknameLabel.flex.markDirty()
+        }
+        coordinator?.onCoupleInfoUpdated = { [weak self] info in
+            self?.ourInfoView.setOurInfo(info: info)
+        }
+        
+        contentView.flex.layout()
+    }
+    
     @objc private func syncNotificationSwitch() {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             DispatchQueue.main.async {
@@ -306,5 +426,11 @@ final class MypageViewController: CustomBackViewController {
 extension MypageViewController: CustomBackViewControllerDelegate {
     func navigateBack() {
         coordinator?.navigateBack()
+    }
+}
+
+extension MypageViewController: UIGestureRecognizerDelegate {
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        return false
     }
 }

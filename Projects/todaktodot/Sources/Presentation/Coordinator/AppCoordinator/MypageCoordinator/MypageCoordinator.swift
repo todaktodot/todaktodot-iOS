@@ -6,19 +6,29 @@
 //
 
 import UIKit
+import NetworkKit
 
 final class MypageCoordinator: Coordinator {
+    var onNicknameUpdated: ((String) -> Void)?
+    var onCoupleInfoUpdated: ((CoupleInfo) -> Void)?
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
     weak var tabBarCoordinator: TabBarCoordinator?
+    private let networkManager = NetworkManager()
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
     }
     
     func start() {
+        let useCase = MypageUsecase(
+            repository: MypageRepositoryImpl(
+                networkManager: networkManager
+                )
+        )
         let vc = MypageViewController()
         vc.coordinator = self
+        vc.reactor = MyPageReactor(mypageUsecase: useCase)
         navigationController.pushViewController(vc, animated: true)
     }
     
@@ -46,14 +56,27 @@ final class MypageCoordinator: Coordinator {
     
     func showNickname() {
         let signinCoordinator = SigninCoordinator(navigationController: navigationController)
+        signinCoordinator.tabBarCoordinator = tabBarCoordinator
         addChild(signinCoordinator)
+        signinCoordinator.onNicknameUpdated = { [weak self] nickname in
+            self?.onNicknameUpdated?(nickname)
+        }
         signinCoordinator.showNickname(flowType: .edit)
     }
     
     func showCoupleInfo() {
         let signinCoordinator = SigninCoordinator(navigationController: navigationController)
         addChild(signinCoordinator)
+        signinCoordinator.onCoupleInfoUpdated = { [weak self] info in
+            self?.onCoupleInfoUpdated?(info)
+        }
         signinCoordinator.showCoupleInfo(flowType: .editUser)
+    }
+    
+    func showCoupleConnect() {
+        let signinCoordinator = SigninCoordinator(navigationController: navigationController)
+        addChild(signinCoordinator)
+        signinCoordinator.showCoupleConnect()
     }
     
     func navigateBack() {

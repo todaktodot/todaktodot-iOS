@@ -10,7 +10,7 @@ import RxSwift
 protocol CoupleRepository {
     func issueCode() -> Observable<CoupleCode>
     func connectCouple(code: String) -> Observable<Bool>
-    func setNickname(nickname: String) -> Observable<Bool>
-    func setCoupleInfo(date: String, stage: String) -> Observable<Bool>
+    func updateNickname(nickname: String) -> Observable<String>
+    func updateCoupleInfo(date: String, stage: String) -> Observable<CoupleInfo>
     func setTerms(marketingAgree: Bool) -> Observable<Bool>
 }

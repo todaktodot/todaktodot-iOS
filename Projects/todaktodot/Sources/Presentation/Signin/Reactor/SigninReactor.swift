@@ -31,6 +31,7 @@ final class SigninReactor: Reactor {
         case tapGoogleButton
         case tapAppleButton
         case clearEvent
+        case stopLoading
     }
 
     enum Mutation {
@@ -76,6 +77,8 @@ final class SigninReactor: Reactor {
             ])
         case .clearEvent:
             return .just(.setSigninEvent(nil))
+        case .stopLoading:
+            return .just(.setLoading(false))
         }
     }
     

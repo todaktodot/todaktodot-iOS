@@ -9,6 +9,8 @@ import UIKit
 import NetworkKit
 
 final class SigninCoordinator: Coordinator {
+    var onNicknameUpdated: ((String) -> Void)?
+    var onCoupleInfoUpdated: ((CoupleInfo) -> Void)?
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
     weak var parentCoordinator: Coordinator?
@@ -67,7 +69,7 @@ final class SigninCoordinator: Coordinator {
         let nicknameViewController = NicknameViewController(flowType: flowType)
         nicknameViewController.coordinator = self
         nicknameViewController.reactor = CoupleReactor(coupleUseCase: useCase)
-        self.navigationController.isNavigationBarHidden = true
+        self.navigationController.isNavigationBarHidden = true // TODO: 지우기
         navigationController.pushViewController(nicknameViewController, animated: true)
     }
     
@@ -80,7 +82,7 @@ final class SigninCoordinator: Coordinator {
         let coupleInfoViewController = CoupleInfoViewController(flowType: flowType)
         coupleInfoViewController.coordinator = self
         coupleInfoViewController.reactor = CoupleReactor(coupleUseCase: useCase)
-        self.navigationController.isNavigationBarHidden = true
+        self.navigationController.isNavigationBarHidden = true // TODO: 지우기
         navigationController.pushViewController(coupleInfoViewController, animated: true)
     }
     

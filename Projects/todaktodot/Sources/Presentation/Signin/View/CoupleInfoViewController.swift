@@ -134,17 +134,18 @@ final class CoupleInfoViewController: UIViewController, View {
     
     func bind(reactor: CoupleReactor) {
         reactor.state
-            .map { $0.isJoinSuccess }
-            .filter { $0 }
-            .distinctUntilChanged()
-            .subscribe(onNext: { [weak self] _ in
-                switch self?.flowType {
+            .compactMap { $0.updateCoupleInfo }
+            .subscribe(onNext: { [weak self] info in
+                guard let self = self else { return }
+                print(info)
+                
+                coordinator?.onCoupleInfoUpdated?(info)
+                
+                switch self.flowType {
                 case .newUser:
-                    self?.coordinator?.navigateToMain()
+                    self.coordinator?.navigateToMain()
                 case .editUser:
-                    self?.coordinator?.navigateBack()
-                case .none:
-                    break
+                    self.coordinator?.navigateBack()
                 }
             })
             .disposed(by: disposeBag)
@@ -153,7 +154,7 @@ final class CoupleInfoViewController: UIViewController, View {
             .compactMap { [weak self] in
                 guard let date = self?.isDateSelected.value,
                       let step = self?.isRelationSelected.value else { return nil }
-                return CoupleReactor.Action.tapJoinButton(date, step.rawValue)
+                return CoupleReactor.Action.tapStartButton(date, step.rawValue)
             }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)

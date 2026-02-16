@@ -96,10 +96,10 @@ final class CoupleDatePickerView: UIView {
             })
             .disposed(by: disposeBag)
         
-        dateTextField.rx.text.orEmpty
-            .map { !$0.isEmpty }
-            .subscribe(onNext: { [weak self] _ in
-                self?.isDateSelected.accept(self?.dateTextField.text)
+        dateTextField.rx.text
+            .subscribe(onNext: { [weak self] text in
+                guard text != "" else { return }
+                self?.isDateSelected.accept(text)
             })
             .disposed(by: disposeBag)
     }

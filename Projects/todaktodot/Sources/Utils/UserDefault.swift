@@ -17,11 +17,17 @@ enum UserdefaultKey {
     @UserDefault(key: "couple", defaultValue: false)
     static var couple: Bool
     
-    @UserDefault(key: "joined", defaultValue: false)
+    @UserDefault(key: "joined", defaultValue: false) // TODO: 이거 약관동의 완료여뷰였음 바꿔야됨
     static var joined: Bool
+    
+    @UserDefault(key: "loginProvider", defaultValue: "")
+    static var loginProvider: String
     
     @UserDefault(key: "accessToken", defaultValue: "")
     static var accessToken: String
+    
+    @UserDefault(key: "refreshToken", defaultValue: "")
+    static var refreshToken: String
     
     @UserDefault(key: "connectedDate", defaultValue: Date())
     static var connectedDate: Date
