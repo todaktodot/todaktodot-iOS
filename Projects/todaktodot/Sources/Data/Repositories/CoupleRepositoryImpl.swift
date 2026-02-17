@@ -24,7 +24,6 @@ final class CoupleRepositoryImpl: CoupleRepository {
             baseURL: .todaktodotAPI,
             path: "/api/couple-link/issue",
             method: .post,
-            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)]
         )
 
         return networkManager.request(with: endpoint)
@@ -35,7 +34,6 @@ final class CoupleRepositoryImpl: CoupleRepository {
             baseURL: .todaktodotAPI,
             path: "/api/couple-link/connect",
             method: .post,
-            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
             parameters: ["linkCode": code]
         )
 
@@ -48,7 +46,6 @@ final class CoupleRepositoryImpl: CoupleRepository {
             baseURL: .todaktodotAPI,
             path: "/api/profile/nickname",
             method: .patch,
-            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
             parameters: ["nickname": nickname]
         )
 
@@ -61,7 +58,6 @@ final class CoupleRepositoryImpl: CoupleRepository {
             baseURL: .todaktodotAPI,
             path: "/api/couple/info",
             method: .patch,
-            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
             parameters: [
                 "firstMetDt": date,
                 "relationshipStage": stage,
@@ -77,7 +73,6 @@ final class CoupleRepositoryImpl: CoupleRepository {
             baseURL: .todaktodotAPI,
             path: "/api/term",
             method: .post,
-            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
             parameters: [
                 "marketingAndAlarmYN": marketingAgree ? "Y" : "N"
             ]

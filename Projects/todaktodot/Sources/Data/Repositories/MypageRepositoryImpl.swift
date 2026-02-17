@@ -23,7 +23,6 @@ final class MypageRepositoryImpl: MypageRepository {
             baseURL: .todaktodotAPI,
             path: "/api/profile/detail",
             method: .get,
-            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)]
         )
 
         return networkManager.request(with: endpoint)
@@ -33,16 +32,18 @@ final class MypageRepositoryImpl: MypageRepository {
     }
     
     func logout() -> Observable<Bool> {
+        guard let provider = UserdefaultKey.loginProvider,
+              let token = UserdefaultKey.accessToken else { return .just(false) }
+        
         let parameters: [String: Any] = [
-            "provider": UserdefaultKey.loginProvider,
-            "token": UserdefaultKey.accessToken
+            "provider": provider,
+            "token": token
         ]
         
         let endpoint = Endpoint<Empty>(
             baseURL: .todaktodotAPI,
             path: "/api/logout",
             method: .post,
-            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
             parameters: parameters
         )
 
@@ -55,7 +56,6 @@ final class MypageRepositoryImpl: MypageRepository {
             baseURL: .todaktodotAPI,
             path: "/api/couple/disconnect",
             method: .post,
-            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)]
         )
 
         return networkManager.request(with: endpoint)

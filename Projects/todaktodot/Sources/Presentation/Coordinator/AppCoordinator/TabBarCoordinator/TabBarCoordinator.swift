@@ -65,7 +65,7 @@ final class TabBarCoordinator: Coordinator {
 }
 
 final class HomeCoordinator: Coordinator {
-    let networkManager = NetworkManager()
+    let networkManager = NetworkManager.shared
     
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController

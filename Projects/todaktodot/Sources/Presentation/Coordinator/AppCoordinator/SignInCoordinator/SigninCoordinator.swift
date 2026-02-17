@@ -15,7 +15,7 @@ final class SigninCoordinator: Coordinator {
     var navigationController: UINavigationController
     weak var parentCoordinator: Coordinator?
     weak var tabBarCoordinator: TabBarCoordinator?
-    private let networkManager = NetworkManager() // TODO: AppDIContainer 사용? 고민
+    private let networkManager = NetworkManager.shared // TODO: AppDIContainer 사용? 고민
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController

@@ -199,6 +199,10 @@ final class SigninViewController: UIViewController, View {
 //        } else {
 //            coordinator?.showCoupleConnect()
 //        }
-        coordinator?.showCoupleConnect() // TODO: 임시 처리
+        coordinator?.navigateToMain() // TODO: 임시 처리
+    }
+    
+    func showExpireAlert() {
+        self.showAlert(icon: UIImage(resource: .check), title: "로그인 시간이 만료되었습니다.\n다시 로그인해 주세요.", primaryButtonTitle: "확인", primaryButtonAction: {})
     }
 }

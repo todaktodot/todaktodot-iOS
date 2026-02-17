@@ -3,6 +3,7 @@ import RxKakaoSDKCommon
 import FirebaseCore
 import GoogleSignIn
 import FirebaseMessaging
+import NetworkKit
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -13,6 +14,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
     ) -> Bool {
+        NetworkManager.setup(tokenProvider: AppTokenProvider())
+        
         FirebaseApp.configure()
         
         let authOption: UNAuthorizationOptions = [.alert, .badge, .sound]

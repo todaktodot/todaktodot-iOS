@@ -14,7 +14,7 @@ final class MypageCoordinator: Coordinator {
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
     weak var tabBarCoordinator: TabBarCoordinator?
-    private let networkManager = NetworkManager()
+    private let networkManager = NetworkManager.shared
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController

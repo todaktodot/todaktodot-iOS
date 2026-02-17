@@ -10,10 +10,28 @@ import RxSwift
 public import Alamofire
 
 public final class NetworkManager: Network {
-    public var session: Session
     
-    public init(session: Session = Session(eventMonitors: [APIEventMonitor()])) {
-        self.session = session
+    public var session: Session
+    private static var _shared: NetworkManager?
+    
+    public static var shared: NetworkManager {
+        guard let instance = _shared else {
+            fatalError("NetworkManager.setup()이 호출 된 곳이 없습니다.")
+        }
+        return instance
+    }
+    
+    public static func setup(tokenProvider: TokenProvider) {
+        self._shared = NetworkManager(tokenProvider: tokenProvider)
+    }
+    
+    private init(tokenProvider: TokenProvider? = nil) {
+        let interceptor = TokenInterceptor(tokenProvider: tokenProvider)
+        
+        self.session = Session(
+            interceptor: interceptor,
+            eventMonitors: [APIEventMonitor()]
+        )
     }
     
     public func request<E: Requestable>(with endpoint: E) -> Observable<E.Response> {
@@ -58,18 +76,13 @@ public final class NetworkManager: Network {
                                                encoding: endpoint.encoding,
                                                headers: endpoint.headers)
                 .validate()
-                .responseDecodable(of: E.Response.self) { response in
+                .responseDecodable(of: E.Response.self, emptyResponseCodes: Set(200..<300)) { response in
                     switch response.result {
                     case .success(let data):
                         observer.onNext(data)
                         observer.onCompleted()
                     case .failure(let error):
-                        if (200..<300).contains(response.response?.statusCode ?? 0) {
-                            observer.onNext(nil)
-                            observer.onCompleted()
-                        } else {
-                            observer.onError(error)
-                        }
+                        observer.onError(error)
                     }
                 }
             
