@@ -146,12 +146,16 @@ final class HomeReactor: Reactor {
                 .flatMap { result -> Observable<Mutation> in
                     switch result {
                     case .success(let cards):
-                        print("✅ 오늘 카드 패치 완료: \(cards.count)개")
-                        return .just(.setTodayCards(cards))
+                        print("✅ 오늘 카드 서버 패치 완료: \(cards.count)개")
+                        let status = cards.isEmpty ? .bothUnanswered : self.determineAnswerStatus(from: cards)
+                        return .concat([
+                            .just(.setTodayCards(cards)),
+                            .just(.setAnswerStatus(status))
+                        ])
                     case .failure:
-                        print("⚠️ 서버 실패 - 저장된 카드 확인")
+                        print("⚠️ 서버 실패 - 로컬 주간 카드 확인")
                         let savedTodayCards = CardStorageService.shared.getTodayCards()
-                        print("💾 저장된 카드: \(savedTodayCards.count)개")
+                        print("💾 로컬 저장된 오늘 카드: \(savedTodayCards.count)개")
                         
                         if savedTodayCards.isEmpty {
                             print("🔄 Mock 데이터 사용")
@@ -160,10 +164,18 @@ final class HomeReactor: Reactor {
                             let calendar = Calendar.current
                             let todayCards = mockCards.filter { calendar.isDate($0.date, inSameDayAs: today) }
                             print("📦 Mock 오늘 카드: \(todayCards.count)개")
-                            return .just(.setTodayCards(todayCards))
+                            let status = todayCards.isEmpty ? .bothUnanswered : self.determineAnswerStatus(from: todayCards)
+                            return .concat([
+                                .just(.setTodayCards(todayCards)),
+                                .just(.setAnswerStatus(status))
+                            ])
                         }
                         
-                        return .just(.setTodayCards(savedTodayCards))
+                        let status = savedTodayCards.isEmpty ? .bothUnanswered : self.determineAnswerStatus(from: savedTodayCards)
+                        return .concat([
+                            .just(.setTodayCards(savedTodayCards)),
+                            .just(.setAnswerStatus(status))
+                        ])
                     }
                 }
         }

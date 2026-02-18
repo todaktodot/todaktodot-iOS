@@ -76,6 +76,8 @@ final class HomeViewController: BaseViewController, View {
         let arrowConfig = UIImage.SymbolConfiguration(weight: .semibold)
         $0.setImage(UIImage(systemName: "arrow.right", withConfiguration: arrowConfig), for: .normal)
         $0.tintColor = .white
+        $0.isUserInteractionEnabled = true
+        $0.layer.zPosition = 100
     }
     private let pokeButton = UIButton().then {
         $0.setTitle("콕 찌르기", for: .normal)
@@ -126,31 +128,28 @@ final class HomeViewController: BaseViewController, View {
     }
     
     private func fetchAllCards() {
-        let todayCardAction: Observable<Void>
+        // 오늘 카드와 히스토리 카드 먼저 패치 (UI 우선)
+        reactor?.action.onNext(.loadTodayCards)
+        fetchHistoryCards()
+        
         if let lastWeeklyDate = UserdefaultKey.lastWeeklyCardDate,
            lastWeeklyDate >= Date() {
-            print("오늘 카드가 주간 카드에 저장 돼 있음, 로컬 패치")
-            todayCardAction = Observable.just(()).do(onNext: { [weak self] in
-                self?.reactor?.action.onNext(.loadTodayCards)
-            })
+            print("✅ 주간 카드 저장됨")
         } else {
-            print("저장한 주간 카드에 오늘 없음, 서버 패치")
-            todayCardAction = Observable.just(()).do(onNext: { [weak self] in
-                self?.fetchWeeklyCards()
-            })
+            print("📥 주간 카드 백그라운드 패치 시작")
+            fetchWeeklyCards()
         }
-        
-        let historyCardAction = Observable.just(()).do(onNext: { [weak self] in
-            self?.fetchHistoryCards()
-        })
-        
-        Observable.zip(todayCardAction, historyCardAction)
-            .subscribe()
-            .disposed(by: disposeBag)
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        reactor?.action.onNext(.loadTodayCards)
+        fetchHistoryCards()
     }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        
         if UserdefaultKey.isInitialLogin == true {
             showNotificationAlert()
             UserdefaultKey.isInitialLogin = false
@@ -234,8 +233,16 @@ final class HomeViewController: BaseViewController, View {
             .disposed(by: disposeBag)
         
         arrowButton.rx.tap
+            .do(onNext: { print("🔘 Arrow button tap detected!") })
             .subscribe(onNext: { [weak self] in
-                self?.coordinator?.showDailyCard()
+                guard let self = self,
+                      let reactor = self.reactor else { return }
+                let todayCards = reactor.currentState.todayCards
+                print("🔘 Arrow button tapped, todayCards count: \(todayCards.count)")
+                if todayCards.isEmpty {
+                    print("⚠️ todayCards is empty!")
+                }
+                self.coordinator?.showDailyCard(todayCards: todayCards)
             })
             .disposed(by: disposeBag)
     }
@@ -266,9 +273,7 @@ final class HomeViewController: BaseViewController, View {
     }
     
     private func updateWeekCards() {
-        weekCardsContainer.flex.markDirty()
         setupHistoryCards()
-        weekCardsContainer.flex.layout()
         view.setNeedsLayout()
     }
     
@@ -288,7 +293,13 @@ final class HomeViewController: BaseViewController, View {
             
             print("📅 조회 범위: \(startDate) ~ \(endDate)")
             reactor?.action.onNext(.fetchHistoryCards(startDate: startDate, endDate: endDate))
+        
+        DispatchQueue.main.async { [weak self] in
+            self?.view.setNeedsLayout()
+            self?.view.layoutIfNeeded()
+        }
     }
+    
     
     private func fetchWeeklyCards() {
         /// 오늘부터 다음 일요일까지
@@ -335,8 +346,12 @@ final class HomeViewController: BaseViewController, View {
         scrollView.pin.all(view.pin.safeArea)
         contentContainer.pin.top().left().right()
         
+        let previousHeight = contentContainer.frame.height
         contentContainer.flex.layout(mode: .adjustHeight)
-        scrollView.contentSize = contentContainer.frame.size
+        
+        if previousHeight != contentContainer.frame.height {
+            scrollView.contentSize = contentContainer.frame.size
+        }
     }
 }
 
@@ -432,7 +447,7 @@ extension HomeViewController {
     private func hideMainCardSkeleton() {
         mainCard.isHidden = false
         
-        UIView.animate(withDuration: 0.4, delay: 0, options: [.curveEaseInOut], animations: {
+        UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseInOut], animations: {
             self.mainCardSkeleton.alpha = 0
             self.mainCard.alpha = 1
         }) { _ in
