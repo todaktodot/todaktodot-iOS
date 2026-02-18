@@ -22,8 +22,8 @@ enum UserdefaultKey {
     @UserDefault(key: "refreshToken", defaultValue: nil)
     static var refreshToken: String?
     
-    @UserDefault(key: "isSiginedIn", defaultValue: false)
-    static var isSiginedIn: Bool
+    @UserDefault(key: "isLoggedIn", defaultValue: false)
+    static var isLoggedIn: Bool
     
     @UserDefault(key: "couple", defaultValue: false)
     static var couple: Bool

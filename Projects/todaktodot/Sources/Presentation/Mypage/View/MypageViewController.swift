@@ -279,7 +279,7 @@ final class MypageViewController: CustomBackViewController, View {
             .subscribe(onNext: { [weak self] state in
                 guard let self = self else { return }
                 self.showAlert(icon: UIImage(resource: .check), title: "정상적으로 로그아웃 되었어요", primaryButtonTitle: "확인", primaryButtonAction: {
-                    UserdefaultKey.isSiginedIn = false
+                    UserdefaultKey.isLoggedIn = false
                 })
                 self.coordinator?.showSigninFlow()
             })
