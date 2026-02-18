@@ -18,10 +18,10 @@ import Then
 final class DailyCardDetailViewController: UIViewController {
     
     weak var coordinator: HomeCoordinator?
-    private let cardType: CardType
+    private let card: QuestionCard
     
-    init(cardType: CardType = .roleplay) {
-        self.cardType = cardType
+    init(card: QuestionCard) {
+        self.card = card
         super.init(nibName: nil, bundle: nil)
         hidesBottomBarWhenPushed = true
     }
@@ -57,7 +57,6 @@ final class DailyCardDetailViewController: UIViewController {
     }
     
     private let questionLabel = TDLabel().then {
-        $0.text = "이런 상황에서\n나는 어떻게 행동할까요?"
         $0.font = .pretenSemiBold(24)
         $0.textColor = .white
         $0.numberOfLines = 0
@@ -68,6 +67,17 @@ final class DailyCardDetailViewController: UIViewController {
     private let situationContainer = UIView().then {
         $0.backgroundColor = .white
         $0.layer.cornerRadius = 12
+    }
+    
+    private let situationTitleLabel = TDLabel().then {
+        $0.font = .pretenSemiBold(14)
+        $0.textColor = .mainPurple
+    }
+    
+    private let situationLabel = TDLabel().then {
+        $0.font = .pretenRegular(16)
+        $0.textColor = .grayScale800
+        $0.numberOfLines = 0
     }
     
     private let optionsContainer = UIView()
@@ -109,10 +119,20 @@ final class DailyCardDetailViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         setupKeyboardObservers()
+        bindCardData()
         
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tapGesture.cancelsTouchesInView = false
         view.addGestureRecognizer(tapGesture)
+    }
+    
+    private func bindCardData() {
+        questionLabel.text = "이런 상황에서\n나는 어떻게 행동할까요?"
+        situationTitleLabel.text = card.situation
+        situationLabel.text = card.title
+        
+        setupModeIndicators()
+        setupOptions()
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -136,9 +156,7 @@ final class DailyCardDetailViewController: UIViewController {
         view.addSubview(scrollView)
         scrollView.addSubview(rootFlexContainer)
         
-        setupModeIndicators()
         setupSituation()
-        setupOptions()
         setupReasonSection()
         
         reasonTextView.delegate = self
@@ -167,7 +185,14 @@ final class DailyCardDetailViewController: UIViewController {
     }
     
     private func setupModeIndicators() {
-        let modes = ["🍰 디저트 모드", "💸 경제관", "🎭 상황극"]
+        modeContainer.flex.markDirty()
+        modeContainer.subviews.forEach { $0.removeFromSuperview() }
+        
+        let modes = [
+            "\(card.mode.emoji) \(card.mode.displayName)",
+            "\(card.subject.emoji) \(card.subject.displayName)",
+            "\(card.type.emoji) \(card.type.displayName)"
+        ]
         
         modeContainer.flex
             .direction(.row)
@@ -197,51 +222,34 @@ final class DailyCardDetailViewController: UIViewController {
     }
     
     private func setupSituation() {
-        let situationTitle = TDLabel().then {
-            $0.text = "🍽️ 레스토랑 데이트"
-            $0.font = .pretenSemiBold(14)
-            $0.textColor = .mainPurple
-        }
-        
-        let situationLabel = TDLabel().then {
-            $0.text = "둘이 처음 가는 고급 레스토랑에서 식사를 마쳤습니다. 계산서가 15만원이 나왔는데, 마침 둘 다 지갑을 꺼내려고 하는 상황이에요!"
-            $0.font = .pretenRegular(16)
-            $0.textColor = .grayScale800
-            $0.numberOfLines = 0
-        }
+        situationContainer.addSubview(situationTitleLabel)
+        situationContainer.addSubview(situationLabel)
         
         situationContainer.flex.padding(20).define { flex in
-            flex.addItem(situationTitle)
+            flex.addItem(situationTitleLabel)
             flex.addItem(situationLabel).marginTop(8)
         }
     }
     
     private func setupOptions() {
-        if cardType == .balance {
-            let balanceOptions = [
-                (title: "내가 모두 결제", description: "\"오늘은 내가 낼게!\"라고 말하며 상대방의 지갑을 부드럽게 밀어 넣고 쿨하게 15만 원 전액을 결제한다."),
-                (title: "절반씩 정확히 나눠 결제", description: "\"정확히 반반씩 내자\"고 말하며 7만 5천 원을 요청하거나, 각자의 카드로 긁어 나눠 낸다.")
-            ]
-            
+        optionsContainer.flex.markDirty()
+        optionsContainer.subviews.forEach { $0.removeFromSuperview() }
+        optionButtons.removeAll()
+        
+        guard let mainQuestion = card.questions.first else { return }
+        
+        if card.type == .balance {
             optionsContainer.flex.direction(.row).justifyContent(.spaceBetween).define { flex in
-                for (index, option) in balanceOptions.enumerated() {
-                    let button = createBalanceOptionButton(title: option.title, description: option.description, index: index)
+                for (index, option) in mainQuestion.options.enumerated() {
+                    let button = createBalanceOptionButton(title: option.text, description: "", index: index)
                     optionButtons.append(button)
                     flex.addItem(button).width(48%)
                 }
             }
         } else {
-            let options = [
-                "내가 먼저 카드를 내밀며 '내가 낼게'라고 한다",
-                "'반반 하자'고 제안한다",
-                "상대방이 내려고 하면 '고마워, 다음엔 내가 낼게' 한다",
-                "'가위바위보로 정하자'며 재미있게 풀어간다",
-                "조용히 기다리며 상대방의 반응을 본다"
-            ]
-            
             optionsContainer.flex.define { flex in
-                for (index, option) in options.enumerated() {
-                    let button = createOptionButton(option, index: index)
+                for (index, option) in mainQuestion.options.enumerated() {
+                    let button = createOptionButton(option.text, index: index)
                     optionButtons.append(button)
                     flex.addItem(button).marginBottom(12)
                 }
@@ -347,16 +355,18 @@ extension DailyCardDetailViewController {
         let radioOff = UIImage(systemName: "circle")
         
         optionButtons.forEach { button in
-            if cardType == .balance {
+            if card.type == .balance {
                 let titleLabel = button.subviews.first { $0 is UILabel } as? UILabel
                 
                 UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5) {
                     if button.tag == sender.tag {
                         button.layer.borderColor = UIColor.mainPurple.cgColor
                         titleLabel?.textColor = .mainPurple
+                        titleLabel?.font = .pretenMedium(16)
                     } else {
                         button.layer.borderColor = UIColor.grayScale200.cgColor
                         titleLabel?.textColor = .grayScale900
+                        titleLabel?.font = .pretenMedium(16)
                     }
                 }
             } else {

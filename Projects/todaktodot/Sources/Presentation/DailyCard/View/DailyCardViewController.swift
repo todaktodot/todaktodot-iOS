@@ -44,6 +44,20 @@ final class DailyCardViewController: UIViewController, View {
     }
     
     func bind(reactor: DailyCardReactor) {
+        // 초기 선택 상태 반영 (레이아웃 완료 후)
+        reactor.state.map { $0.selectedCardType }
+            .take(1)
+            .compactMap { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] cardType in
+                guard let self = self else { return }
+                DispatchQueue.main.async {
+                    self.updateButtonStyle(self.situationButton, isSelected: cardType == .roleplay)
+                    self.updateButtonStyle(self.balanceButton, isSelected: cardType == .balance)
+                }
+            })
+            .disposed(by: disposeBag)
+        
         situationButton.rx.tap
             .withLatestFrom(reactor.state.map { $0.selectedCardType })
             .subscribe(onNext: { [weak self] selectedCardType in
@@ -75,22 +89,22 @@ final class DailyCardViewController: UIViewController, View {
             })
             .disposed(by: disposeBag)
         
-        reactor.state.map { $0.selectedCardType }
-            .distinctUntilChanged()
+        reactor.state.map { $0.selectedCard }
+            .compactMap { $0 }
+            .skip(1)
+            .distinctUntilChanged { $0.id == $1.id }
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] cardType in
+            .subscribe(onNext: { [weak self] card in
                 guard let self = self else { return }
                 
-                self.updateButtonStyle(self.situationButton, isSelected: cardType == .roleplay)
-                self.updateButtonStyle(self.balanceButton, isSelected: cardType == .balance)
+                self.updateButtonStyle(self.situationButton, isSelected: card.type == .roleplay)
+                self.updateButtonStyle(self.balanceButton, isSelected: card.type == .balance)
                 
-                if let cardType = cardType {
-                    switch cardType {
-                    case .roleplay:
-                        self.coordinator?.showDailyCardDetail()
-                    case .balance:
-                        self.coordinator?.showBalanceCardDetail()
-                    }
+                switch card.type {
+                case .roleplay:
+                    self.coordinator?.showDailyCardDetail(card: card)
+                case .balance:
+                    self.coordinator?.showBalanceCardDetail(card: card)
                 }
             })
             .disposed(by: disposeBag)
@@ -135,7 +149,8 @@ final class DailyCardViewController: UIViewController, View {
     }
     
     private func showNotificationAlert() {
-        guard let cardType = reactor?.currentState.selectedCardType else { return }
+        guard let cardType = reactor?.currentState.selectedCardType,
+              let card = reactor?.currentState.selectedCard else { return }
         
         showAlert(
             icon: UIImage(resource: .warning),
@@ -145,9 +160,9 @@ final class DailyCardViewController: UIViewController, View {
             primaryButtonAction: { [weak self] in
                 switch cardType {
                 case .roleplay:
-                    self?.coordinator?.showDailyCardDetail()
+                    self?.coordinator?.showDailyCardDetail(card: card)
                 case .balance:
-                    self?.coordinator?.showBalanceCardDetail()
+                    self?.coordinator?.showBalanceCardDetail(card: card)
                 }
             }
         )
