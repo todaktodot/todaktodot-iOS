@@ -13,4 +13,5 @@ protocol CoupleRepository {
     func updateNickname(nickname: String) -> Observable<String>
     func updateCoupleInfo(date: String, stage: String) -> Observable<CoupleInfo>
     func setTerms(marketingAgree: Bool) -> Observable<Bool>
+    func fetchConnectInfo() -> Observable<ConnectInfo>
 }

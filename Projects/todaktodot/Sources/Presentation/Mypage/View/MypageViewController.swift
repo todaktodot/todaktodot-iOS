@@ -293,6 +293,7 @@ final class MypageViewController: CustomBackViewController, View {
                 guard let self = self else { return }
                 self.showAlert(icon: UIImage(resource: .check), title: "정상적으로 커플 연결이 해제됐어요\n다시 로그인이 필요해요", primaryButtonTitle: "확인", primaryButtonAction: {})
                 self.coordinator?.showSigninFlow()
+                UserdefaultKey.resetUserDefaults()
             })
             .disposed(by: disposeBag)
         
@@ -358,6 +359,7 @@ final class MypageViewController: CustomBackViewController, View {
                 
                 self?.showAlert(icon: UIImage(resource: .warning), title: "계정 탈퇴 시 서비스 사용이\n제한돼요. 그래도 탈퇴할까요?", primaryButtonTitle: "탈퇴", primaryButtonAction: {
                     self?.showAlert(icon: UIImage(resource: .check), title: "정상적으로 탈퇴 되었어요", primaryButtonTitle: "확인", primaryButtonAction: {})
+                    UserdefaultKey.resetUserDefaults()
                     self?.coordinator?.showSigninFlow()
                 }, secondaryButtonTitle: "취소")
                 

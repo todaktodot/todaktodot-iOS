@@ -34,4 +34,8 @@ final class CoupleUseCase {
     func updateCoupleInfo(date: String, stage: String) -> Observable<CoupleInfo> {
         repository.updateCoupleInfo(date: date, stage: stage)
     }
+    
+    func fetchConnectInfo() -> Observable<ConnectInfo> {
+        repository.fetchConnectInfo()
+    }
 }

@@ -31,6 +31,12 @@ enum UserdefaultKey {
     @UserDefault(key: "joined", defaultValue: false) // 약관 동의 여부
     static var joined: Bool
     
+    @UserDefault(key: "createdCoupleInfo", defaultValue: false)
+    static var createdCoupleInfo: Bool
+    
+    @UserDefault(key: "createdMyNickname", defaultValue: false)
+    static var createdMyNickname: Bool
+    
     @UserDefault(key: "connectedDate", defaultValue: Date())
     static var connectedDate: Date
     

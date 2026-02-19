@@ -14,9 +14,9 @@ import RxRelay
 import ReactorKit
 
 enum ConnectFlowType {
-    /// 먼저 커플 연결 하는 사용자
+    /// 닉네임 -> 기본정보 -> 메인
     case create
-    /// 상대방이 먼저 연결한 사용자
+    /// 닉네임 -> 메인
     case join
     /// 닉네임 수정
     case edit
@@ -25,7 +25,7 @@ enum ConnectFlowType {
 final class NicknameViewController: UIViewController, View {
     var disposeBag = DisposeBag()
     weak var coordinator: SigninCoordinator?
-    private var flowType = BehaviorRelay<ConnectFlowType>(value: .create)
+    private var flowType = BehaviorRelay<ConnectFlowType?>(value: nil)
     
     private let contentsView = UIView()
     private let backgroundView = UIImageView().then {
@@ -61,7 +61,7 @@ final class NicknameViewController: UIViewController, View {
         $0.isEnabled = false
     }
     
-    init(flowType: ConnectFlowType) {
+    init(flowType: ConnectFlowType? = nil) {
         self.flowType.accept(flowType)
         super.init(nibName: nil, bundle: nil)
     }
@@ -121,20 +121,43 @@ final class NicknameViewController: UIViewController, View {
     }
     
     func bind(reactor: CoupleReactor) {
+        if flowType.value == nil {
+            reactor.action.onNext(.fetchConnectInfo)
+            
+            reactor.state
+                .compactMap { $0.connectInfo }
+                .subscribe(onNext: { [weak self] info in
+                    guard let self = self else { return }
+                    
+                    UserdefaultKey.createdCoupleInfo = info.createdCoupleInfo
+                    
+                    if !info.createdCoupleInfo {
+                        self.flowType.accept(.create)
+                    } else {
+                        self.flowType.accept(.join)
+                    }
+                })
+                .disposed(by: disposeBag)
+        }
+        
         reactor.state
             .compactMap { $0.updateNickname }
             .subscribe(onNext: { [weak self] nickname in
                 guard let self = self else { return }
                 
+                UserdefaultKey.createdMyNickname = true
+                
                 coordinator?.onNicknameUpdated?(nickname)
                 
-                switch flowType.value {
-                case .create:
-                    self.coordinator?.showCoupleInfo()
-                case .join:
-                    self.coordinator?.tabBarCoordinator?.start()
-                case .edit:
-                    self.coordinator?.navigateBack()
+                if let type = flowType.value {
+                    switch type {
+                    case .create:
+                        self.coordinator?.showCoupleInfo()
+                    case .join:
+                        self.coordinator?.navigateToMain()
+                    case .edit:
+                        self.coordinator?.navigateBack()
+                    }
                 }
             })
             .disposed(by: disposeBag)

@@ -17,6 +17,10 @@ let googleServiceInfoScript = TargetScript.post(
 
 let project = Project(
     name: "todaktodot",
+    options: .options(
+        defaultKnownRegions: ["en", "ko"],
+        developmentRegion: "ko"
+    ),
     targets: [
         .target(
             name: "todaktodot",

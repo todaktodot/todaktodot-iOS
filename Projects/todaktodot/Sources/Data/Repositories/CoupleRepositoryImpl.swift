@@ -84,4 +84,17 @@ final class CoupleRepositoryImpl: CoupleRepository {
             })
             .map { _ in true }
     }
+    
+    func fetchConnectInfo() -> Observable<ConnectInfo> {
+        let endpoint = Endpoint<UserDTO>(
+            baseURL: .todaktodotAPI,
+            path: "/api/profile/detail",
+            method: .get,
+        )
+
+        return networkManager.request(with: endpoint)
+            .map {
+                $0.toConnectInfo()
+            }
+    }
 }

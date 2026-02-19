@@ -166,8 +166,12 @@ final class SigninViewController: UIViewController, View {
                 guard let self = self else { return }
                 switch event {
                 case .kakaoSuccess, .googleSuccess, .appleSuccess:
-                    self.moveNext()
-                    
+                    UserdefaultKey.isLoggedIn = true
+                    if UserdefaultKey.createdCoupleInfo && UserdefaultKey.createdMyNickname {
+                        self.coordinator?.navigateToMain()
+                    } else {
+                        self.coordinator?.showCoupleConnect()
+                    }
                 case .kakaoFail, .googleFail, .appleFail:
                     break
                 }
@@ -191,15 +195,6 @@ final class SigninViewController: UIViewController, View {
             .map { SigninReactor.Action.tapAppleButton }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
-    }
-    
-    private func moveNext() {
-//        if UserdefaultKey.couple && UserdefaultKey.joined {
-//            coordinator?.navigateToMain()
-//        } else {
-//            coordinator?.showCoupleConnect()
-//        }
-        coordinator?.navigateToMain() // TODO: 임시 처리
     }
     
     func showExpireAlert() {

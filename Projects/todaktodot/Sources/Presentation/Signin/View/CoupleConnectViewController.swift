@@ -17,8 +17,6 @@ final class CoupleConnectViewController: UIViewController, View {
     var disposeBag = DisposeBag()
     weak var coordinator: SigninCoordinator?
     
-    private var flowType: ConnectFlowType
-    
     private let background = UIImageView().then {
         $0.image = UIImage(resource: .connectBackground)
     }
@@ -110,16 +108,6 @@ final class CoupleConnectViewController: UIViewController, View {
         $0.tintColor = .grayScale600
     }
     
-    init(flowType: ConnectFlowType) {
-        self.flowType = flowType
-        
-        super.init(nibName: nil, bundle: nil)
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
     // MARK: - View Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -129,13 +117,10 @@ final class CoupleConnectViewController: UIViewController, View {
         hideKeyboardwhenTappedAround()
         registerKeyboardNotification()
         
-        if !UserdefaultKey.couple {
-//            reactor?.action.onNext(.issueCoupleCode)
-//            reactor?.action.onNext(.checkIsJoined)
+        if UserdefaultKey.couple {
+            showConnectAlert()
         } else {
-            showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
-                self.coordinator?.showNickname(flowType: self.flowType)
-            })
+            reactor?.action.onNext(.checkIsJoined)
         }
     }
     
@@ -230,6 +215,18 @@ final class CoupleConnectViewController: UIViewController, View {
     }
     
     func bind(reactor: CoupleReactor) {
+        
+        reactor.action.onNext(.issueCoupleCode)
+        
+        reactor.state
+            .compactMap { $0.isAlreadyCouple }
+            .distinctUntilChanged()
+            .subscribe(onNext: { [weak self] _ in
+                guard let self = self else { return }
+                self.showConnectAlert()
+            })
+            .disposed(by: disposeBag)
+        
         reactor.state
             .compactMap { $0.mycode }
             .distinctUntilChanged()
@@ -257,9 +254,7 @@ final class CoupleConnectViewController: UIViewController, View {
             .subscribe(onNext: { [weak self] success in
                 guard let self = self else { return }
                 if success {
-                    showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
-                        self.coordinator?.showNickname(flowType: self.flowType)
-                    })
+                    showConnectAlert()
                 } else {
                     showAlert(icon: UIImage(resource: .heart), title: "앗, 입력하신 코드가 올바르지 않아요", primaryButtonTitle: "다시 입력하기", primaryButtonAction: {})
                 }
@@ -303,6 +298,14 @@ final class CoupleConnectViewController: UIViewController, View {
                 self?.coordinator?.navigateToMain()
             })
             .disposed(by: disposeBag)
+    }
+    
+    func showConnectAlert() {
+        UserdefaultKey.couple = true
+        
+        showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
+            self.coordinator?.showNickname()
+        })
     }
 }
 

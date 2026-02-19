@@ -41,9 +41,10 @@ final class TokenInterceptor: RequestInterceptor, Sendable {
         
         let excludedPaths = ["/api/login"] // 헤더에 토큰 안넣는 API Path
         
-        if let urlString = urlRequest.url?.absoluteString,
-           excludedPaths.contains(where: { urlString.contains($0) }) {
+        if let path = urlRequest.url?.path,
+           excludedPaths.contains(path) {
             completion(.success(urlRequest))
+            return
         }
         
         if let token = tokenProvider?.fetchAccessToken() {
@@ -53,7 +54,7 @@ final class TokenInterceptor: RequestInterceptor, Sendable {
     }
     
     func retry(_ request: Request, for session: Session, dueTo error: Error, completion: @escaping (RetryResult) -> Void) {
-        guard let response = request.task?.response as? HTTPURLResponse, response.statusCode == 401 || response.statusCode == 500 else {
+        guard let response = request.task?.response as? HTTPURLResponse, response.statusCode == 401 else {
             completion(.doNotRetryWithError(error))
             return
         }

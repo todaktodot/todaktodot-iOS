@@ -42,7 +42,7 @@ final class SigninCoordinator: Coordinator {
                 networkManager: networkManager
                 )
         )
-        let coupleConnectViewController = CoupleConnectViewController(flowType: .create)
+        let coupleConnectViewController = CoupleConnectViewController()
         coupleConnectViewController.coordinator = self
         coupleConnectViewController.reactor = CoupleReactor(coupleUseCase: useCase)
         navigationController.setViewControllers([coupleConnectViewController], animated: true)
@@ -54,13 +54,13 @@ final class SigninCoordinator: Coordinator {
                 networkManager: networkManager
                 )
         )
-        let coupleConnectViewController = CoupleConnectViewController(flowType: .join)
+        let coupleConnectViewController = CoupleConnectViewController()
         coupleConnectViewController.coordinator = self
         coupleConnectViewController.reactor = CoupleReactor(coupleUseCase: useCase)
         navigationController.setViewControllers([coupleConnectViewController], animated: true)
     }
     
-    func showNickname(flowType: ConnectFlowType) {
+    func showNickname(flowType: ConnectFlowType? = nil) {
         let useCase = CoupleUseCase(
             repository: CoupleRepositoryImpl(
                 networkManager: networkManager
@@ -69,8 +69,7 @@ final class SigninCoordinator: Coordinator {
         let nicknameViewController = NicknameViewController(flowType: flowType)
         nicknameViewController.coordinator = self
         nicknameViewController.reactor = CoupleReactor(coupleUseCase: useCase)
-        self.navigationController.isNavigationBarHidden = true // TODO: 지우기
-        navigationController.pushViewController(nicknameViewController, animated: true)
+        navigationController.setViewControllers([nicknameViewController], animated: true)
     }
     
     func showCoupleInfo(flowType: CoupleInfoFlowType = .newUser) {
@@ -82,7 +81,6 @@ final class SigninCoordinator: Coordinator {
         let coupleInfoViewController = CoupleInfoViewController(flowType: flowType)
         coupleInfoViewController.coordinator = self
         coupleInfoViewController.reactor = CoupleReactor(coupleUseCase: useCase)
-        self.navigationController.isNavigationBarHidden = true // TODO: 지우기
         navigationController.pushViewController(coupleInfoViewController, animated: true)
     }
     

@@ -137,7 +137,6 @@ final class CoupleInfoViewController: UIViewController, View {
             .compactMap { $0.updateCoupleInfo }
             .subscribe(onNext: { [weak self] info in
                 guard let self = self else { return }
-                print(info)
                 
                 coordinator?.onCoupleInfoUpdated?(info)
                 

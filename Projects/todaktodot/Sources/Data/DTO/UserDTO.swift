@@ -57,6 +57,10 @@ extension UserDTO {
         )
     }
     
+    func toConnectInfo() -> ConnectInfo {
+        ConnectInfo(createdCoupleInfo: coupleDetailInfo?.relationshipStage != nil)
+    }
+    
     func dateToKR(_ dateString: String?) -> String? {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
