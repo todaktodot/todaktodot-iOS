@@ -32,17 +32,24 @@ final class DailyCardReactor: Reactor {
         case tapBackButton
         case tapSituationButton
         case tapBalanceButton
+        case submitAnswers(coupleCardId: Int, cardId: Int, answers: [Answer])
     }
     
     enum Mutation {
         case setDismiss(Bool)
         case navigateToDetail(QuestionCard)
+        case setLoading(Bool)
+        case setSubmitSuccess(SubmitAnswerResult)
+        case setSubmitError(Error)
     }
     
     struct State {
         var shouldDismiss: Bool = false
         var selectedCardType: CardType?
         var selectedCard: QuestionCard?
+        var isLoading: Bool = false
+        var submitResult: SubmitAnswerResult?
+        var submitError: Error?
     }
     
     let initialState: State
@@ -69,6 +76,20 @@ final class DailyCardReactor: Reactor {
                     self?.onCardSelected.onNext(())
                 })
                 .flatMap { _ in Observable.just(Mutation.navigateToDetail(card)) }
+        case .submitAnswers(let coupleCardId, let cardId, let answers):
+            return Observable.concat([
+                .just(.setLoading(true)),
+                cardUseCase.submitAnswers(coupleCardId: coupleCardId, cardId: cardId, answers: answers)
+                    .flatMap { result -> Observable<Mutation> in
+                        switch result {
+                        case .success(let submitResult):
+                            return .just(.setSubmitSuccess(submitResult))
+                        case .failure(let error):
+                            return .just(.setSubmitError(error))
+                        }
+                    },
+                .just(.setLoading(false))
+            ])
         }
     }
     
@@ -80,6 +101,14 @@ final class DailyCardReactor: Reactor {
         case .navigateToDetail(let card):
             newState.selectedCardType = card.type
             newState.selectedCard = card
+        case .setLoading(let isLoading):
+            newState.isLoading = isLoading
+        case .setSubmitSuccess(let result):
+            newState.submitResult = result
+            newState.submitError = nil
+        case .setSubmitError(let error):
+            newState.submitError = error
+            newState.submitResult = nil
         }
         return newState
     }

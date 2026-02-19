@@ -155,7 +155,7 @@ final class DailyCardViewController: UIViewController, View {
         showAlert(
             icon: UIImage(resource: .warning),
             title: "연인이 이미 유형을 선택했어요!",
-            description: "다음에는 먼저 질문에 답변하여 유형을 선정해보세요.",
+            description: "다음에는 먼저 질문에 답변하여\n 유형을 선정해보세요.",
             primaryButtonTitle: "카드 작성하러 가기",
             primaryButtonAction: { [weak self] in
                 switch cardType {

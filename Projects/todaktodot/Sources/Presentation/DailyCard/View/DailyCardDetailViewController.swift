@@ -9,20 +9,20 @@ import UIKit
 import FlexLayout
 import PinLayout
 import Then
+import ReactorKit
+import RxSwift
+import RxCocoa
 
-import UIKit
-import FlexLayout
-import PinLayout
-import Then
-
-final class DailyCardDetailViewController: UIViewController {
+final class DailyCardDetailViewController: UIViewController, View {
     
+    var disposeBag = DisposeBag()
     weak var coordinator: HomeCoordinator?
     private let card: QuestionCard
     
-    init(card: QuestionCard) {
+    init(card: QuestionCard, reactor: DailyCardReactor) {
         self.card = card
         super.init(nibName: nil, bundle: nil)
+        self.reactor = reactor
         hidesBottomBarWhenPushed = true
     }
     
@@ -126,6 +126,58 @@ final class DailyCardDetailViewController: UIViewController {
         view.addGestureRecognizer(tapGesture)
     }
     
+    func bind(reactor: DailyCardReactor) {
+        // Action
+        submitButton.rx.tap
+            .withUnretained(self)
+            .flatMap { owner, _ in owner.showConfirmAlert() }
+            .withUnretained(self)
+            .flatMap { owner, _ -> Observable<DailyCardReactor.Action> in
+                guard let selectedIndex = owner.selectedOptionIndex,
+                      let mainQuestion = owner.card.questions.first else {
+                    return .empty()
+                }
+                
+                let reasonText = owner.reasonTextView.textColor == .grayScale900 ? owner.reasonTextView.text : ""
+                
+                var answers: [Answer] = [
+                    Answer(questionNo: mainQuestion.number, content: mainQuestion.options[selectedIndex].text)
+                ]
+                
+                if let reasonText = reasonText, !reasonText.isEmpty {
+                    answers.append(Answer(questionNo: 99, content: reasonText))
+                }
+                
+                return .just(.submitAnswers(
+                    coupleCardId: owner.card.coupleCardId,
+                    cardId: owner.card.id,
+                    answers: answers
+                ))
+            }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        // State
+        reactor.state
+            .map { $0.submitResult }
+            .compactMap { $0 }
+            .distinctUntilChanged { $0.savedAt == $1.savedAt }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] _ in
+                self?.showSuccessAlert()
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .map { $0.submitError }
+            .compactMap { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] error in
+                self?.showErrorAlert(error: error)
+            })
+            .disposed(by: disposeBag)
+    }
+    
     private func bindCardData() {
         questionLabel.text = "이런 상황에서\n나는 어떻게 행동할까요?"
         situationTitleLabel.text = card.situation
@@ -160,8 +212,6 @@ final class DailyCardDetailViewController: UIViewController {
         setupReasonSection()
         
         reasonTextView.delegate = self
-        
-        submitButton.addTarget(self, action: #selector(submitButtonTapped), for: .touchUpInside)
         
         rootFlexContainer.flex
             .paddingHorizontal(20)
@@ -316,18 +366,6 @@ final class DailyCardDetailViewController: UIViewController {
             gradientLayer.frame = mainCardContainer.bounds
         }
     }
-    
-    private func showSuccessAlert() {
-        showAlert(
-            icon: UIImage(named: "Check"),
-            title: "답변 완료!",
-            description: "오늘의 Dot이 만들어졌어요.\n연인도 답변 완료하면\n답변을 같이 볼 수 있어요",
-            primaryButtonTitle: "확인",
-            primaryButtonAction: { [weak self] in
-                self?.coordinator?.navigateToHome()
-            }
-        )
-    }
 
     private func updateSubmitButton() {
         let hasSelection = selectedOptionIndex != nil
@@ -391,21 +429,6 @@ extension DailyCardDetailViewController {
         
         updateSubmitButton()
     }
-    
-    @objc private func submitButtonTapped() {
-        showAlert(
-            icon: UIImage(named: "Warning"),
-            title: "답변을 완료하시겠어요?",
-            description: "답변을 완료하시면",
-            tintedDescription: "더 이상 수정이 불가합니다.",
-            primaryButtonTitle: "답변 완료",
-            primaryButtonAction: { [weak self] in
-                self?.showSuccessAlert()
-            },
-            secondaryButtonTitle: "취소",
-            secondaryButtonAction: {}
-        )
-    }
 }
 
 // MARK: - SUB UI
@@ -445,6 +468,52 @@ extension DailyCardDetailViewController {
         }
         
         return button
+    }
+}
+
+// MARK: - Alert
+extension DailyCardDetailViewController {
+    private func showConfirmAlert() -> Observable<Void> {
+        return Observable.create { [weak self] observer in
+            self?.showAlert(
+                icon: UIImage(named: "Warning"),
+                title: "답변을 완료하시겠어요?",
+                description: "답변을 완료하시면",
+                tintedDescription: "더 이상 수정이 불가합니다.",
+                primaryButtonTitle: "답변 완료",
+                primaryButtonAction: {
+                    observer.onNext(())
+                    observer.onCompleted()
+                },
+                secondaryButtonTitle: "취소",
+                secondaryButtonAction: {
+                    observer.onCompleted()
+                }
+            )
+            return Disposables.create()
+        }
+    }
+    
+    private func showSuccessAlert() {
+        showAlert(
+            icon: UIImage(named: "Check"),
+            title: "답변 완료!",
+            description: "오늘의 Dot이 만들어졌어요.\n연인도 답변 완료하면\n답변을 같이 볼 수 있어요",
+            primaryButtonTitle: "확인",
+            primaryButtonAction: { [weak self] in
+                self?.coordinator?.navigateToHome()
+            }
+        )
+    }
+    
+    private func showErrorAlert(error: Error) {
+        showAlert(
+            icon: UIImage(named: "Warning"),
+            title: "답변 제출 실패",
+            description: "답변 제출 중 오류가 발생했어요.\n잠시 후 다시 시도해주세요.",
+            primaryButtonTitle: "확인",
+            primaryButtonAction: {}
+        )
     }
 }
 

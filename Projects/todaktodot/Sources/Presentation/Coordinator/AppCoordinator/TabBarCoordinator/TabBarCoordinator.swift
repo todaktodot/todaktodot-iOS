@@ -98,14 +98,20 @@ final class HomeCoordinator: Coordinator {
     }
     
     func showDailyCardDetail(card: QuestionCard) {
-        let dailyCardDetailViewController = DailyCardDetailViewController(card: card)
+        let cardRepository = CardRepositoryImpl(networkManager: networkManager)
+        let cardUseCase = CardUseCase(repository: cardRepository)
+        let reactor = DailyCardReactor(cardUseCase: cardUseCase, dailyCards: [card])
+        let dailyCardDetailViewController = DailyCardDetailViewController(card: card, reactor: reactor)
         dailyCardDetailViewController.coordinator = self
         dailyCardDetailViewController.hidesBottomBarWhenPushed = true
         navigationController.pushViewController(dailyCardDetailViewController, animated: true)
     }
     
     func showBalanceCardDetail(card: QuestionCard) {
-        let dailyCardDetailViewController = DailyCardDetailViewController(card: card)
+        let cardRepository = CardRepositoryImpl(networkManager: networkManager)
+        let cardUseCase = CardUseCase(repository: cardRepository)
+        let reactor = DailyCardReactor(cardUseCase: cardUseCase, dailyCards: [card])
+        let dailyCardDetailViewController = DailyCardDetailViewController(card: card, reactor: reactor)
         dailyCardDetailViewController.coordinator = self
         dailyCardDetailViewController.hidesBottomBarWhenPushed = true
         navigationController.pushViewController(dailyCardDetailViewController, animated: true)
