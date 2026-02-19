@@ -56,17 +56,17 @@ enum CardSubject: String, Codable, CaseIterable {
     
     var displayName: String {
         switch self {
-        case .love:      return "사랑"
-        case .lifestyle: return "라이프스타일"
-        case .economy:   return "경제"
+        case .love:      return "연애관"
+        case .lifestyle: return "셍활관"
+        case .economy:   return "경제관"
         }
     }
     
     var emoji: String {
         switch self {
-        case .love:      return "❤️"
-        case .lifestyle: return "❤️"
-        case .economy:   return "❤️"
+        case .love:      return "💑"
+        case .lifestyle: return "🏡"
+        case .economy:   return "💸"
         }
     }
 }
