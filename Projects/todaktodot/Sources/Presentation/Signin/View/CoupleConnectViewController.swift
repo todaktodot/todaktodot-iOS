@@ -80,7 +80,7 @@ final class CoupleConnectViewController: UIViewController, View {
     }
     
     private let myCodeTextField = CodeTextFieldView()
-    private let partnerCodeTextField = CodeTextFieldView()
+    private let partnerCodeTextField = CodeTextFieldView(isPartnerCode: true)
     
     private let copyButton = ImageTextButton(imageSize: 20).then {
         $0.customText.text = "복사하기"
@@ -130,8 +130,8 @@ final class CoupleConnectViewController: UIViewController, View {
         registerKeyboardNotification()
         
         if !UserdefaultKey.couple {
-            reactor?.action.onNext(.issueCoupleCode)
-            reactor?.action.onNext(.checkIsJoined)
+//            reactor?.action.onNext(.issueCoupleCode)
+//            reactor?.action.onNext(.checkIsJoined)
         } else {
             showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
                 self.coordinator?.showNickname(flowType: self.flowType)
@@ -287,7 +287,7 @@ final class CoupleConnectViewController: UIViewController, View {
             .disposed(by: disposeBag)
         
         connectButton.rx.tap
-            .map { CoupleReactor.Action.tapConnectButton(self.partnerCodeTextField.getCode()) }
+            .map { CoupleReactor.Action.tapConnectButton(self.partnerCodeTextField.getCode().uppercased()) }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
@@ -332,11 +332,15 @@ extension CoupleConnectViewController {
         let bottomInset =
             keyboardFrame.height
             - view.safeAreaInsets.bottom
-            + 80
+            + 100
         UIView.animate(withDuration: 0.1) {
             self.scrollview.isScrollEnabled = true
             self.scrollview.contentInset.bottom = bottomInset
-            self.scrollview.verticalScrollIndicatorInsets.bottom = bottomInset
+            
+            self.scrollview.setContentOffset(
+                CGPoint(x: 0, y: 60),
+                animated: false
+            )
         }
     }
     

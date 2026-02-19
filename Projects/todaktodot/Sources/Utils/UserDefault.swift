@@ -28,7 +28,7 @@ enum UserdefaultKey {
     @UserDefault(key: "couple", defaultValue: false)
     static var couple: Bool
     
-    @UserDefault(key: "joined", defaultValue: false) // TODO: 이거 약관동의 완료여뷰였음 바꿔야됨
+    @UserDefault(key: "joined", defaultValue: false) // 약관 동의 여부
     static var joined: Bool
     
     @UserDefault(key: "connectedDate", defaultValue: Date())
