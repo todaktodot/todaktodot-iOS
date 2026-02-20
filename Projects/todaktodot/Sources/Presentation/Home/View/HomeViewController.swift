@@ -161,18 +161,20 @@ final class HomeViewController: BaseViewController, View {
         let todayCardsStream = reactor.state.map { $0.todayCards }
             .distinctUntilChanged { $0.count == $1.count }
             .skip(1)
-        
+//            .distinctUntilChanged { $0.count == $1.count }
         let historyCardsStream = reactor.state.map { $0.historyCards }
             .distinctUntilChanged { $0.count == $1.count }
             .skip(1)
-        
+//            .distinctUntilChanged { $0.count == $1.count }
         Observable.combineLatest(todayCardsStream, historyCardsStream)
             .take(1)
+//            .skip(1)
+//            .delay(.milliseconds(300), scheduler: MainScheduler.instance)
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] todayCards, historyCards in
                 self?.updateTodayCardUI(todayCards)
-                self?.isLoadingHistoryCards = false
                 self?.HistoryCards = historyCards
+                self?.isLoadingHistoryCards = false
                 self?.updateWeekCards()
             })
             .disposed(by: disposeBag)
@@ -502,7 +504,7 @@ extension HomeViewController {
     private func updateTodayCardUI(_ cards: [QuestionCard]) {
         hideMainCardSkeleton()
         
-        guard let firstCard = cards.first else { 
+        guard let firstCard = cards.first else {
             print("⚠️ 표시 가능한 오늘 카드 없음")
             return
         }
