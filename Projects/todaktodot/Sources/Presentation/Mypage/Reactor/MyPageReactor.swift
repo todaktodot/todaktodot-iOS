@@ -17,6 +17,7 @@ final class MyPageReactor: Reactor {
         var isLoading: Bool = true
         var isLogout: Bool?
         var isDisconnectCouple: Bool?
+        var isWithdrawal: Bool?
     }
     
     enum Action {
@@ -24,7 +25,7 @@ final class MyPageReactor: Reactor {
 //        case tapTerms
         case tapLogout
         case tapDisconnectCouple
-//        case tapWitdrawal
+        case tapWitdrawal
     }
 
     enum Mutation {
@@ -32,6 +33,7 @@ final class MyPageReactor: Reactor {
         case setLoading(Bool)
         case setLogout(Bool)
         case setDisconnectCouple(Bool)
+        case setWithdrawal(Bool)
     }
     
     let initialState = State()
@@ -61,7 +63,9 @@ final class MyPageReactor: Reactor {
             return useCase.logout()
                 .map { .setLogout($0) }
             
-//        case .tapWitdrawal:
+        case .tapWitdrawal:
+            return useCase.withdrawal()
+                .map { .setWithdrawal($0) }
             
         }
     }
@@ -77,6 +81,8 @@ final class MyPageReactor: Reactor {
             newState.isLoading = isLoading
         case .setLogout(let success):
             newState.isLogout = success
+        case .setWithdrawal(let success):
+            newState.isWithdrawal = success
         }
         return newState
     }

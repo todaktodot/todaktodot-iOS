@@ -11,4 +11,5 @@ protocol MypageRepository {
     func fetchInfo() -> Observable<MypageInfo>
     func logout() -> Observable<Bool>
     func disconnectCouple() -> Observable<Bool>
+    func withdrawal() -> Observable<Bool>
 }

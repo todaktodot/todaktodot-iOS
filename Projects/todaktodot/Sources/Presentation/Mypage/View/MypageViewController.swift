@@ -112,7 +112,6 @@ final class MypageViewController: CustomBackViewController, View {
         
         setupViews()
         setupFlexLayout()
-        bindActions()
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -297,6 +296,18 @@ final class MypageViewController: CustomBackViewController, View {
             })
             .disposed(by: disposeBag)
         
+        reactor.state
+            .compactMap { $0.isWithdrawal }
+            .filter { $0 }
+            .distinctUntilChanged()
+            .subscribe(onNext: { [weak self] state in
+                guard let self = self else { return }
+                self.showAlert(icon: UIImage(resource: .check), title: "정상적으로 탈퇴 되었어요", primaryButtonTitle: "확인", primaryButtonAction: {})
+                UserdefaultKey.resetUserDefaults()
+                self.coordinator?.showSigninFlow()
+            })
+            .disposed(by: disposeBag)
+        
         isCouple
             .subscribe(onNext: { [weak self] in
                 guard let self = self else { return }
@@ -333,6 +344,16 @@ final class MypageViewController: CustomBackViewController, View {
             })
             .disposed(by: disposeBag)
         
+        withdrawalButton.rx.tap
+            .subscribe(onNext: { [weak self] in
+                
+                self?.showAlert(icon: UIImage(resource: .warning), title: "계정 탈퇴 시 서비스 사용이\n제한돼요. 그래도 탈퇴할까요?", primaryButtonTitle: "탈퇴", primaryButtonAction: {
+                    reactor.action.onNext(.tapWitdrawal)
+                }, secondaryButtonTitle: "취소")
+                
+            })
+            .disposed(by: disposeBag)
+        
         notYetConnectedView.connectButton.rx.tap
             .subscribe(onNext: { [weak self] in
                 self?.coordinator?.showCoupleConnect()
@@ -348,21 +369,6 @@ final class MypageViewController: CustomBackViewController, View {
         ourInfoView.settingButton.rx.tap
             .subscribe(onNext: { [weak self] in
                 self?.coordinator?.showCoupleInfo()
-            })
-            .disposed(by: disposeBag)
-    }
-    
-    private func bindActions() {
-        
-        withdrawalButton.rx.tap
-            .subscribe(onNext: { [weak self] in
-                
-                self?.showAlert(icon: UIImage(resource: .warning), title: "계정 탈퇴 시 서비스 사용이\n제한돼요. 그래도 탈퇴할까요?", primaryButtonTitle: "탈퇴", primaryButtonAction: {
-                    self?.showAlert(icon: UIImage(resource: .check), title: "정상적으로 탈퇴 되었어요", primaryButtonTitle: "확인", primaryButtonAction: {})
-                    UserdefaultKey.resetUserDefaults()
-                    self?.coordinator?.showSigninFlow()
-                }, secondaryButtonTitle: "취소")
-                
             })
             .disposed(by: disposeBag)
         

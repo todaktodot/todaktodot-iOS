@@ -23,7 +23,7 @@ final class AIReportStorageView: UIView {
     }
     
     private let yearButton = ImageTextButton(spacing: 4, imageSize: 12, imageFirst: false).then {
-        $0.customText.text = "2025년"
+        $0.customText.text = "2026년"
         $0.customText.font = .pretenSemiBold(18)
         $0.customImage.image = UIImage(systemName: "chevron.down")
         $0.customImage.tintColor = .black

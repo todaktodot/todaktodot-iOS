@@ -61,4 +61,15 @@ final class MypageRepositoryImpl: MypageRepository {
         return networkManager.request(with: endpoint)
             .map { _ in true }
     }
+    
+    func withdrawal() -> Observable<Bool> {
+        let endpoint = Endpoint<Empty>(
+            baseURL: .todaktodotAPI,
+            path: "/api/profile/withdraw",
+            method: .post
+        )
+
+        return networkManager.requestOptional(with: endpoint)
+            .map { _ in true }
+    }
 }

@@ -26,4 +26,8 @@ final class MypageUsecase {
     func disconnectCouple() -> Observable<Bool> {
         repository.disconnectCouple()
     }
+    
+    func withdrawal() -> Observable<Bool> {
+        repository.withdrawal()
+    }
 }
