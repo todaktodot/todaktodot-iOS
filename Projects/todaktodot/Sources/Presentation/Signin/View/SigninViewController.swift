@@ -12,13 +12,19 @@ import RxSwift
 import RxCocoa
 import Then
 import ReactorKit
+import Lottie
 
 final class SigninViewController: UIViewController, View {
     
     var disposeBag = DisposeBag()
     weak var coordinator: SigninCoordinator?
     
-    private let onboardingView = InfiniteSliderView()
+    
+    private let onboardingLottie = LottieAnimationView(name: "onboarding").then {
+        $0.loopMode = .autoReverse
+        $0.contentMode = .scaleAspectFill
+    }
+    private let infiniteSliderView = InfiniteSliderView()
     private let buttonContainerView = UIView()
     private let indicatorView = UIActivityIndicatorView(style: .medium).then {
         $0.hidesWhenStopped = true
@@ -70,6 +76,7 @@ final class SigninViewController: UIViewController, View {
         
         setupViews()
         setupFlexLayout()
+        onboardingLottie.play()
     }
     
     override func viewDidLayoutSubviews() {
@@ -83,13 +90,24 @@ final class SigninViewController: UIViewController, View {
     }
     
     private func setupViews() {
-        view.addSubview(onboardingView)
+        view.addSubview(onboardingLottie)
+        view.addSubview(infiniteSliderView)
         view.addSubview(appLogo)
         view.addSubview(buttonContainerView)
         view.addSubview(indicatorView)
     }
     
     private func setupFlexLayout() {
+        buttonContainerView.flex.gap(12).define {
+            $0.addItem(kakaoButton)
+                .height(52)
+            
+            $0.addItem(googleButton)
+                .height(52)
+            
+            $0.addItem(appleButton)
+                .height(52)
+        }
         
         kakaoButton.flex.define {
             $0.addItem(kakaoLogo)
@@ -112,24 +130,16 @@ final class SigninViewController: UIViewController, View {
                 .marginVertical(14)
                 .size(24)
         }
-        
-        buttonContainerView.flex.gap(12).define {
-            $0.addItem(kakaoButton)
-                .height(52)
-            
-            $0.addItem(googleButton)
-                .height(52)
-            
-            $0.addItem(appleButton)
-                .height(52)
-        }
     }
     
     private func layoutViews() {
+        onboardingLottie.pin
+            .all()
+        
         indicatorView.pin
             .all()
         
-        onboardingView.pin
+        infiniteSliderView.pin
             .all()
         
         appLogo.pin
