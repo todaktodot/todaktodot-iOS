@@ -24,7 +24,7 @@ struct UserDTO: Codable {
 struct CoupleDetailInfoDTO: Codable {
     let coupleId: Int
     let loginUserId: Int
-    let loginNickname: String
+    let loginNickname: String?
     let anotherUserId: Int
     let anotherNickname: String?
     let firstMetDt: String?

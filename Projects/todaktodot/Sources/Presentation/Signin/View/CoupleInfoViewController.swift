@@ -76,7 +76,7 @@ final class CoupleInfoViewController: UIViewController, View {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+        hiddenBackButton()
         hideKeyboardwhenTappedAround()
         setupViews()
         setupFlexLayout()
@@ -96,7 +96,7 @@ final class CoupleInfoViewController: UIViewController, View {
     private func setupFlexLayout() {
         contentsView.flex.paddingHorizontal(20).define {
             $0.addItem(titleLabel)
-                .marginTop(40)
+                .marginTop(84)
             
             $0.addItem(dateLabel)
                 .marginTop(40)
@@ -120,9 +120,7 @@ final class CoupleInfoViewController: UIViewController, View {
             .all()
         
         contentsView.pin
-            .top(view.pin.safeArea.top)
-            .horizontally()
-            .bottom()
+            .all()
         
         startButton.pin
             .horizontally(20)

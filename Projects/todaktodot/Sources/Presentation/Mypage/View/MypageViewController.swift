@@ -155,10 +155,11 @@ final class MypageViewController: CustomBackViewController, View {
     }
     
     private func setupFlexLayout() {
+        let topMargin: CGFloat = 124
         contentView.flex.define {
             $0.addItem(profileView)
             $0.addItem(notYetConnectedView)
-                .marginTop(28)
+                .marginTop(topMargin)
                 .marginHorizontal(20)
             
             $0.addItem(settingSectionView)
@@ -192,7 +193,7 @@ final class MypageViewController: CustomBackViewController, View {
         
         profileView.flex.define {
             $0.addItem()
-                .marginTop(28)
+                .marginTop(topMargin)
                 .gap(11)
                 .direction(.row)
                 .alignItems(.start)
@@ -229,9 +230,7 @@ final class MypageViewController: CustomBackViewController, View {
             .all()
         
         contentView.pin
-            .top(view.pin.safeArea)
-            .horizontally()
-            .bottom()
+            .all()
         
         indicatorView.pin
             .all()

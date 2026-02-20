@@ -72,9 +72,8 @@ final class NicknameViewController: UIViewController, View {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.hidesBackButton = true
-        navigationController?.interactivePopGestureRecognizer?.delegate = nil
         
+        hiddenBackButton()
         textFiled.delegate = self
         hideKeyboardwhenTappedAround()
         setupViews()
@@ -95,7 +94,7 @@ final class NicknameViewController: UIViewController, View {
     private func setupFlexLayout() {
         contentsView.flex.paddingHorizontal(20).define {
             $0.addItem(titleLabel)
-                .marginTop(40)
+                .marginTop(84)
             
             $0.addItem(textFiled)
                 .marginTop(40)
@@ -108,9 +107,7 @@ final class NicknameViewController: UIViewController, View {
             .all()
         
         contentsView.pin
-            .top(view.pin.safeArea.top)
-            .horizontally()
-            .bottom()
+            .all()
         
         nextButton.pin
             .horizontally(20)

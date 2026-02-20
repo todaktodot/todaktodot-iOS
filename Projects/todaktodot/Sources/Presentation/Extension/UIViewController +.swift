@@ -72,4 +72,9 @@ extension UIViewController {
             navigationItem.rightBarButtonItem?.hidesSharedBackground = true
         }
     }
+    
+    func hiddenBackButton() {
+        navigationItem.hidesBackButton = true
+        navigationController?.interactivePopGestureRecognizer?.delegate = nil
+    }
 }

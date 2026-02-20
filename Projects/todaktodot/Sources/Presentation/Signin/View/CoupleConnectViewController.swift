@@ -112,6 +112,7 @@ final class CoupleConnectViewController: UIViewController, View {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        hiddenBackButton()
         setupViews()
         setupFlexLayout()
         hideKeyboardwhenTappedAround()
@@ -142,7 +143,7 @@ final class CoupleConnectViewController: UIViewController, View {
     private func setupFlexLayout() {
         contentsView.flex.paddingHorizontal(20).define {
             $0.addItem(titleLabel)
-                .marginTop(40)
+                .marginTop(84)
             
             $0.addItem(descriptionLabel1)
                 .marginTop(8)
@@ -190,10 +191,7 @@ final class CoupleConnectViewController: UIViewController, View {
             .all()
         
         scrollview.pin
-            .top(view.pin.safeArea.top)
-            .left()
-            .right()
-            .bottom()
+            .all()
         
         contentsView.pin
             .top()
@@ -340,29 +338,32 @@ extension CoupleConnectViewController {
             let userInfo = notification.userInfo,
             let keyboardFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
         else { return }
+
+        let keyboardHeight = keyboardFrame.height - view.safeAreaInsets.bottom
+
+        scrollview.contentInset.bottom = keyboardHeight + 100
         
-        let bottomInset =
-            keyboardFrame.height
-            - view.safeAreaInsets.bottom
-            + 100
-        UIView.animate(withDuration: 0.1) {
-            self.scrollview.isScrollEnabled = true
-            self.scrollview.contentInset.bottom = bottomInset
-            
-            self.scrollview.setContentOffset(
-                CGPoint(x: 0, y: 60),
-                animated: false
-            )
-        }
+        scrollview.isScrollEnabled = true
+        scrollview.setContentOffset(CGPoint(x: 0, y: 100), animated: true)
     }
     
     @objc private func keyboardWillHide(_ notification: Notification) {
         UIView.animate(withDuration: 0.1) {
             self.scrollview.contentInset.bottom = 0
-            self.scrollview.verticalScrollIndicatorInsets.bottom = 0
             
             self.scrollview.setContentOffset(.zero, animated: false)
             self.scrollview.isScrollEnabled = false
         }
+    }
+}
+extension UIView {
+    func findFirstResponder() -> UIView? {
+        if isFirstResponder { return self }
+        for subview in subviews {
+            if let responder = subview.findFirstResponder() {
+                return responder
+            }
+        }
+        return nil
     }
 }

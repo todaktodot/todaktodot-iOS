@@ -45,6 +45,16 @@ extension CoupleInfoDto {
         let months = components.month ?? 0
         let days = components.day ?? 0
 
-        return "\(years)년 \(months)월 \(days)일"
+        var parts: [String] = []
+        
+        if years > 0 { parts.append("\(years)년") }
+        if months > 0 { parts.append("\(months)월") }
+        if days > 0 { parts.append("\(days)일") }
+        
+        if parts.isEmpty {
+            return "0일"
+        }
+
+        return parts.joined(separator: " ")
     }
 }

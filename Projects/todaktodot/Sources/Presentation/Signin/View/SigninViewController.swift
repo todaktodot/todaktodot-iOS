@@ -177,7 +177,7 @@ final class SigninViewController: UIViewController, View {
                 switch event {
                 case .kakaoSuccess, .googleSuccess, .appleSuccess:
                     UserdefaultKey.isLoggedIn = true
-                    if UserdefaultKey.createdCoupleInfo && UserdefaultKey.createdMyNickname {
+                    if /*UserdefaultKey.createdCoupleInfo && */UserdefaultKey.createdMyNickname { // TODO: 임시 주석처리 서버 push 나오면 연동하기
                         self.coordinator?.navigateToMain()
                     } else {
                         self.coordinator?.showCoupleConnect()
