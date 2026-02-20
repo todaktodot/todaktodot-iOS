@@ -160,8 +160,8 @@ final class DailyCardViewController: UIViewController, View {
         // historySelectedType에 해당하는 카드 찾기
         guard let card = reactor.currentState.selectedCard ?? 
               (historyType == .roleplay ? 
-                CardStorageService.shared.getTodayCards().first(where: { $0.type == .roleplay }) :
-                CardStorageService.shared.getTodayCards().first(where: { $0.type == .balance })) else {
+                CardService.shared.getTodayCards().first(where: { $0.type == .roleplay }) :
+                CardService.shared.getTodayCards().first(where: { $0.type == .balance })) else {
             return
         }
         

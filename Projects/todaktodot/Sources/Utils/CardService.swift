@@ -1,5 +1,5 @@
 //
-//  CardStorageService.swift
+//  CardService.swift
 //  todaktodot
 //
 //  Created by daye on 2/7/26.
@@ -7,8 +7,8 @@
 
 import Foundation
 
-struct CardStorageService {
-    static let shared = CardStorageService()
+struct CardService {
+    static let shared = CardService()
     
     private let calendar = Calendar.current
 
@@ -25,9 +25,23 @@ struct CardStorageService {
     }
     
     func getTodayCards() -> [QuestionCard] {
-        let today = Date()
+        let today = getCardSystemDate()
         return UserdefaultKey.weeklyCards.filter { card in
             calendar.isDate(card.date, inSameDayAs: today)
+        }
+    }
+    
+    /// 카드 배치 기준 날짜 반환 (오전 8시 기준)
+    /// - 8시 이후: 오늘 날짜
+    /// - 8시 이전: 어제 날짜
+    func getCardSystemDate() -> Date {
+        let now = Date()
+        let hour = calendar.component(.hour, from: now)
+        
+        if hour >= 8 {
+            return now
+        } else {
+            return calendar.date(byAdding: .day, value: -1, to: now) ?? now
         }
     }
 }

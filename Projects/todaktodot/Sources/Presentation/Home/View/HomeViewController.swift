@@ -232,8 +232,9 @@ final class HomeViewController: BaseViewController, View {
             .do(onNext: { print("🔘 Arrow button tap detected!") })
             .subscribe(onNext: { [weak self] in
                 guard let self = self else { return }
-                // 히스토리에서 오늘 카드 찾기
-                let todayCard = self.HistoryCards.first { Calendar.current.isDateInToday($0.date) }
+                // 히스토리에서 오늘 카드 찾기 (8시 기준)
+                let cardSystemDate = CardStorageService.shared.getCardSystemDate()
+                let todayCard = self.HistoryCards.first { Calendar.current.isDate($0.date, inSameDayAs: cardSystemDate) }
                 let selectedType = todayCard?.type ?? .none
                 
                 // 로컬에 저장된 오늘 카드 로드
@@ -278,11 +279,11 @@ final class HomeViewController: BaseViewController, View {
     }
     
     private func fetchHistoryCards() {
-        /// 월요일부터 오늘까지
+        /// 월요일부터 오늘까지 (8시 기준)
         var calendar = Calendar.current
             calendar.firstWeekday = 2
             
-            let today = Date()
+            let today = CardStorageService.shared.getCardSystemDate()
             let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)
             guard let startOfWeek = calendar.date(from: components) else { return }
             
@@ -295,9 +296,9 @@ final class HomeViewController: BaseViewController, View {
     
     
     private func fetchWeeklyCards() {
-        /// 오늘부터 다음 일요일까지
+        /// 오늘부터 다음 일요일까지 (8시 기준)
         let calendar = Calendar.current
-        let today = Date()
+        let today = CardStorageService.shared.getCardSystemDate()
         
         guard let nextSunday = calendar.nextDate(after: today, matching: DateComponents(weekday: 1), matchingPolicy: .nextTime) else {
             return
@@ -523,8 +524,9 @@ extension HomeViewController {
     }
     
     private func updateMainCardFromHistory(_ cards: [QuestionCard]) {
-        // 히스토리에서 오늘 카드 찾기
-        let todayCard = cards.first { Calendar.current.isDateInToday($0.date) }
+        // 히스토리에서 오늘 카드 찾기 (8시 기준)
+        let cardSystemDate = CardStorageService.shared.getCardSystemDate()
+        let todayCard = cards.first { Calendar.current.isDate($0.date, inSameDayAs: cardSystemDate) }
         
         guard let card = todayCard else {
             hideMainCardSkeleton()
@@ -689,7 +691,8 @@ extension HomeViewController {
         let cardView = UIView()
         
         let calendar = Calendar.current
-        let isToday = calendar.isDateInToday(card.date)
+        let cardSystemDate = CardStorageService.shared.getCardSystemDate()
+        let isToday = calendar.isDate(card.date, inSameDayAs: cardSystemDate)
     
         if isToday {
             cardView.backgroundColor = UIColor.mainPurple

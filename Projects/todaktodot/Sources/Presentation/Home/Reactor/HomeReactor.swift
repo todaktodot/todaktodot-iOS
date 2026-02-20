@@ -127,9 +127,9 @@ final class HomeReactor: Reactor {
                     switch result {
                     case .success(let cards):
                         print("주간 카드 패치 완료")
-                        CardStorageService.shared.saveWeeklyCards(cards)
+                        CardService.shared.saveWeeklyCards(cards)
                         UserdefaultKey.lastWeeklyCardDate = endDate.toDate()
-                        let todayCards = CardStorageService.shared.getTodayCards()
+                        let todayCards = CardService.shared.getTodayCards()
                         return .just(.setTodayCards(todayCards))
                     case .failure:
                         let mockCards = MockCardData.dailyCards
@@ -155,7 +155,7 @@ final class HomeReactor: Reactor {
                         ])
                     case .failure:
                         print("⚠️ 서버 실패 - 로컬 주간 카드 확인")
-                        let savedTodayCards = CardStorageService.shared.getTodayCards()
+                        let savedTodayCards = CardService.shared.getTodayCards()
                         print("💾 로컬 저장된 오늘 카드: \(savedTodayCards.count)개")
                         
                         if savedTodayCards.isEmpty {
