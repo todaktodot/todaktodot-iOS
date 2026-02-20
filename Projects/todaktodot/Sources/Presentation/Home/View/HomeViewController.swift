@@ -110,7 +110,7 @@ final class HomeViewController: BaseViewController, View {
     }
     
     private let weekCardsContainer = UIView()
-    private var HistoryCards: [QuestionCard] = []
+    var HistoryCards: [QuestionCard] = []
     private var isLoadingHistoryCards = true
     private let shimmerLayer = CAGradientLayer()
     
@@ -135,10 +135,7 @@ final class HomeViewController: BaseViewController, View {
     }
     
     private func fetchAllCards() {
-        // 히스토리 카드만 패치 (UI용)
-        fetchHistoryCards()
-        
-        // 주간 카드는 조건부 패치 (캐싱용)
+
         if let lastWeeklyDate = UserdefaultKey.lastWeeklyCardDate,
            lastWeeklyDate >= Date() {
             print("✅ 주간 카드 저장됨")
@@ -166,7 +163,6 @@ final class HomeViewController: BaseViewController, View {
 
         // 히스토리 카드만 구독
         reactor.state.map { $0.historyCards }
-            .distinctUntilChanged { $0.count == $1.count }
             .skip(1)
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] historyCards in
@@ -236,13 +232,17 @@ final class HomeViewController: BaseViewController, View {
             .do(onNext: { print("🔘 Arrow button tap detected!") })
             .subscribe(onNext: { [weak self] in
                 guard let self = self else { return }
+                // 히스토리에서 오늘 카드 찾기
+                let todayCard = self.HistoryCards.first { Calendar.current.isDateInToday($0.date) }
+                let selectedType = todayCard?.type ?? .none
+                
                 // 로컬에 저장된 오늘 카드 로드
                 let todayCards = CardStorageService.shared.getTodayCards()
-                print("🔘 Arrow button tapped, todayCards count: \(todayCards.count)")
+                print("🔘 Arrow button tapped, todayCards count: \(todayCards.count), selectedType: \(selectedType)")
                 if todayCards.isEmpty {
                     print("⚠️ todayCards is empty!")
                 }
-                self.coordinator?.showDailyCard(todayCards: todayCards)
+                self.coordinator?.showDailyCard(todayCards: todayCards, selectedType: selectedType)
             })
             .disposed(by: disposeBag)
     }
@@ -279,8 +279,6 @@ final class HomeViewController: BaseViewController, View {
     
     private func fetchHistoryCards() {
         /// 월요일부터 오늘까지
-        setupHistoryCards()
-        
         var calendar = Calendar.current
             calendar.firstWeekday = 2
             
@@ -293,11 +291,6 @@ final class HomeViewController: BaseViewController, View {
             
             print("📅 조회 범위: \(startDate) ~ \(endDate)")
             reactor?.action.onNext(.fetchHistoryCards(startDate: startDate, endDate: endDate))
-        
-        DispatchQueue.main.async { [weak self] in
-            self?.view.setNeedsLayout()
-            self?.view.layoutIfNeeded()
-        }
     }
     
     

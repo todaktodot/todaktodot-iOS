@@ -87,10 +87,10 @@ final class HomeCoordinator: Coordinator {
         navigationController.setViewControllers([homeViewController], animated: false)
     }
     
-    func showDailyCard(todayCards: [QuestionCard]) {
+    func showDailyCard(todayCards: [QuestionCard], selectedType: CardType) {
         let cardRepository = CardRepositoryImpl(networkManager: networkManager)
         let cardUseCase = CardUseCase(repository: cardRepository)
-        let reactor = DailyCardReactor(cardUseCase: cardUseCase, dailyCards: todayCards)
+        let reactor = DailyCardReactor(cardUseCase: cardUseCase, dailyCards: todayCards, selectedType: selectedType)
         let dailyCardViewController = DailyCardViewController(reactor: reactor)
         dailyCardViewController.coordinator = self
         dailyCardViewController.hidesBottomBarWhenPushed = true
@@ -100,7 +100,7 @@ final class HomeCoordinator: Coordinator {
     func showDailyCardDetail(card: QuestionCard) {
         let cardRepository = CardRepositoryImpl(networkManager: networkManager)
         let cardUseCase = CardUseCase(repository: cardRepository)
-        let reactor = DailyCardReactor(cardUseCase: cardUseCase, dailyCards: [card])
+        let reactor = DailyCardReactor(cardUseCase: cardUseCase, dailyCards: [card], selectedType: .none)
         let dailyCardDetailViewController = DailyCardDetailViewController(card: card, reactor: reactor)
         dailyCardDetailViewController.coordinator = self
         dailyCardDetailViewController.hidesBottomBarWhenPushed = true
@@ -110,7 +110,7 @@ final class HomeCoordinator: Coordinator {
     func showBalanceCardDetail(card: QuestionCard) {
         let cardRepository = CardRepositoryImpl(networkManager: networkManager)
         let cardUseCase = CardUseCase(repository: cardRepository)
-        let reactor = DailyCardReactor(cardUseCase: cardUseCase, dailyCards: [card])
+        let reactor = DailyCardReactor(cardUseCase: cardUseCase, dailyCards: [card], selectedType: .none)
         let dailyCardDetailViewController = DailyCardDetailViewController(card: card, reactor: reactor)
         dailyCardDetailViewController.coordinator = self
         dailyCardDetailViewController.hidesBottomBarWhenPushed = true

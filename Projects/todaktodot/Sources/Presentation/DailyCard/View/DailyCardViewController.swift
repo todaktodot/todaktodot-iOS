@@ -45,36 +45,40 @@ final class DailyCardViewController: UIViewController, View {
     
     func bind(reactor: DailyCardReactor) {
         // 초기 선택 상태 반영 (레이아웃 완료 후)
-        reactor.state.map { $0.selectedCardType }
+        reactor.state.map { $0.historySelectedType }
             .take(1)
-            .compactMap { $0 }
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] cardType in
+            .subscribe(onNext: { [weak self] historyType in
                 guard let self = self else { return }
                 DispatchQueue.main.async {
-                    self.updateButtonStyle(self.situationButton, isSelected: cardType == .roleplay)
-                    self.updateButtonStyle(self.balanceButton, isSelected: cardType == .balance)
+                    // historySelectedType에 따라 버튼 스타일 적용
+                    self.updateButtonStyle(self.situationButton, isSelected: historyType == .roleplay)
+                    self.updateButtonStyle(self.balanceButton, isSelected: historyType == .balance)
                 }
             })
             .disposed(by: disposeBag)
         
         situationButton.rx.tap
-            .withLatestFrom(reactor.state.map { $0.selectedCardType })
-            .subscribe(onNext: { [weak self] selectedCardType in
-                if let selectedCardType = selectedCardType, selectedCardType != .roleplay {
+            .withLatestFrom(reactor.state.map { $0.historySelectedType })
+            .subscribe(onNext: { [weak self] historyType in
+                // historyType이 .balance면 알림
+                if historyType == .balance {
                     self?.showNotificationAlert()
                 } else {
+                    // .none 또는 .roleplay면 이동
                     reactor.action.onNext(.tapSituationButton)
                 }
             })
             .disposed(by: disposeBag)
         
         balanceButton.rx.tap
-            .withLatestFrom(reactor.state.map { $0.selectedCardType })
-            .subscribe(onNext: { [weak self] selectedCardType in
-                if let selectedCardType = selectedCardType, selectedCardType != .balance {
+            .withLatestFrom(reactor.state.map { $0.historySelectedType })
+            .subscribe(onNext: { [weak self] historyType in
+                // historyType이 .roleplay면 알림
+                if historyType == .roleplay {
                     self?.showNotificationAlert()
                 } else {
+                    // .none 또는 .balance면 이동
                     reactor.action.onNext(.tapBalanceButton)
                 }
             })
@@ -97,8 +101,7 @@ final class DailyCardViewController: UIViewController, View {
             .subscribe(onNext: { [weak self] card in
                 guard let self = self else { return }
                 
-                self.updateButtonStyle(self.situationButton, isSelected: card.type == .roleplay)
-                self.updateButtonStyle(self.balanceButton, isSelected: card.type == .balance)
+                // 버튼 스타일 업데이트 제거 - historySelectedType만 기준으로 함
                 
                 switch card.type {
                 case .roleplay:
@@ -151,8 +154,16 @@ final class DailyCardViewController: UIViewController, View {
     }
     
     private func showNotificationAlert() {
-        guard let cardType = reactor?.currentState.selectedCardType,
-              let card = reactor?.currentState.selectedCard else { return }
+        guard let reactor = reactor else { return }
+        let historyType = reactor.currentState.historySelectedType
+        
+        // historySelectedType에 해당하는 카드 찾기
+        guard let card = reactor.currentState.selectedCard ?? 
+              (historyType == .roleplay ? 
+                CardStorageService.shared.getTodayCards().first(where: { $0.type == .roleplay }) :
+                CardStorageService.shared.getTodayCards().first(where: { $0.type == .balance })) else {
+            return
+        }
         
         showAlert(
             icon: UIImage(resource: .warning),
@@ -160,7 +171,7 @@ final class DailyCardViewController: UIViewController, View {
             description: "다음에는 먼저 질문에 답변하여\n 유형을 선정해보세요.",
             primaryButtonTitle: "카드 작성하러 가기",
             primaryButtonAction: { [weak self] in
-                switch cardType {
+                switch historyType {
                 case .roleplay:
                     self?.coordinator?.showDailyCardDetail(card: card)
                 case .balance:

@@ -12,20 +12,16 @@ final class DailyCardReactor: Reactor {
     
     private let cardUseCase: CardUseCase
     private let dailyCards: [QuestionCard]
+    private let historySelectedType: CardType  // 히스토리 카드에서 선택된 타입
     let onCardSelected = PublishSubject<Void>()
     
-    init(cardUseCase: CardUseCase, dailyCards: [QuestionCard]) {
+    init(cardUseCase: CardUseCase, dailyCards: [QuestionCard], selectedType: CardType) {
         self.cardUseCase = cardUseCase
         self.dailyCards = dailyCards
+        self.historySelectedType = selectedType  // 히스토리 선택 타입 저장
         
-        // 이미 선택된 카드가 있으면 초기 상태 설정
-        if let selectedCard = dailyCards.first(where: { $0.isSelected }) {
-            self.initialState = State(selectedCardType: selectedCard.type, selectedCard: selectedCard)
-        } else if dailyCards.count == 1, let card = dailyCards.first {
-            self.initialState = State(selectedCardType: card.type, selectedCard: card)
-        } else {
-            self.initialState = State()
-        }
+        // 초기 상태는 히스토리 선택 타입으로 설정
+        self.initialState = State(historySelectedType: selectedType)
     }
     
     enum Action {
@@ -45,7 +41,8 @@ final class DailyCardReactor: Reactor {
     
     struct State {
         var shouldDismiss: Bool = false
-        var selectedCardType: CardType?
+        var historySelectedType: CardType  // 히스토리에서 선택된 타입 (UI 표시용)
+        var selectedCardType: CardType?    // 현재 선택된 타입 (로직 판별용)
         var selectedCard: QuestionCard?
         var isLoading: Bool = false
         var submitResult: SubmitAnswerResult?
@@ -62,24 +59,21 @@ final class DailyCardReactor: Reactor {
             guard let card = dailyCards.first(where: { $0.type == .roleplay }) else {
                 return .empty()
             }
-            return cardUseCase.selectCardType(coupleCardId: card.coupleCardId)
-                .do(onNext: { [weak self] _ in
-                    self?.onCardSelected.onNext(())
-                })
-                .flatMap { _ in Observable.just(Mutation.navigateToDetail(card)) }
+//            onCardSelected.onNext(())
+            return .just(.navigateToDetail(card))
         case .tapBalanceButton:
             guard let card = dailyCards.first(where: { $0.type == .balance }) else {
                 return .empty()
             }
-            return cardUseCase.selectCardType(coupleCardId: card.coupleCardId)
-                .do(onNext: { [weak self] _ in
-                    self?.onCardSelected.onNext(())
-                })
-                .flatMap { _ in Observable.just(Mutation.navigateToDetail(card)) }
+//            onCardSelected.onNext(())
+            return .just(.navigateToDetail(card))
         case .submitAnswers(let coupleCardId, let cardId, let answers):
             return Observable.concat([
                 .just(.setLoading(true)),
-                cardUseCase.submitAnswers(coupleCardId: coupleCardId, cardId: cardId, answers: answers)
+                cardUseCase.selectCardType(coupleCardId: coupleCardId)
+                    .flatMap { _ in
+                        return self.cardUseCase.submitAnswers(coupleCardId: coupleCardId, cardId: cardId, answers: answers)
+                    }
                     .flatMap { result -> Observable<Mutation> in
                         switch result {
                         case .success(let submitResult):
@@ -113,3 +107,4 @@ final class DailyCardReactor: Reactor {
         return newState
     }
 }
+
