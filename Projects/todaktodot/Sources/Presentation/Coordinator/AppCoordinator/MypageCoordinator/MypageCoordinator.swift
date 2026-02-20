@@ -56,7 +56,7 @@ final class MypageCoordinator: Coordinator {
     
     func showNickname() {
         let signinCoordinator = SigninCoordinator(navigationController: navigationController)
-        signinCoordinator.tabBarCoordinator = tabBarCoordinator
+        signinCoordinator.parentCoordinator = tabBarCoordinator
         addChild(signinCoordinator)
         signinCoordinator.onNicknameUpdated = { [weak self] nickname in
             self?.onNicknameUpdated?(nickname)
@@ -75,8 +75,9 @@ final class MypageCoordinator: Coordinator {
     
     func showCoupleConnect() {
         let signinCoordinator = SigninCoordinator(navigationController: navigationController)
+        signinCoordinator.parentCoordinator = tabBarCoordinator
         addChild(signinCoordinator)
-        signinCoordinator.showCoupleConnect()
+        signinCoordinator.showCoupleConnectOnly()
     }
     
     func navigateBack() {

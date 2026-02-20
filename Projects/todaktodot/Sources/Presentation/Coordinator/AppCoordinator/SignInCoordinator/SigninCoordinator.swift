@@ -14,7 +14,6 @@ final class SigninCoordinator: Coordinator {
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
     weak var parentCoordinator: Coordinator?
-    weak var tabBarCoordinator: TabBarCoordinator?
     private let networkManager = NetworkManager.shared // TODO: AppDIContainer 사용? 고민
     
     init(navigationController: UINavigationController) {
@@ -57,7 +56,7 @@ final class SigninCoordinator: Coordinator {
         let coupleConnectViewController = CoupleConnectViewController()
         coupleConnectViewController.coordinator = self
         coupleConnectViewController.reactor = CoupleReactor(coupleUseCase: useCase)
-        navigationController.setViewControllers([coupleConnectViewController], animated: true)
+        navigationController.pushViewController(coupleConnectViewController, animated: true)
     }
     
     func showNickname(flowType: ConnectFlowType? = nil) {

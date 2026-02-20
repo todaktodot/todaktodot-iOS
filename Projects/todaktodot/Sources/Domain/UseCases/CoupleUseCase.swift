@@ -38,4 +38,8 @@ final class CoupleUseCase {
     func fetchConnectInfo() -> Observable<ConnectInfo> {
         repository.fetchConnectInfo()
     }
+    
+    func soloStart() -> Observable<Bool> {
+        repository.soloStart()
+    }
 }

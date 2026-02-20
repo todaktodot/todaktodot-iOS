@@ -20,7 +20,9 @@ final class CoupleReactor: Reactor {
         var isAlreadyCouple: Bool?
         var isTermsAgreeSuccess: Bool = false
         var isCoupleConnectSuccess: Bool = false
+        var isSoloStartSuccess: Bool = false
         var isMyCodeIssueFailed: Bool = false
+        var isSoloStartFailed: Bool = false
         
         var updateNickname: String?
         var updateCoupleInfo: CoupleInfo?
@@ -34,19 +36,26 @@ final class CoupleReactor: Reactor {
         case tapConnectButton(String)
         case tapNicknameButton(String)
         case tapStartButton(String, String)
+        case tapSoloStartButton
     }
     
     enum Mutation {
+        case setSoloStart(Bool)
         case setLoading(Bool)
-        case setMyCode(String)
         case setIsJoined(Bool)
+        
         case setTermsAgreeSuccess(Bool)
         case setCoupleConnectSuccess(Bool)
+        
+        case setMyCode(String)
         case setNickname(String)
         case setCoupleInfo(CoupleInfo)
-        case setMyCodeIssueFailed
         case setConnectInfo(ConnectInfo)
+        
         case setAlreadyCouple
+        
+        case setMyCodeIssueFailed
+        case setSoloStartFailed
     }
     
     let initialState = State()
@@ -62,9 +71,8 @@ final class CoupleReactor: Reactor {
         case .issueCoupleCode:
             return coupleUseCase.issueCode()
                 .map { Mutation.setMyCode($0.linkCode) }
-                .catch { error in
-                    if let afError = error.asCustomAFError, afError.isAlreadyCouple {
-                        print("afError.isAlreadyCouple")
+                .catch {
+                    if let afError = $0.asCustomAFError, afError.isAlreadyCouple {
                         return .just(.setAlreadyCouple)
                     }
                     return .just(.setMyCodeIssueFailed) // TODO: 에러 처리
@@ -93,6 +101,16 @@ final class CoupleReactor: Reactor {
         case .fetchConnectInfo:
             return coupleUseCase.fetchConnectInfo()
                 .map { Mutation.setConnectInfo($0) }
+            
+        case .tapSoloStartButton:
+            return coupleUseCase.soloStart()
+                .map { Mutation.setSoloStart($0) }
+                .catch {
+                    if let afError = $0.asCustomAFError, afError.isAleardySolo {
+                        return .just(.setSoloStart(true))
+                    }
+                    return .just(.setSoloStartFailed)
+                }
         }
     }
     
@@ -129,6 +147,12 @@ final class CoupleReactor: Reactor {
             
         case .setAlreadyCouple:
             newState.isAlreadyCouple = true
+            
+        case .setSoloStart(let isSuccess):
+            newState.isSoloStartSuccess = isSuccess
+            
+        case .setSoloStartFailed:
+            newState.isSoloStartFailed = true
         }
         
         return newState

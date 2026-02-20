@@ -21,7 +21,6 @@ final class AppCoordinator: Coordinator {
         setupLogoutObserver()
     }
     
-    // TODO: 고민
     func start() {
         if isLoggedIn() {
             showMainFlow()
@@ -30,7 +29,6 @@ final class AppCoordinator: Coordinator {
         }
     }
     
-    // TODO: 실제 로그인 정보로 변경
     private func isLoggedIn() -> Bool {
         return UserdefaultKey.isLoggedIn
     }

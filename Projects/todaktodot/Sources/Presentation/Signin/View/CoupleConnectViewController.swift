@@ -102,7 +102,7 @@ final class CoupleConnectViewController: UIViewController, View {
         $0.isEnabled = false
     }
     
-    private let lookAroundButton = UIButton(type: .system).then {
+    private let soloStartButton = UIButton(type: .system).then {
         $0.setTitle("혼자 둘러볼게요", for: .normal)
         $0.titleLabel?.font = .pretenMedium(16)
         $0.tintColor = .grayScale600
@@ -135,7 +135,7 @@ final class CoupleConnectViewController: UIViewController, View {
         view.addSubview(background)
         view.addSubview(scrollview)
         view.addSubview(connectButton)
-        view.addSubview(lookAroundButton)
+        view.addSubview(soloStartButton)
         scrollview.addSubview(contentsView)
     }
 
@@ -204,7 +204,7 @@ final class CoupleConnectViewController: UIViewController, View {
             .bottom(108)
             .height(52)
         
-        lookAroundButton.pin
+        soloStartButton.pin
             .horizontally(20)
             .bottom(48)
             .height(52)
@@ -263,6 +263,16 @@ final class CoupleConnectViewController: UIViewController, View {
             .disposed(by: disposeBag)
         
         reactor.state
+            .map { $0.isSoloStartSuccess }
+            .distinctUntilChanged()
+            .filter { $0 }
+            .subscribe(onNext: { [weak self] _ in
+                guard let self = self else { return }
+                self.coordinator?.navigateToMain()
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state
             .map { $0.isMyCodeIssueFailed }
             .distinctUntilChanged()
             .filter { $0 }
@@ -293,10 +303,9 @@ final class CoupleConnectViewController: UIViewController, View {
             })
             .disposed(by: disposeBag)
         
-        lookAroundButton.rx.tap
-            .subscribe(onNext: { [weak self] _ in
-                self?.coordinator?.navigateToMain()
-            })
+        soloStartButton.rx.tap
+            .map { CoupleReactor.Action.tapSoloStartButton }
+            .bind(to: reactor.action)
             .disposed(by: disposeBag)
     }
     

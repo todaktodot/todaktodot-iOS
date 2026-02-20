@@ -15,6 +15,10 @@ public struct CustomAFError: Error {
     public var isAlreadyCouple: Bool {
         return message == APIErrorMessages.aleardyCouple.rawValue
     }
+    
+    public var isAleardySolo: Bool {
+        return message == APIErrorMessages.aleardySolo.rawValue
+    }
 }
 
 struct APIErrorResponse: Decodable {
@@ -23,4 +27,5 @@ struct APIErrorResponse: Decodable {
 
 public enum APIErrorMessages: String {
     case aleardyCouple = "이미 커플인 유저입니다"
+    case aleardySolo = "이미 등록된 상태입니다. 커플 연결 또는 혼자 둘러보기가 진행 중입니다."
 }

@@ -97,4 +97,15 @@ final class CoupleRepositoryImpl: CoupleRepository {
                 $0.toConnectInfo()
             }
     }
+    
+    func soloStart() -> Observable<Bool> {
+        let endpoint = Endpoint<Empty>(
+            baseURL: .todaktodotAPI,
+            path: "/api/solo/start",
+            method: .post
+        )
+
+        return networkManager.request(with: endpoint)
+            .map { _ in true }
+    }
 }
