@@ -81,4 +81,21 @@ final class AuthRepositoryImpl: AuthRepository {
             .map { _ in true }
             .catchAndReturn(false)
     }
+    
+    func loginTest() -> Observable<Bool> {
+        let endpoint = Endpoint<LoginInfo>(
+            baseURL: .todaktodotAPI,
+            path: "/login/test2",
+            method: .post
+        )
+        
+        return networkManager.request(with: endpoint)
+            .do(onNext: { result in
+                UserdefaultKey.accessToken = result.accessToken
+                UserdefaultKey.couple = result.couple
+                UserdefaultKey.joined = result.joined
+            })
+            .map { _ in true }
+            .catchAndReturn(false)
+    }
 }
