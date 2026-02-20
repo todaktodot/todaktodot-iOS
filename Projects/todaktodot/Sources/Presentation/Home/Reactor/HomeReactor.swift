@@ -33,6 +33,7 @@ final class HomeReactor: Reactor {
         case fetchHistoryCards(startDate: String, endDate: String)
         case fetchWeeklyCards(startDate: String, endDate: String)
         case loadTodayCards
+        case assignCards
     }
     
     enum Mutation {
@@ -56,7 +57,7 @@ final class HomeReactor: Reactor {
     
     let initialState = State()
 
-    private func determineAnswerStatus(from cards: [QuestionCard]) -> AnswerStatus {
+    func determineAnswerStatus(from cards: [QuestionCard]) -> AnswerStatus {
         let selectedCard = cards.first(where: { $0.isSelected }) ?? cards.first
         
         guard let card = selectedCard else {
@@ -139,7 +140,7 @@ final class HomeReactor: Reactor {
 //                        return .just(.setError(error))
                     }
                 }
-            
+            //TODO: 저장된 카드 중 오늘 카드 패치?
         case .loadTodayCards:
             let todayString = Date().toYYYYMMDD()
             return cardUseCase.fetchWeeklyCards(startDate: todayString, endDate: todayString)
@@ -176,6 +177,27 @@ final class HomeReactor: Reactor {
                             .just(.setTodayCards(savedTodayCards)),
                             .just(.setAnswerStatus(status))
                         ])
+                    }
+                }
+        case .assignCards:
+            let today = Date()
+            let calendar = Calendar.current
+            guard let nextSunday = calendar.nextDate(after: today, matching: DateComponents(weekday: 1), matchingPolicy: .nextTime) else {
+                return .empty()
+            }
+            
+            let startDate = today.toYYYYMMDD()
+            let endDate = nextSunday.toYYYYMMDD()
+            
+            return cardUseCase.assignCards(startDate: startDate, endDate: endDate)
+                .flatMap { result -> Observable<Mutation> in
+                    switch result {
+                    case .success:
+                        print("✅ 카드 할당 완료")
+                        return .empty()
+                    case .failure(let error):
+                        print("⚠️ 카드 할당 실패: \(error)")
+                        return .empty()
                     }
                 }
         }

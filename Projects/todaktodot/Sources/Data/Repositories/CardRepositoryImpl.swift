@@ -35,13 +35,9 @@ final class CardRepositoryImpl: CardRepository {
     func assignCards(startDate: String, endDate: String) -> Observable<Result<Void, Error>> {
         let endpoint = Endpoint<Empty>(
             baseURL: .todaktodotAPI,
-            path: "/api/daily-card/assign/me",
+            path: "/api/daily-card/assign/me?startDate=\(startDate)&endDate=\(endDate)",
             method: .post,
-            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
-            parameters: [
-                "startDate": startDate,
-                "endDate": endDate
-            ]
+            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)]
         )
         
         return networkManager.request(with: endpoint)

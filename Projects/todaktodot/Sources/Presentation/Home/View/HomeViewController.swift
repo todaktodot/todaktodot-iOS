@@ -70,6 +70,10 @@ final class HomeViewController: BaseViewController, View {
     }
     private let chip1 = ChipView(title: "🍰 디저트모드")
     private let chip2 = ChipView(title: "💸 경제관")
+    private lazy var chip3 = ChipView(title: "⚖️ 밸런스게임").then {
+        $0.isHidden = true
+    }
+    
     private let arrowButton = UIButton().then {
         $0.backgroundColor = TodotColors.Button.purpleButton1
         $0.layer.cornerRadius = 24
@@ -122,16 +126,19 @@ final class HomeViewController: BaseViewController, View {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+// 테스트용 배치
+// reactor?.action.onNext(.assignCards)
+
         setupUI()
         showMainCardSkeleton()
         fetchAllCards()
     }
     
     private func fetchAllCards() {
-        // 오늘 카드와 히스토리 카드 먼저 패치 (UI 우선)
-        reactor?.action.onNext(.loadTodayCards)
+        // 히스토리 카드만 패치 (UI용)
         fetchHistoryCards()
         
+        // 주간 카드는 조건부 패치 (캐싱용)
         if let lastWeeklyDate = UserdefaultKey.lastWeeklyCardDate,
            lastWeeklyDate >= Date() {
             print("✅ 주간 카드 저장됨")
@@ -143,7 +150,6 @@ final class HomeViewController: BaseViewController, View {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        reactor?.action.onNext(.loadTodayCards)
         fetchHistoryCards()
     }
     
@@ -158,24 +164,16 @@ final class HomeViewController: BaseViewController, View {
     
     func bind(reactor: HomeReactor) {
 
-        let todayCardsStream = reactor.state.map { $0.todayCards }
+        // 히스토리 카드만 구독
+        reactor.state.map { $0.historyCards }
             .distinctUntilChanged { $0.count == $1.count }
             .skip(1)
-//            .distinctUntilChanged { $0.count == $1.count }
-        let historyCardsStream = reactor.state.map { $0.historyCards }
-            .distinctUntilChanged { $0.count == $1.count }
-            .skip(1)
-//            .distinctUntilChanged { $0.count == $1.count }
-        Observable.combineLatest(todayCardsStream, historyCardsStream)
-            .take(1)
-//            .skip(1)
-//            .delay(.milliseconds(300), scheduler: MainScheduler.instance)
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] todayCards, historyCards in
-                self?.updateTodayCardUI(todayCards)
+            .subscribe(onNext: { [weak self] historyCards in
                 self?.HistoryCards = historyCards
                 self?.isLoadingHistoryCards = false
                 self?.updateWeekCards()
+                self?.updateMainCardFromHistory(historyCards)
             })
             .disposed(by: disposeBag)
         
@@ -237,9 +235,9 @@ final class HomeViewController: BaseViewController, View {
         arrowButton.rx.tap
             .do(onNext: { print("🔘 Arrow button tap detected!") })
             .subscribe(onNext: { [weak self] in
-                guard let self = self,
-                      let reactor = self.reactor else { return }
-                let todayCards = reactor.currentState.todayCards
+                guard let self = self else { return }
+                // 로컬에 저장된 오늘 카드 로드
+                let todayCards = CardStorageService.shared.getTodayCards()
                 print("🔘 Arrow button tapped, todayCards count: \(todayCards.count)")
                 if todayCards.isEmpty {
                     print("⚠️ todayCards is empty!")
@@ -371,7 +369,7 @@ extension HomeViewController {
             attributes: [.paragraphStyle: descParagraphStyle]
         )
         
-        [yearLabel, questionIcon, titleLabel, chip1, chip2, arrowButton, descriptionCard, pokeButton]
+        [yearLabel, questionIcon, titleLabel, chip1, chip2, chip3, arrowButton, descriptionCard, pokeButton]
             .forEach {mainCard.addSubview($0)}
         [descriptionTitle, descriptionLabel].forEach {descriptionCard.addSubview($0)}
         
@@ -381,12 +379,15 @@ extension HomeViewController {
                 flex.addItem(questionIcon).position(.absolute).top(20).right(20).size(24)
                 flex.addItem(yearLabel)
                 flex.addItem(titleLabel).marginTop(8)
-                flex.addItem().direction(.row).justifyContent(.spaceBetween).alignItems(.end).marginTop(16).marginRight(22).define { rowFlex in
-                    rowFlex.addItem().direction(.row).define { chipFlex in
-                        chipFlex.addItem(chip1).height(37).width(chip1.intrinsicContentSize.width)
-                        chipFlex.addItem(chip2).height(37).width(chip2.intrinsicContentSize.width).marginLeft(4)
+                flex.addItem().direction(.row).justifyContent(.spaceBetween).alignItems(.start).marginTop(16).define { rowFlex in
+                    rowFlex.addItem().direction(.column).define { chipContainer in
+                        chipContainer.addItem().direction(.row).define { firstRow in
+                            firstRow.addItem(chip1).height(37).width(chip1.intrinsicContentSize.width)
+                            firstRow.addItem(chip2).height(37).width(chip2.intrinsicContentSize.width).marginLeft(4)
+                        }
+                        chipContainer.addItem(chip3).height(37).width(chip3.intrinsicContentSize.width).marginTop(9).isIncludedInLayout(false)
                     }
-                    rowFlex.addItem(arrowButton).marginLeft(47).size(48)
+                    rowFlex.addItem(arrowButton).size(48).marginLeft(16)
                 }
                 flex.addItem(descriptionCard).direction(.column).marginTop(20).define { descFlex in
                     descFlex.addItem(descriptionTitle).marginTop(16).marginLeft(16)
@@ -471,6 +472,7 @@ extension HomeViewController {
                 attributes: [.paragraphStyle: paragraphStyle]
             )
             pokeButton.isHidden = true
+            arrowButton.isHidden = false
             
         case .partnerAnswered:
             titleLabel.attributedText = NSAttributedString(
@@ -478,6 +480,7 @@ extension HomeViewController {
                 attributes: [.paragraphStyle: paragraphStyle]
             )
             pokeButton.isHidden = true
+            arrowButton.isHidden = false
             
         case .myAnswered:
             titleLabel.attributedText = NSAttributedString(
@@ -486,6 +489,7 @@ extension HomeViewController {
             )
             pokeButton.isHidden = false
             pokeButton.flex.isIncludedInLayout(true).height(48).marginTop(16)
+            arrowButton.isHidden = true
             
         case .bothAnswered:
             titleLabel.attributedText = NSAttributedString(
@@ -493,6 +497,7 @@ extension HomeViewController {
                 attributes: [.paragraphStyle: paragraphStyle]
             )
             pokeButton.isHidden = true
+            arrowButton.isHidden = true
         }
         
         titleLabel.flex.markDirty()
@@ -516,12 +521,49 @@ extension HomeViewController {
         
         chip1.updateTitle("\(firstCard.mode.emoji)" + " " + "\(firstCard.mode.displayName)")
         chip2.updateTitle("\(firstCard.subject.emoji)" + " " + "\(firstCard.subject.displayName)")
-        
+//        firstCard.type.
         chip1.flex.width(chip1.intrinsicContentSize.width)
         chip2.flex.width(chip2.intrinsicContentSize.width)
         chip1.superview?.flex.layout(mode: .adjustWidth)
         
         // TODO: 카드 모드 선택 완료시 다음줄에 칩뷰 1개 추가
+    }
+    
+    private func updateMainCardFromHistory(_ cards: [QuestionCard]) {
+        // 히스토리에서 오늘 카드 찾기
+        let todayCard = cards.first { Calendar.current.isDateInToday($0.date) }
+        
+        guard let card = todayCard else {
+            hideMainCardSkeleton()
+            print("⚠️ 오늘 카드 없음")
+            return
+        }
+        
+        // 날짜와 칩만 업데이트 (answerStatus는 Reactor에서 자동 처리)
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "ko_KR")
+        dateFormatter.dateFormat = "yyyy년 M월 d일 EEEE"
+        yearLabel.text = dateFormatter.string(from: card.date)
+        
+        chip1.updateTitle("\(card.mode.emoji) \(card.mode.displayName)")
+        chip2.updateTitle("\(card.subject.emoji) \(card.subject.displayName)")
+        
+        // chip3는 type이 .none이 아닐 때만 표시
+        if card.type != .none {
+            chip3.updateTitle("\(card.type.emoji) \(card.type.displayName)")
+            chip3.isHidden = false
+            chip3.flex.isIncludedInLayout(true)
+            chip3.flex.width(chip3.intrinsicContentSize.width)
+        } else {
+            chip3.isHidden = true
+            chip3.flex.isIncludedInLayout(false)
+        }
+        
+        chip1.flex.width(chip1.intrinsicContentSize.width)
+        chip2.flex.width(chip2.intrinsicContentSize.width)
+        chip1.superview?.flex.layout(mode: .adjustWidth)
+        
+        hideMainCardSkeleton()
     }
        
     private func updateButtonForMyAnswered(status: AnswerStatus, isCoupleConnected: Bool) {
@@ -598,7 +640,7 @@ extension HomeViewController {
               let card = HistoryCards.first(where: { $0.id == tappedView.tag }) else {
             return
         }
-        if !card.user1Answered && !card.user1Answered {
+        if !card.user1Answered && !card.user2Answered {
             showNonAnsweredAlert()
         } else {
             coordinator?.showHistoryCardDetail(card: card)
@@ -687,7 +729,10 @@ extension HomeViewController {
         dayLabel.textColor = isToday ? .white : .grayScale900
         
         let topicLabel = TDLabel()
-        topicLabel.text = "\(card.mode.displayName) · \(card.subject.displayName) · \(card.type.displayName)"
+        let topicText = card.type != .none 
+            ? "\(card.mode.displayName) · \(card.subject.displayName) · \(card.type.displayName)"
+            : "\(card.mode.displayName) · \(card.subject.displayName)"
+        topicLabel.text = topicText
         topicLabel.font = .pretenRegular(14)
         topicLabel.textColor = isToday ? .white : .grayScale800
         
@@ -701,7 +746,9 @@ extension HomeViewController {
         cardView.addSubview(arrowIcon)
         
         cardView.flex
-            .padding(20)
+            .paddingHorizontal(20)
+            .paddingTop(16)
+            .paddingBottom(18)
             .define { flex in
                 flex.addItem(arrowIcon).position(.absolute).right(20).top(33.5).size(16)
                 flex.addItem(dayLabel)

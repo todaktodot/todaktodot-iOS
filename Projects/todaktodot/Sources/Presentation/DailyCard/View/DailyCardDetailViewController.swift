@@ -144,8 +144,9 @@ final class DailyCardDetailViewController: UIViewController, View {
                     Answer(questionNo: mainQuestion.number, content: mainQuestion.options[selectedIndex].text)
                 ]
                 
-                if let reasonText = reasonText, !reasonText.isEmpty {
-                    answers.append(Answer(questionNo: 99, content: reasonText))
+                if let reasonText = reasonText, !reasonText.isEmpty,
+                   let subjectiveQuestion = owner.card.questions.first(where: { $0.type == .subjective }) {
+                    answers.append(Answer(questionNo: subjectiveQuestion.number, content: reasonText))
                 }
                 
                 return .just(.submitAnswers(

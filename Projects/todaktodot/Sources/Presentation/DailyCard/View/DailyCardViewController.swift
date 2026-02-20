@@ -105,6 +105,8 @@ final class DailyCardViewController: UIViewController, View {
                     self.coordinator?.showDailyCardDetail(card: card)
                 case .balance:
                     self.coordinator?.showBalanceCardDetail(card: card)
+                case .none:
+                    break
                 }
             })
             .disposed(by: disposeBag)
@@ -163,6 +165,8 @@ final class DailyCardViewController: UIViewController, View {
                     self?.coordinator?.showDailyCardDetail(card: card)
                 case .balance:
                     self?.coordinator?.showBalanceCardDetail(card: card)
+                case .none:
+                    break
                 }
             }
         )
