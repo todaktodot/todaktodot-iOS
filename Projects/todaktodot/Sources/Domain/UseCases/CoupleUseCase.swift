@@ -23,8 +23,8 @@ final class CoupleUseCase {
         repository.connectCouple(code: code)
     }
     
-    func setTerms(marketingAgree: Bool) -> Observable<Bool> {
-        repository.setTerms(marketingAgree: marketingAgree)
+    func setTerms(infoAgree: Bool? = nil, marketingAgree: Bool? = nil, advertiesmentAgree: Bool? = nil) -> Observable<Bool> {
+        repository.setTerms(infoAgree: infoAgree, marketingAgree: marketingAgree, advertiesmentAgree: advertiesmentAgree)
     }
     
     func updateNickname(nickname: String) -> Observable<String> {

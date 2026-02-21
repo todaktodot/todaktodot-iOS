@@ -32,7 +32,7 @@ final class CoupleReactor: Reactor {
         case issueCoupleCode
         case checkIsJoined
         case fetchConnectInfo
-        case tapTemrsAgreeButtonWithMarketingAgree(Bool)
+        case tapTemrsAgreeButton(Bool, Bool)
         case tapConnectButton(String)
         case tapNicknameButton(String)
         case tapStartButton(String, String)
@@ -90,8 +90,8 @@ final class CoupleReactor: Reactor {
             return coupleUseCase.updateCoupleInfo(date: date, stage: stage)
                 .map { Mutation.setCoupleInfo($0) }
             
-        case .tapTemrsAgreeButtonWithMarketingAgree(let isMarketing):
-            return coupleUseCase.setTerms(marketingAgree: isMarketing)
+        case .tapTemrsAgreeButton(let isMarketing, let isAdvertiesment):
+            return coupleUseCase.setTerms(marketingAgree: isMarketing, advertiesmentAgree: isAdvertiesment)
                 .map { Mutation.setTermsAgreeSuccess($0) }
                 .catchAndReturn(Mutation.setTermsAgreeSuccess(false))
             

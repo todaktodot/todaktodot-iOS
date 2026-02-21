@@ -117,12 +117,6 @@ final class CoupleConnectViewController: UIViewController, View {
         setupFlexLayout()
         hideKeyboardwhenTappedAround()
         registerKeyboardNotification()
-        
-        if UserdefaultKey.couple {
-            showConnectAlert()
-        } else {
-            reactor?.action.onNext(.checkIsJoined)
-        }
     }
     
     override func viewDidLayoutSubviews() {
@@ -219,9 +213,13 @@ final class CoupleConnectViewController: UIViewController, View {
         reactor.state
             .compactMap { $0.isAlreadyCouple }
             .distinctUntilChanged()
-            .subscribe(onNext: { [weak self] _ in
+            .subscribe(onNext: { [weak self] isCouple in
                 guard let self = self else { return }
-                self.showConnectAlert()
+                if isCouple {
+                    self.showConnectAlert()
+                } else {
+                    reactor.action.onNext(.checkIsJoined)
+                }
             })
             .disposed(by: disposeBag)
         

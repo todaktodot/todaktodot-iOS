@@ -48,7 +48,7 @@ final class CoupleRepositoryImpl: CoupleRepository {
             method: .patch,
             parameters: ["nickname": nickname]
         )
-
+        
         return networkManager.request(with: endpoint)
             .map { $0.toNickname() }
     }
@@ -68,21 +68,25 @@ final class CoupleRepositoryImpl: CoupleRepository {
             .map { $0.toCoupleInfo() }
     }
     
-    func setTerms(marketingAgree: Bool) -> Observable<Bool> {
+    func setTerms(infoAgree: Bool? = nil, marketingAgree: Bool? = nil, advertiesmentAgree: Bool? = nil) -> Observable<Bool> {
+        var parameters: [String: String] = [:]
+        
+        if let info = infoAgree { parameters["infoAlarmYN"] = (info ? "Y" : "N") }
+        if let marketing = marketingAgree { parameters["marketingAndAlarmYN"] = (marketing ? "Y" : "N") }
+        if let advertiesment = advertiesmentAgree { parameters["advertiesmentAlarmYN"] = (advertiesment ? "Y" : "N") }
+        
         let endpoint = Endpoint<Empty>(
             baseURL: .todaktodotAPI,
             path: "/api/term",
             method: .post,
-            parameters: [
-                "marketingAndAlarmYN": marketingAgree ? "Y" : "N"
-            ]
+            parameters: parameters
         )
 
         return networkManager.request(with: endpoint)
-            .do(onNext: { _ in
+            .map { _ in
                 UserdefaultKey.joined = true
-            })
-            .map { _ in true }
+                return true
+            }
     }
     
     func fetchConnectInfo() -> Observable<ConnectInfo> {
