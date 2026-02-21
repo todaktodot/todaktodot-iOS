@@ -77,7 +77,7 @@ final class MypageCoordinator: Coordinator {
         let signinCoordinator = SigninCoordinator(navigationController: navigationController)
         signinCoordinator.parentCoordinator = tabBarCoordinator
         addChild(signinCoordinator)
-        signinCoordinator.showCoupleConnectOnly()
+        signinCoordinator.showCoupleConnect()
     }
     
     func navigateBack() {

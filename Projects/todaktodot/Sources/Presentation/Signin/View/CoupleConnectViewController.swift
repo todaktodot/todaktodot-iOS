@@ -244,22 +244,21 @@ final class CoupleConnectViewController: UIViewController, View {
             .disposed(by: disposeBag)
         
         reactor.state
-            .map { $0.isCoupleConnectSuccess }
+            .compactMap { $0.isCoupleConnectSuccess }
             .distinctUntilChanged()
-            .filter { $0 }
             .subscribe(onNext: { [weak self] success in
                 guard let self = self else { return }
                 if success {
                     showConnectAlert()
                 } else {
-                    showAlert(icon: UIImage(resource: .heart), title: "앗, 입력하신 코드가 올바르지 않아요", primaryButtonTitle: "다시 입력하기", primaryButtonAction: {})
+                    showAlert(icon: UIImage(resource: .warning), title: "앗, 입력하신 코드가 올바르지 않아요", primaryButtonTitle: "다시 입력하기", primaryButtonAction: {})
                 }
                      
             })
             .disposed(by: disposeBag)
         
         reactor.state
-            .map { $0.isSoloStartSuccess }
+            .compactMap { $0.isSoloStartSuccess }
             .distinctUntilChanged()
             .filter { $0 }
             .subscribe(onNext: { [weak self] _ in
@@ -269,11 +268,11 @@ final class CoupleConnectViewController: UIViewController, View {
             .disposed(by: disposeBag)
         
         reactor.state
-            .map { $0.isMyCodeIssueFailed }
-            .distinctUntilChanged()
-            .filter { $0 }
+            .compactMap { $0.error }
+            .distinctUntilChanged { $0.localizedDescription == $1.localizedDescription }
             .subscribe(onNext: { [weak self] _ in
                 guard let self = self else { return }
+                self.showAlert(icon: UIImage(resource: .warning), title: "에러가 발생하였습니다", primaryButtonTitle: "확인", primaryButtonAction: {})
                 self.coordinator?.navigateBack()
             })
             .disposed(by: disposeBag)

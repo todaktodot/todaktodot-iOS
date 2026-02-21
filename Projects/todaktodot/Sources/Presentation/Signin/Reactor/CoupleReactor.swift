@@ -18,14 +18,13 @@ final class CoupleReactor: Reactor {
         var isJoined: Bool?
         
         var isAlreadyCouple: Bool?
-        var isTermsAgreeSuccess: Bool = false
-        var isCoupleConnectSuccess: Bool = false
-        var isSoloStartSuccess: Bool = false
-        var isMyCodeIssueFailed: Bool = false
-        var isSoloStartFailed: Bool = false
+        var isTermsAgreeSuccess: Bool?
+        var isCoupleConnectSuccess: Bool?
+        var isSoloStartSuccess: Bool?
         
         var updateNickname: String?
         var updateCoupleInfo: CoupleInfo?
+        var error: Error?
     }
     
     enum Action {
@@ -53,9 +52,7 @@ final class CoupleReactor: Reactor {
         case setConnectInfo(ConnectInfo)
         
         case setAlreadyCouple
-        
-        case setMyCodeIssueFailed
-        case setSoloStartFailed
+        case setError(Error?)
     }
     
     let initialState = State()
@@ -75,7 +72,7 @@ final class CoupleReactor: Reactor {
                     if let afError = $0.asCustomAFError, afError.isAlreadyCouple {
                         return .just(.setAlreadyCouple)
                     }
-                    return .just(.setMyCodeIssueFailed) // TODO: 에러 처리
+                    return .just(.setError($0))
                 }
         case .tapConnectButton(let code):
             return coupleUseCase.connectCouple(code: code)
@@ -109,7 +106,7 @@ final class CoupleReactor: Reactor {
                     if let afError = $0.asCustomAFError, afError.isAleardySolo {
                         return .just(.setSoloStart(true))
                     }
-                    return .just(.setSoloStartFailed)
+                    return .just(.setError($0))
                 }
         }
     }
@@ -126,9 +123,6 @@ final class CoupleReactor: Reactor {
             
         case .setTermsAgreeSuccess(let isSuccess):
             newState.isTermsAgreeSuccess = isSuccess
-            
-        case .setMyCodeIssueFailed:
-            newState.isMyCodeIssueFailed = true
             
         case .setCoupleConnectSuccess(let isSuccess):
             newState.isCoupleConnectSuccess = isSuccess
@@ -151,8 +145,8 @@ final class CoupleReactor: Reactor {
         case .setSoloStart(let isSuccess):
             newState.isSoloStartSuccess = isSuccess
             
-        case .setSoloStartFailed:
-            newState.isSoloStartFailed = true
+        case .setError(let error):
+            newState.error = error
         }
         
         return newState

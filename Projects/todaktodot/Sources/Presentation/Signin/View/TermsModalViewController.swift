@@ -239,7 +239,7 @@ final class TermsModalViewController: UIViewController, View {
             .disposed(by: disposeBag)
         
         reactor.state
-            .map { $0.isTermsAgreeSuccess }
+            .compactMap { $0.isTermsAgreeSuccess }
             .distinctUntilChanged()
             .subscribe(onNext: { [weak self] success in
                 if success {
