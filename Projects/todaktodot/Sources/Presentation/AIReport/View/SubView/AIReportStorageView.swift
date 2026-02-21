@@ -27,6 +27,12 @@ final class AIReportStorageView: UIView {
         $0.customText.font = .pretenSemiBold(18)
         $0.customImage.image = UIImage(systemName: "chevron.down")
         $0.customImage.tintColor = .black
+        
+        let item = UIAction(title: "2026년", handler: { _ in
+            })
+        
+        $0.menu = UIMenu(title: "년도 선택", children: [item])
+        $0.showsMenuAsPrimaryAction = true
     }
     
     private let monthScrollView = UIScrollView().then {
