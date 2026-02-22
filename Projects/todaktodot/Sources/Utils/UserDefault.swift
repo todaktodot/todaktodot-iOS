@@ -10,8 +10,28 @@ import Foundation
 enum UserdefaultKey {
     // 저장: UserdefaultKey.test = "~~"
     // 읽기: let test = UserdefaultKey.test
+    
+    // MARK: - 로그인, 커플 정보
     @UserDefault(key: "userId", defaultValue: nil)
     static var userId: Int?
+    
+    @UserDefault(key: "coupleId", defaultValue: nil)
+    static var coupleId: Int?
+    
+    @UserDefault(key: "couple", defaultValue: false) // 커플 연결 여부
+    static var couple: Bool
+    
+    @UserDefault(key: "joined", defaultValue: false) // 약관 동의 여부
+    static var joined: Bool
+    
+    @UserDefault(key: "createdCoupleInfo", defaultValue: false) // 커플 정보 입력 여부
+    static var createdCoupleInfo: Bool
+    
+    @UserDefault(key: "createdMyNickname", defaultValue: false)
+    static var createdMyNickname: Bool
+    
+    @UserDefault(key: "isLoggedIn", defaultValue: false)
+    static var isLoggedIn: Bool
     
     @UserDefault(key: "loginProvider", defaultValue: nil)
     static var loginProvider: String?
@@ -22,29 +42,15 @@ enum UserdefaultKey {
     @UserDefault(key: "refreshToken", defaultValue: nil)
     static var refreshToken: String?
     
-    @UserDefault(key: "isLoggedIn", defaultValue: false)
-    static var isLoggedIn: Bool
+    @UserDefaultCodable(key: "coupleType", defaultValue: .null)
+    static var coupleType: CoupleType
     
-    @UserDefault(key: "couple", defaultValue: false)
-    static var couple: Bool
-    
-    @UserDefault(key: "joined", defaultValue: false) // 약관 동의 여부
-    static var joined: Bool
-    
-    @UserDefault(key: "createdCoupleInfo", defaultValue: false)
-    static var createdCoupleInfo: Bool
-    
-    @UserDefault(key: "createdMyNickname", defaultValue: false)
-    static var createdMyNickname: Bool
-    
+    // MARK: -
     @UserDefault(key: "connectedDate", defaultValue: Date())
     static var connectedDate: Date
     
     @UserDefault(key: "firstMetDate", defaultValue: Date())
     static var firstMetDate: Date
-    
-    @UserDefault(key: "coupleStage", defaultValue: CoupleStage.dating)
-    static var coupleStage: CoupleStage
     
     @UserDefault(key: "isInitialLogin", defaultValue: true)
     static var isInitialLogin: Bool

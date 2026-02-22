@@ -13,7 +13,6 @@ final class CoupleReactor: Reactor {
     
     struct State {
         var mycode: String?
-        var connectInfo: ConnectInfo?
         var isLoading: Bool = false
         var isJoined: Bool?
         
@@ -30,7 +29,6 @@ final class CoupleReactor: Reactor {
     enum Action {
         case issueCoupleCode
         case checkIsJoined
-        case fetchConnectInfo
         case tapTemrsAgreeButton(Bool, Bool)
         case tapConnectButton(String)
         case tapNicknameButton(String)
@@ -49,7 +47,6 @@ final class CoupleReactor: Reactor {
         case setMyCode(String)
         case setNickname(String)
         case setCoupleInfo(CoupleInfo)
-        case setConnectInfo(ConnectInfo)
         
         case setAlreadyCouple
         case setError(Error?)
@@ -95,10 +92,6 @@ final class CoupleReactor: Reactor {
         case .checkIsJoined:
             return .just(.setIsJoined(UserdefaultKey.joined))
             
-        case .fetchConnectInfo:
-            return coupleUseCase.fetchConnectInfo()
-                .map { Mutation.setConnectInfo($0) }
-            
         case .tapSoloStartButton:
             return coupleUseCase.soloStart()
                 .map { Mutation.setSoloStart($0) }
@@ -135,9 +128,6 @@ final class CoupleReactor: Reactor {
             
         case .setIsJoined(let isJoined):
             newState.isJoined = isJoined
-            
-        case .setConnectInfo(let connectInfo):
-            newState.connectInfo = connectInfo
             
         case .setAlreadyCouple:
             newState.isAlreadyCouple = true

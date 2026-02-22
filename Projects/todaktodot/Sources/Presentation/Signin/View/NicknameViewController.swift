@@ -64,6 +64,14 @@ final class NicknameViewController: UIViewController, View {
     init(flowType: ConnectFlowType? = nil) {
         self.flowType.accept(flowType)
         super.init(nibName: nil, bundle: nil)
+        
+        if flowType == nil {
+            if UserdefaultKey.createdCoupleInfo {
+                self.flowType.accept(.join)
+            } else {
+                self.flowType.accept(.create)
+            }
+        }
     }
     
     required init?(coder: NSCoder) {
@@ -118,31 +126,11 @@ final class NicknameViewController: UIViewController, View {
     }
     
     func bind(reactor: CoupleReactor) {
-        if flowType.value == nil {
-            reactor.action.onNext(.fetchConnectInfo)
-            
-            reactor.state
-                .compactMap { $0.connectInfo }
-                .subscribe(onNext: { [weak self] info in
-                    guard let self = self else { return }
-                    
-                    UserdefaultKey.createdCoupleInfo = info.createdCoupleInfo
-                    
-                    if !info.createdCoupleInfo {
-                        self.flowType.accept(.create)
-                    } else {
-                        self.flowType.accept(.join)
-                    }
-                })
-                .disposed(by: disposeBag)
-        }
         
         reactor.state
             .compactMap { $0.updateNickname }
             .subscribe(onNext: { [weak self] nickname in
                 guard let self = self else { return }
-                
-                UserdefaultKey.createdMyNickname = true
                 
                 coordinator?.onNicknameUpdated?(nickname)
                 

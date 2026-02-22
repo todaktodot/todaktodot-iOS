@@ -35,10 +35,6 @@ final class CoupleUseCase {
         repository.updateCoupleInfo(date: date, stage: stage)
     }
     
-    func fetchConnectInfo() -> Observable<ConnectInfo> {
-        repository.fetchConnectInfo()
-    }
-    
     func soloStart() -> Observable<Bool> {
         repository.soloStart()
     }

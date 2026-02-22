@@ -74,12 +74,25 @@ final class AuthRepositoryImpl: AuthRepository {
         )
         
         return networkManager.request(with: endpoint)
-            .do(onNext: { result in
-                UserdefaultKey.accessToken = result.accessToken
-                UserdefaultKey.refreshToken = result.refreshToken
+            .map {
+                UserdefaultKey.accessToken = $0.accessToken
+                UserdefaultKey.refreshToken = $0.refreshToken
                 UserdefaultKey.loginProvider = loginType.rawValue.uppercased()
-            })
-            .map { _ in true }
-            .catchAndReturn(false)
+                return true
+            }
+    }
+    
+    func fetchUserInfo() -> Observable<UserInfo> {
+        let endpoint = Endpoint<UserDTO>(
+            baseURL: .todaktodotAPI,
+            path: "/api/profile/detail",
+            method: .get
+        )
+        
+        return networkManager.request(with: endpoint)
+            .map {
+                $0.setUserDefaultUserInfo()
+                return $0.toUserInfo()
+            }
     }
 }

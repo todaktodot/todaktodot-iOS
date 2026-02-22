@@ -7,16 +7,18 @@
 
 import Foundation
 
-enum CoupleType: String {
+enum CoupleType: String, Codable {
     case null = "NULL"
     case solo = "SOLO"
     case connected = "CONNECTED"
 }
 
-struct UserInfo {
-    
-    let nickname: String?
+struct UserInfo: Decodable {
+    let userId: Int
+    let coupleId: Int?
     let isTerm: Bool
     let isCouple: Bool
     let coupleType: CoupleType
+    let createdMyNickname: Bool
+    let createdCoupleInfo: Bool
 }

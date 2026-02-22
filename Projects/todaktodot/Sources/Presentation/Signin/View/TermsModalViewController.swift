@@ -29,12 +29,6 @@ final class TermsModalViewController: UIViewController, View {
         $0.layer.maskedCorners = CACornerMask(arrayLiteral: .layerMinXMinYCorner, .layerMaxXMinYCorner)
     }
     
-    private let topToggleView = UIView().then {
-        $0.backgroundColor = UIColor(hex: "D9D9D9")
-        $0.layer.cornerRadius = 8
-        $0.layer.borderWidth = 1
-    }
-    
     private let allCheckButton = CheckButtonView(titleFont: .pretenSemiBold(16)).then {
         $0.configure(isBackground: true, title: "전체 동의")
         $0.setState(isSelected: false)
@@ -96,14 +90,11 @@ final class TermsModalViewController: UIViewController, View {
     
     private func setupFlexLayout() {
         modalView.flex.paddingHorizontal(20).define {
-            $0.addItem(topToggleView)
-                .marginTop(16)
-            
             $0.addItem(titleLabel)
-                .marginTop(22)
+                .marginTop(28)
             
             $0.addItem(allCheckButton)
-                .marginTop(24)
+                .marginTop(20)
                 .height(52)
             
             $0.addItem(termsButton)
@@ -137,7 +128,7 @@ final class TermsModalViewController: UIViewController, View {
         modalView.pin
             .horizontally()
             .bottom()
-            .height(451)
+            .height(479)
         
         modalView.flex.layout()
     }

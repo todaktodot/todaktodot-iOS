@@ -37,11 +37,14 @@ struct CoupleDetailInfoDTO: Codable {
 extension UserDTO {
     func toUserInfo() -> UserInfo {
         UserInfo(
-            nickname: nickname ?? "",
+            userId: userId,
+            coupleId: coupleDetailInfo?.coupleId,
             isTerm: isTerm == "Y",
             isCouple: isCouple == "Y",
-            coupleType: CoupleType(rawValue: coupleType?.uppercased() ?? "") ?? .null
-            )
+            coupleType: CoupleType(rawValue: coupleType?.uppercased() ?? "") ?? .null,
+            createdMyNickname: nickname != nil,
+            createdCoupleInfo: coupleDetailInfo?.relationshipStage != nil
+        )
     }
     
     func toMypageInfo() -> MypageInfo {
@@ -57,8 +60,14 @@ extension UserDTO {
         )
     }
     
-    func toConnectInfo() -> ConnectInfo {
-        ConnectInfo(createdCoupleInfo: coupleDetailInfo?.relationshipStage != nil)
+    func setUserDefaultUserInfo() {
+        UserdefaultKey.userId = userId
+        UserdefaultKey.coupleId = coupleDetailInfo?.coupleId
+        UserdefaultKey.joined = isTerm == "Y"
+        UserdefaultKey.couple = isCouple == "Y"
+        UserdefaultKey.coupleType = CoupleType(rawValue: coupleType?.uppercased() ?? "") ?? .null
+        UserdefaultKey.createdMyNickname = nickname != nil
+        UserdefaultKey.createdCoupleInfo = coupleDetailInfo?.relationshipStage != nil
     }
     
     func dateToKR(_ dateString: String?) -> String? {

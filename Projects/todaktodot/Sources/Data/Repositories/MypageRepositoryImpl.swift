@@ -27,7 +27,8 @@ final class MypageRepositoryImpl: MypageRepository {
 
         return networkManager.request(with: endpoint)
             .map {
-                $0.toMypageInfo()
+                $0.setUserDefaultUserInfo()
+                return $0.toMypageInfo()
             }
     }
     

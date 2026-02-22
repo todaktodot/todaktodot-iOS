@@ -159,7 +159,6 @@ final class SigninViewController: UIViewController, View {
     func bind(reactor: SigninReactor) {
         reactor.state
             .map { $0.isLoading }
-            .distinctUntilChanged()
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] isLoading in
                 isLoading
@@ -168,25 +167,30 @@ final class SigninViewController: UIViewController, View {
             })
             .disposed(by: disposeBag)
         
+        reactor.pulse(\.$signinInfo)
+            .compactMap { $0 }
+            .observe(on: MainScheduler.asyncInstance)
+            .subscribe(onNext: { [weak self] info in
+                guard let self = self else { return }
+                
+                if info.createdCoupleInfo && info.createdMyNickname {
+                    self.coordinator?.navigateToMain()
+                } else {
+                    self.coordinator?.showCoupleConnect()
+                }
+            })
+            .disposed(by: disposeBag)
+        
         reactor.state
-            .compactMap { $0.signinEvent }
+            .compactMap { $0.isSigninFail }
             .distinctUntilChanged()
             .observe(on: MainScheduler.asyncInstance)
-            .subscribe(onNext: { [weak self] event in
+            .subscribe(onNext: { [weak self] fail in
                 guard let self = self else { return }
-                switch event {
-                case .kakaoSuccess, .googleSuccess, .appleSuccess:
-                    UserdefaultKey.isLoggedIn = true
-                    if /*UserdefaultKey.createdCoupleInfo && */UserdefaultKey.createdMyNickname { // TODO: 임시 주석처리 서버 push 나오면 연동하기
-                        self.coordinator?.navigateToMain()
-                    } else {
-                        self.coordinator?.showCoupleConnect()
-                    }
-                case .kakaoFail, .googleFail, .appleFail:
-                    break
+                
+                if fail {
+                    showAlert(icon: UIImage(resource: .warning), title: "로그인에 실패하였습니다", primaryButtonTitle: "확인", primaryButtonAction: {})
                 }
-                reactor.action.onNext(.stopLoading)
-                reactor.action.onNext(.clearEvent)
             })
             .disposed(by: disposeBag)
         
@@ -194,7 +198,6 @@ final class SigninViewController: UIViewController, View {
             .map { SigninReactor.Action.tapKakaoButton }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
-        
         
         googleButton.rx.tap
             .map { SigninReactor.Action.tapGoogleButton }

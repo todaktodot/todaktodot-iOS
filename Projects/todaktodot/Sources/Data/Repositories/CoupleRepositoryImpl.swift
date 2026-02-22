@@ -89,28 +89,18 @@ final class CoupleRepositoryImpl: CoupleRepository {
             }
     }
     
-    func fetchConnectInfo() -> Observable<ConnectInfo> {
-        let endpoint = Endpoint<UserDTO>(
-            baseURL: .todaktodotAPI,
-            path: "/api/profile/detail",
-            method: .get,
-        )
-
-        return networkManager.request(with: endpoint)
-            .map {
-                UserdefaultKey.userId = $0.userId
-                return $0.toConnectInfo()
-            }
-    }
-    
     func soloStart() -> Observable<Bool> {
-        let endpoint = Endpoint<Empty>(
+        let endpoint = Endpoint<SoloDTO>(
             baseURL: .todaktodotAPI,
             path: "/api/solo/start",
             method: .post
         )
 
         return networkManager.request(with: endpoint)
-            .map { _ in true }
+            .map {
+                UserdefaultKey.coupleId = $0.coupleId
+                UserdefaultKey.coupleType = .solo
+                return true
+            }
     }
 }

@@ -209,17 +209,15 @@ final class CoupleConnectViewController: UIViewController, View {
     func bind(reactor: CoupleReactor) {
         
         reactor.action.onNext(.issueCoupleCode)
+        reactor.action.onNext(.checkIsJoined)
         
         reactor.state
             .compactMap { $0.isAlreadyCouple }
+            .filter { $0 }
             .distinctUntilChanged()
-            .subscribe(onNext: { [weak self] isCouple in
+            .subscribe(onNext: { [weak self] _ in
                 guard let self = self else { return }
-                if isCouple {
-                    self.showConnectAlert()
-                } else {
-                    reactor.action.onNext(.checkIsJoined)
-                }
+                self.showConnectAlert()
             })
             .disposed(by: disposeBag)
         
