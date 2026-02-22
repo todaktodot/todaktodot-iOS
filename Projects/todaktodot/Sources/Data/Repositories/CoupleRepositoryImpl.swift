@@ -98,7 +98,8 @@ final class CoupleRepositoryImpl: CoupleRepository {
 
         return networkManager.request(with: endpoint)
             .map {
-                $0.toConnectInfo()
+                UserdefaultKey.userId = $0.userId
+                return $0.toConnectInfo()
             }
     }
     
