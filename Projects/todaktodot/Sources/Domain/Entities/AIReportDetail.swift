@@ -19,7 +19,12 @@ struct AIReportDetail: Decodable {
     let totalDailycardAnswerCnt: String
     let insightInfo: InsightInfo
     let similarSubjectList: [Subject]
-    let diffrentSubjectList: [Subject]
+    let differentSubjectList: [Subject]
+    
+    enum CodingKeys: String, CodingKey {
+        case reportId, startDt, endDt, totalSyncRate, economySyncRate, lifeSyncRate, loveSyncRate, dailycardAnswerRate, totalDailycardAnswerCnt, insightInfo, similarSubjectList
+        case differentSubjectList = "diffrentSubjectList"
+    }
     
     struct InsightInfo: Decodable {
         let insightId: Int
@@ -53,7 +58,7 @@ extension AIReportDetail {
             Subject(coupleCardId: 101, issuedDt: "2026-02-17", mode: "커피모드", subject: "연애관"),
             Subject(coupleCardId: 102, issuedDt: "2026-02-19", mode: "디저트모드", subject: "생활관")
         ],
-        diffrentSubjectList: [
+        differentSubjectList: [
             Subject(coupleCardId: 103, issuedDt: "2026-02-18", mode: "위스키모드", subject: "경제관"),
             Subject(coupleCardId: 104, issuedDt: "2026-02-21", mode: "위스키모드", subject: "생활관")
         ]

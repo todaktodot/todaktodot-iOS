@@ -10,5 +10,10 @@ import Foundation
 struct AIReportCreated: Decodable {
     let reportId: Int
     let creatable: Bool
-    let initalize: Bool
+    let initialize: Bool
+    
+    enum CodingKeys: String, CodingKey {
+        case reportId, creatable
+        case initialize = "initalize"
+    }
 }
