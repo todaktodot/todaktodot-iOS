@@ -30,12 +30,14 @@ final class CardRepositoryImpl: CardRepository {
             .map { _ in Result<Void, Error>.success(()) }
             .catch { error in .just(.failure(error)) }
     }
-
+    
     func assignCards(startDate: String, endDate: String) -> Observable<Result<Void, Error>> {
         let endpoint = Endpoint<Empty>(
             baseURL: .todaktodotAPI,
+//            path: "/api/daily-card/assign/me?startDate=\(startDate)&endDate=\(endDate)",
             path: "/api/daily-card/assign/me",
             method: .post,
+            encodingType: .body,
             parameters: [
                 "startDate": startDate,
                 "endDate": endDate

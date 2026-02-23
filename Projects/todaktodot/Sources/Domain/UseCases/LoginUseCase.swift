@@ -28,4 +28,8 @@ final class LoginUseCase {
     func fetchUserInfo() -> Observable<UserInfo> {
         repository.fetchUserInfo()
     }
+    
+    func loginTest() -> Observable<Bool> {
+        return repository.loginTest()
+    }
 }

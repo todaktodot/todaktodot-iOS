@@ -23,7 +23,7 @@ final class CoupleRepositoryImpl: CoupleRepository {
         let endpoint = Endpoint<CoupleCode>(
             baseURL: .todaktodotAPI,
             path: "/api/couple-link/issue",
-            method: .post,
+            method: .post
         )
 
         return networkManager.request(with: endpoint)

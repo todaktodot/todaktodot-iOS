@@ -24,6 +24,7 @@ final class SigninReactor: Reactor {
         case tapAppleButton
         case stopLoading
         case fetchUserInfo
+        case tapTestButton
     }
 
     enum Mutation {
@@ -84,6 +85,16 @@ final class SigninReactor: Reactor {
         case .fetchUserInfo:
             return loginUseCase.fetchUserInfo()
                 .map { Mutation.setUserInfo($0) }
+            
+        case .tapTestButton:
+            return Observable.concat([
+                .just(.setLoading(true)),
+                loginUseCase.loginTest()
+                    .flatMap { _ in self.loginUseCase.fetchUserInfo()}
+                    .map { Mutation.setUserInfo($0) }
+                    .catchAndReturn(.setSigninFail(true)),
+                .just(.setLoading(false))
+            ])
         }
     }
     

@@ -29,7 +29,7 @@ struct QuestionDTO: Decodable {
     let questionNo: Int
     let questionType: QuestionType
     let questionCnts: String
-    let answerReqYn: String //Y|N
+    let answerReqYn: String? //Y|N
     let options: [OptionDTO]?
 }
 
