@@ -13,7 +13,7 @@ final class AIReportCoordinator: Coordinator {
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
     weak var tabBarCoordinator: TabBarCoordinator?
-    private let reactor = AIReportReactor(useCase: AIReportUseCase(repository: AIReportRepositoryImpl(networkManager: NetworkManager())))
+    private let reactor = AIReportReactor(useCase: AIReportUseCase(repository: AIReportRepositoryImpl(networkManager: NetworkManager.shared)))
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController

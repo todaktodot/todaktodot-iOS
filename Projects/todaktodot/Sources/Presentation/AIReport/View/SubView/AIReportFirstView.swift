@@ -65,6 +65,7 @@ final class AIReportFirstView: UIView {
     override init(frame: CGRect = .zero) {
         super.init(frame: frame)
         setupViews()
+        configure(data: AIReportDetail.mock)
     }
     
     required init?(coder: NSCoder) {
@@ -76,10 +77,10 @@ final class AIReportFirstView: UIView {
         syncPercentLabel.text = "\(data.totalSyncRate)%"
         talkCountLabel.text = "\(data.totalDailycardAnswerCnt)개"
         
-        progressView1.setProgress(CGFloat(Int(data.economySyncRate)! * 100))
-        progressView2.setProgress(CGFloat(Int(data.lifeSyncRate)! * 100))
-        progressView3.setProgress(CGFloat(Int(data.loveSyncRate)! * 100))
-        circleProgress.setProgress(CGFloat(Int(data.dailycardAnswerRate)! * 100))
+        progressView1.setProgress(CGFloat(Int(data.economySyncRate)!) / 100)
+        progressView2.setProgress(CGFloat(Int(data.lifeSyncRate)!) / 100)
+        progressView3.setProgress(CGFloat(Int(data.loveSyncRate)!) / 100)
+        circleProgress.setProgress(CGFloat(Int(data.dailycardAnswerRate)!) / 100)
     }
     
     private func setupViews() {

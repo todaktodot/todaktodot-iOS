@@ -14,4 +14,5 @@ protocol CoupleRepository {
     func updateCoupleInfo(date: String, stage: String) -> Observable<CoupleInfo>
     func setTerms(infoAgree: Bool?, marketingAgree: Bool?, advertiesmentAgree: Bool?) -> Observable<Bool>
     func soloStart() -> Observable<Bool>
+    func assignCards(endDate: String) -> Observable<Bool>
 }

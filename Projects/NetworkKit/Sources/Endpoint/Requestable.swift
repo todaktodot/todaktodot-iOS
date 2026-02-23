@@ -44,14 +44,14 @@ public extension Requestable {
             case .body:
                 return JSONEncoding.default
             case .query:
-                return URLEncoding.default
+                return URLEncoding.queryString
             }
         } else {
             switch method {
             case .post, .put, .patch:
                 return JSONEncoding.default
             default:
-                return URLEncoding.default
+                return URLEncoding.queryString
             }
         }
     }

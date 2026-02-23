@@ -8,6 +8,7 @@
 import RxSwift
 import NetworkKit
 import Alamofire
+import Foundation
 
 final class CoupleRepositoryImpl: CoupleRepository {
     
@@ -54,7 +55,7 @@ final class CoupleRepositoryImpl: CoupleRepository {
     }
     
     func updateCoupleInfo(date: String, stage: String) -> Observable<CoupleInfo> {
-        let endpoint = Endpoint<CoupleInfoDto>(
+        let endpoint = Endpoint<CoupleInfoDTO>(
             baseURL: .todaktodotAPI,
             path: "/api/couple/info",
             method: .patch,
@@ -100,6 +101,25 @@ final class CoupleRepositoryImpl: CoupleRepository {
             .map {
                 UserdefaultKey.coupleId = $0.coupleId
                 UserdefaultKey.coupleType = .solo
+                return true
+            }
+    }
+    
+    func assignCards(endDate: String) -> Observable<Bool> {
+        let endpoint = Endpoint<AssignCardDTO>(
+            baseURL: .todaktodotAPI,
+            path: "/api/daily-card/assign/me",
+            method: .post,
+            encodingType: .query,
+            parameters: [
+                "startDate": Date().toYYYYMMDD(),
+                "endDate": endDate
+            ]
+        )
+        
+        return networkManager.request(with: endpoint)
+            .map {
+                UserdefaultKey.coupleId = $0.coupleId
                 return true
             }
     }
