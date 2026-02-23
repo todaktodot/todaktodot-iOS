@@ -6,12 +6,14 @@
 //
 
 import UIKit
+import NetworkKit
 
 final class AIReportCoordinator: Coordinator {
     
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
     weak var tabBarCoordinator: TabBarCoordinator?
+    private let reactor = AIReportReactor(useCase: AIReportUseCase(repository: AIReportRepositoryImpl(networkManager: NetworkManager())))
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
@@ -20,31 +22,19 @@ final class AIReportCoordinator: Coordinator {
     func start() {
         let vc = AIReportViewController()
         vc.coordinator = self
+        vc.reactor = reactor
         navigationController.pushViewController(vc, animated: true)
     }
     
-    func showLoading() {
-        let vc = AIReportLoadingViewController()
-        vc.hidesBottomBarWhenPushed = true
-        vc.coordinator = self
-        navigationController.pushViewController(vc, animated: true)
-    }
-    
-    func showNext(step: AIReportViewStep, animated: Bool = true) {
+    func showNext(step: AIReportViewStep) {
         let vc = AIReportDetailViewController(step: step)
-        vc.hidesBottomBarWhenPushed = true
         vc.coordinator = self
-
-        var vcs = self.navigationController.viewControllers
-        vcs.removeAll { $0 is AIReportLoadingViewController }
-        vcs.append(vc)
-
-        self.navigationController.setViewControllers(vcs, animated: animated)
+        vc.reactor = reactor
+        navigationController.pushViewController(vc, animated: true)
     }
     
     func showDetail() {
         let vc = AIReportDetailViewController(step: .full)
-        vc.hidesBottomBarWhenPushed = true
         vc.coordinator = self
         
         navigationController.pushViewController(vc, animated: true)

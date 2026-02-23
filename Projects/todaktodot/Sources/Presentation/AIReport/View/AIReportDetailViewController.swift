@@ -18,13 +18,14 @@ enum AIReportViewStep {
     case second
     case third
     case full
-    case detail
+    case history // TODO: 히스토리카드로 이동
 }
 
-final class AIReportDetailViewController: CustomBackViewController {
+final class AIReportDetailViewController: CustomBackViewController, View {
     var disposeBag = DisposeBag()
     weak var coordinator: AIReportCoordinator?
     private var dataEmpty = false
+    private let aIReportLoadingView = AIReportLoadingView()
     private let firstDetailView = AIReportFirstView()
     private let secondDetailView = AIReportSecondView()
     private let thirdDetailView = AIReportThirdView()
@@ -52,10 +53,7 @@ final class AIReportDetailViewController: CustomBackViewController {
     init(step: AIReportViewStep) {
         self.step = step
         super.init(nibName: nil, bundle: nil)
-        if step == .third {
-            nextButton.setTitle("한 눈에 보기", for: .normal)
-        } else {
-            nextButton.setTitle("다음", for: .normal)        }
+        nextButton.setTitle(step == .third ? "한 눈에 보기" : "다음", for: .normal)
     }
     
     required init?(coder: NSCoder) {
@@ -68,16 +66,39 @@ final class AIReportDetailViewController: CustomBackViewController {
         title = "주간 AI 리포트"
         setupViews()
         setupFlexLayout()
-        bindActions()
         
-        if step == .full || step == .detail {
+        if step == .full || step == .history {
             hiddenSubviesTitle()
+        }
+        if step == .first {
+            showLoading()
         }
     }
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         layoutViews()
+    }
+    
+    func bind(reactor: AIReportReactor) {
+        nextButton.rx.tap
+            .subscribe(onNext: { [weak self] in
+                switch self?.step {
+                case .first:
+                    self?.coordinator?.showNext(step: .second)
+                case .second:
+                    self?.coordinator?.showNext(step: .third)
+                case .third:
+                    self?.coordinator?.showNext(step: .full)
+                default:
+                    break
+                }
+            })
+            .disposed(by: disposeBag)
+        
+        thirdDetailView.onTapTopic = {
+            self.coordinator?.showNext(step: .history)
+        }
     }
     
     private func setupViews() {
@@ -95,7 +116,7 @@ final class AIReportDetailViewController: CustomBackViewController {
                 $0.addItem(secondDetailView)
             case .third:
                 $0.addItem(thirdDetailView)
-            case .full, .detail:
+            case .full, .history:
                 $0.addItem(firstDetailView)
                 $0.addItem(secondDetailView)
                 $0.addItem(thirdDetailView)
@@ -103,7 +124,7 @@ final class AIReportDetailViewController: CustomBackViewController {
             
             $0.addItem().grow(1)
             
-            if step != .full && step != .detail {
+            if step != .full && step != .history {
                 $0.addItem(nextButton)
                     .height(52)
                     .marginTop(40)
@@ -139,30 +160,20 @@ final class AIReportDetailViewController: CustomBackViewController {
         scrollView.contentSize = contentContainer.frame.size
     }
     
-    private func bindActions() {
-        nextButton.rx.tap
-            .subscribe(onNext: { [weak self] in
-                switch self?.step {
-                case .first:
-                    self?.coordinator?.showNext(step: .second)
-                case .second:
-                    self?.coordinator?.showNext(step: .third)
-                case .third:
-                    self?.coordinator?.showNext(step: .full)
-                default:
-                    break
-                }
-            })
-            .disposed(by: disposeBag)
-        
-        thirdDetailView.onTapTopic = {
-            self.coordinator?.showNext(step: .detail)
-        }
-    }
-    
     private func hiddenSubviesTitle() {
         secondDetailView.hiddenTitleLabel()
         thirdDetailView.hiddenTitleLabel()
+    }
+    
+    private func showLoading() {
+        view.addSubview(aIReportLoadingView)
+        
+        aIReportLoadingView.pin
+            .all()
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            self.aIReportLoadingView.isHidden = true
+        }
     }
 }
 

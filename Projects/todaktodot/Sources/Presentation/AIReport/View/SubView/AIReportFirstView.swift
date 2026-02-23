@@ -41,8 +41,7 @@ final class AIReportFirstView: UIView {
         $0.textColor = .grayScale800
     }
     
-    // 폰트 크기때문에 UILabel 유지
-    private let syncPercentLabel = UILabel().then {
+    private let syncPercentLabel = TDLabel().then {
         $0.text = "78%"
         $0.font = .pretenMedium(68)
         $0.textColor = .white
@@ -66,18 +65,24 @@ final class AIReportFirstView: UIView {
     override init(frame: CGRect = .zero) {
         super.init(frame: frame)
         setupViews()
-        
-        progressView1.setProgress(0.7, animated: true)
-        progressView2.setProgress(0.55, animated: true)
-        progressView3.setProgress(0.8, animated: true)
-        circleProgress.setProgress(0.78, animated: true)
     }
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
-    func setupViews() {
+    func configure(data: AIReportDetail) {
+        dateLabel.text = "\(data.startDt) - \(data.endDt)"
+        syncPercentLabel.text = "\(data.totalSyncRate)%"
+        talkCountLabel.text = "\(data.totalDailycardAnswerCnt)개"
+        
+        progressView1.setProgress(CGFloat(Int(data.economySyncRate)! * 100))
+        progressView2.setProgress(CGFloat(Int(data.lifeSyncRate)! * 100))
+        progressView3.setProgress(CGFloat(Int(data.loveSyncRate)! * 100))
+        circleProgress.setProgress(CGFloat(Int(data.dailycardAnswerRate)! * 100))
+    }
+    
+    private func setupViews() {
         
         self.flex.define {
             $0.addItem(syncBoxBackground)
