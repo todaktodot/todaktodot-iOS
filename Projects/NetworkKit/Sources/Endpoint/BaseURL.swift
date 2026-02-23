@@ -13,12 +13,11 @@ public enum BaseURL: String {
     case todaktodotAPI = "TODAKTODOT_API"
     
     var configValue: String {
-        if let infoDictionary: [String: Any] = Bundle.main.infoDictionary,
-           let baseURL = infoDictionary[self.rawValue] as? String {
-            return baseURL.decodeURL()
-        } else {
-            return "http://todaktodot.info"
+        guard let infoDictionary = Bundle.main.infoDictionary,
+              let baseURL = infoDictionary[self.rawValue] as? String else {
+            fatalError("⚠️ Info.plist에 '\(self.rawValue)' 설정이 누락되었습니다.")
         }
+        return baseURL.decodeURL()
     }
 }
 

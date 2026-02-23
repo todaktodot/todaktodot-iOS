@@ -24,4 +24,8 @@ final class LoginUseCase {
     func execute(type: LoginType) -> Observable<Bool> {
         repository.login(type: type)
     }
+    
+    func fetchUserInfo() -> Observable<UserInfo> {
+        repository.fetchUserInfo()
+    }
 }

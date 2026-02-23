@@ -1,25 +1,14 @@
-////
-////  CoupleInfo.swift
-////  todaktodot
-////
-////  Created by 임대진 on 2/4/26.
-////
 //
-//import Foundation
+//  CoupleInfo.swift
+//  todaktodot
 //
-//struct CoupleInfo {
-//    let connectedDate: Date
-//    let firstMetDate: Date
-//    let stage: CoupleStage
-//}
+//  Created by 임대진 on 2/14/26.
 //
-//extension CoupleInfo {
-//    init(dto: CoupleInfoDto) {
-//        let dateFormatter = DateFormatter()
-//        dateFormatter.dateFormat = "yyyy-MM-dd"
-//        self.connectedDate = dateFormatter.date(from: dto.connectedDt) ?? Date()
-//        self.firstMetDate = dateFormatter.date(from: dto.firstMetDt) ?? Date()
-//        
-//        self.stage = CoupleStage(rawValue: dto.relationshipStage) ?? .dating
-//    }
-//}
+
+import Foundation
+
+struct CoupleInfo: Codable {
+    let firstMetDate: String
+    let sinceMetDate: String
+    let stage: String
+}

@@ -41,6 +41,10 @@ final class AppleAuthProvider {
                 onError: { [weak self] error in
                     observer.onError(error)
                     self?.currentDelegate = nil
+                },
+                canceled: {
+                    observer.onCompleted()
+                    self?.currentDelegate = nil
                 }
             )
             self?.currentDelegate = delegate
@@ -58,13 +62,16 @@ private final class AppleAuthorizationDelegate: NSObject, ASAuthorizationControl
 
     private let onSuccess: (ASAuthorizationAppleIDCredential) -> Void
     private let onError: (Error) -> Void
+    private let canceled: () -> Void
 
     init(
         onSuccess: @escaping (ASAuthorizationAppleIDCredential) -> Void,
-        onError: @escaping (Error) -> Void
+        onError: @escaping (Error) -> Void,
+        canceled: @escaping () -> Void
     ) {
         self.onSuccess = onSuccess
         self.onError = onError
+        self.canceled = canceled
     }
 
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
@@ -84,7 +91,7 @@ private final class AppleAuthorizationDelegate: NSObject, ASAuthorizationControl
         let nsError = error as NSError
         if nsError.domain == ASAuthorizationError.errorDomain &&
             nsError.code == ASAuthorizationError.canceled.rawValue {
-            return
+            canceled()
         }
         onError(error)
     }
