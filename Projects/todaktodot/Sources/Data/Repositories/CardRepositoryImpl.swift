@@ -91,7 +91,7 @@ final class CardRepositoryImpl: CardRepository {
     func fetchHistoryCards(startDate: String, endDate: String) -> Observable<Result<[QuestionCard], Error>> {
         let endpoint = Endpoint<CardHistoryResponseDTO>(
             baseURL: .todaktodotAPI,
-            path: "/api/daily-card/history/with-details2",
+            path: "/api/daily-card/history/with-details",
             method: .get,
             parameters: [
                 "startDate": startDate,
