@@ -23,10 +23,16 @@ final class AIReportStorageView: UIView {
     }
     
     private let yearButton = ImageTextButton(spacing: 4, imageSize: 12, imageFirst: false).then {
-        $0.customText.text = "2025년"
+        $0.customText.text = "2026년"
         $0.customText.font = .pretenSemiBold(18)
         $0.customImage.image = UIImage(systemName: "chevron.down")
         $0.customImage.tintColor = .black
+        
+        let item = UIAction(title: "2026년", handler: { _ in
+            })
+        
+        $0.menu = UIMenu(title: "년도 선택", children: [item])
+        $0.showsMenuAsPrimaryAction = true
     }
     
     private let monthScrollView = UIScrollView().then {

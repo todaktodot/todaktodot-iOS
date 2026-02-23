@@ -11,26 +11,46 @@ enum UserdefaultKey {
     // 저장: UserdefaultKey.test = "~~"
     // 읽기: let test = UserdefaultKey.test
     
-    @UserDefault(key: "isSiginedIn", defaultValue: false)
-    static var isSiginedIn: Bool
+    // MARK: - 로그인, 커플 정보
+    @UserDefault(key: "userId", defaultValue: nil)
+    static var userId: Int?
     
-    @UserDefault(key: "couple", defaultValue: false)
+    @UserDefault(key: "coupleId", defaultValue: nil)
+    static var coupleId: Int?
+    
+    @UserDefault(key: "couple", defaultValue: false) // 커플 연결 여부
     static var couple: Bool
     
-    @UserDefault(key: "joined", defaultValue: false)
+    @UserDefault(key: "joined", defaultValue: false) // 약관 동의 여부
     static var joined: Bool
     
-    @UserDefault(key: "accessToken", defaultValue: "")
-    static var accessToken: String
+    @UserDefault(key: "createdCoupleInfo", defaultValue: false) // 커플 정보 입력 여부
+    static var createdCoupleInfo: Bool
     
+    @UserDefault(key: "createdMyNickname", defaultValue: false)
+    static var createdMyNickname: Bool
+    
+    @UserDefault(key: "isLoggedIn", defaultValue: false)
+    static var isLoggedIn: Bool
+    
+    @UserDefault(key: "loginProvider", defaultValue: nil)
+    static var loginProvider: String?
+    
+    @UserDefault(key: "accessToken", defaultValue: nil)
+    static var accessToken: String?
+    
+    @UserDefault(key: "refreshToken", defaultValue: nil)
+    static var refreshToken: String?
+    
+    @UserDefaultCodable(key: "coupleType", defaultValue: .null)
+    static var coupleType: CoupleType
+    
+    // MARK: -
     @UserDefault(key: "connectedDate", defaultValue: Date())
     static var connectedDate: Date
     
     @UserDefault(key: "firstMetDate", defaultValue: Date())
     static var firstMetDate: Date
-    
-    @UserDefault(key: "coupleStage", defaultValue: CoupleStage.dating)
-    static var coupleStage: CoupleStage
     
     @UserDefault(key: "isInitialLogin", defaultValue: true)
     static var isInitialLogin: Bool
@@ -41,9 +61,15 @@ enum UserdefaultKey {
     @UserDefault(key: "lastWeeklyCardDate", defaultValue: nil)
     static var lastWeeklyCardDate: Date?
     
-    //탈퇴시 적용
     static func resetUserDefaults() {
-        
+        let domain = Bundle.main.bundleIdentifier!
+        UserDefaults.standard.removePersistentDomain(forName: domain)
+        UserDefaults.standard.synchronize()
+    }
+    
+    static func resetAuthUserDefaults() {
+        self.accessToken = nil
+        self.refreshToken = nil
         UserDefaults.standard.synchronize()
     }
 }
@@ -59,7 +85,11 @@ struct UserDefault<T> {
             return UserDefaults.standard.object(forKey: key) as? T ?? defaultValue
         }
         set {
-            UserDefaults.standard.set(newValue, forKey: key)
+            if let optional = newValue as? AnyOptional, optional.isNil {
+                UserDefaults.standard.removeObject(forKey: key)
+            } else {
+                UserDefaults.standard.set(newValue, forKey: key)
+            }
         }
     }
 }
@@ -79,4 +109,12 @@ struct UserDefaultCodable<T: Codable> {
             UserDefaults.standard.set(data, forKey: key)
         }
     }
+}
+
+private protocol AnyOptional {
+    var isNil: Bool { get }
+}
+
+extension Optional: AnyOptional {
+    var isNil: Bool { self == nil }
 }

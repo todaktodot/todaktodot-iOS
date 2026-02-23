@@ -12,13 +12,19 @@ import RxSwift
 import RxCocoa
 import Then
 import ReactorKit
+import Lottie
 
 final class SigninViewController: UIViewController, View {
     
     var disposeBag = DisposeBag()
     weak var coordinator: SigninCoordinator?
     
-    private let onboardingView = InfiniteSliderView()
+    
+    private let onboardingLottie = LottieAnimationView(name: "onboarding").then {
+        $0.loopMode = .autoReverse
+        $0.contentMode = .scaleAspectFill
+    }
+    private let infiniteSliderView = InfiniteSliderView()
     private let buttonContainerView = UIView()
     private let indicatorView = UIActivityIndicatorView(style: .medium).then {
         $0.hidesWhenStopped = true
@@ -70,6 +76,7 @@ final class SigninViewController: UIViewController, View {
         
         setupViews()
         setupFlexLayout()
+        onboardingLottie.play()
     }
     
     override func viewDidLayoutSubviews() {
@@ -83,13 +90,24 @@ final class SigninViewController: UIViewController, View {
     }
     
     private func setupViews() {
-        view.addSubview(onboardingView)
+        view.addSubview(onboardingLottie)
+        view.addSubview(infiniteSliderView)
         view.addSubview(appLogo)
         view.addSubview(buttonContainerView)
         view.addSubview(indicatorView)
     }
     
     private func setupFlexLayout() {
+        buttonContainerView.flex.gap(12).define {
+            $0.addItem(kakaoButton)
+                .height(52)
+            
+            $0.addItem(googleButton)
+                .height(52)
+            
+            $0.addItem(appleButton)
+                .height(52)
+        }
         
         kakaoButton.flex.define {
             $0.addItem(kakaoLogo)
@@ -112,24 +130,16 @@ final class SigninViewController: UIViewController, View {
                 .marginVertical(14)
                 .size(24)
         }
-        
-        buttonContainerView.flex.gap(12).define {
-            $0.addItem(kakaoButton)
-                .height(52)
-            
-            $0.addItem(googleButton)
-                .height(52)
-            
-            $0.addItem(appleButton)
-                .height(52)
-        }
     }
     
     private func layoutViews() {
+        onboardingLottie.pin
+            .all()
+        
         indicatorView.pin
             .all()
         
-        onboardingView.pin
+        infiniteSliderView.pin
             .all()
         
         appLogo.pin
@@ -149,7 +159,6 @@ final class SigninViewController: UIViewController, View {
     func bind(reactor: SigninReactor) {
         reactor.state
             .map { $0.isLoading }
-            .distinctUntilChanged()
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] isLoading in
                 isLoading
@@ -158,20 +167,30 @@ final class SigninViewController: UIViewController, View {
             })
             .disposed(by: disposeBag)
         
+        reactor.pulse(\.$signinInfo)
+            .compactMap { $0 }
+            .observe(on: MainScheduler.asyncInstance)
+            .subscribe(onNext: { [weak self] info in
+                guard let self = self else { return }
+                
+                if info.createdCoupleInfo && info.createdMyNickname {
+                    self.coordinator?.navigateToMain()
+                } else {
+                    self.coordinator?.showCoupleConnect()
+                }
+            })
+            .disposed(by: disposeBag)
+        
         reactor.state
-            .compactMap { $0.signinEvent }
+            .compactMap { $0.isSigninFail }
             .distinctUntilChanged()
             .observe(on: MainScheduler.asyncInstance)
-            .subscribe(onNext: { [weak self] event in
+            .subscribe(onNext: { [weak self] fail in
                 guard let self = self else { return }
-                switch event {
-                case .kakaoSuccess, .googleSuccess, .appleSuccess:
-                    self.moveNext()
-                    
-                case .kakaoFail, .googleFail, .appleFail:
-                    break
+                
+                if fail {
+                    showAlert(icon: UIImage(resource: .warning), title: "로그인에 실패하였습니다", primaryButtonTitle: "확인", primaryButtonAction: {})
                 }
-                self.reactor?.action.onNext(.clearEvent)
             })
             .disposed(by: disposeBag)
         
@@ -179,7 +198,6 @@ final class SigninViewController: UIViewController, View {
             .map { SigninReactor.Action.tapKakaoButton }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
-        
         
         googleButton.rx.tap
             .map { SigninReactor.Action.tapGoogleButton }
@@ -192,12 +210,7 @@ final class SigninViewController: UIViewController, View {
             .disposed(by: disposeBag)
     }
     
-    private func moveNext() {
-//        if UserdefaultKey.couple && UserdefaultKey.joined {
-//            coordinator?.navigateToMain()
-//        } else {
-//            coordinator?.showCoupleConnect()
-//        }
-        coordinator?.showCoupleConnect() // TODO: 임시 처리
+    func showExpireAlert() {
+        self.showAlert(icon: UIImage(resource: .check), title: "로그인 시간이 만료되었습니다.\n다시 로그인해 주세요.", primaryButtonTitle: "확인", primaryButtonAction: {})
     }
 }

@@ -17,8 +17,6 @@ final class CoupleConnectViewController: UIViewController, View {
     var disposeBag = DisposeBag()
     weak var coordinator: SigninCoordinator?
     
-    private var flowType: ConnectFlowType
-    
     private let background = UIImageView().then {
         $0.image = UIImage(resource: .connectBackground)
     }
@@ -80,7 +78,7 @@ final class CoupleConnectViewController: UIViewController, View {
     }
     
     private let myCodeTextField = CodeTextFieldView()
-    private let partnerCodeTextField = CodeTextFieldView()
+    private let partnerCodeTextField = CodeTextFieldView(isPartnerCode: true)
     
     private let copyButton = ImageTextButton(imageSize: 20).then {
         $0.customText.text = "복사하기"
@@ -104,39 +102,21 @@ final class CoupleConnectViewController: UIViewController, View {
         $0.isEnabled = false
     }
     
-    private let lookAroundButton = UIButton(type: .system).then {
+    private let soloStartButton = UIButton(type: .system).then {
         $0.setTitle("혼자 둘러볼게요", for: .normal)
         $0.titleLabel?.font = .pretenMedium(16)
         $0.tintColor = .grayScale600
-    }
-    
-    init(flowType: ConnectFlowType) {
-        self.flowType = flowType
-        
-        super.init(nibName: nil, bundle: nil)
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
     }
     
     // MARK: - View Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        hiddenBackButton()
         setupViews()
         setupFlexLayout()
         hideKeyboardwhenTappedAround()
         registerKeyboardNotification()
-        
-        if !UserdefaultKey.couple {
-            reactor?.action.onNext(.issueCoupleCode)
-            reactor?.action.onNext(.checkIsJoined)
-        } else {
-            showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
-                self.coordinator?.showNickname(flowType: self.flowType)
-            })
-        }
     }
     
     override func viewDidLayoutSubviews() {
@@ -150,14 +130,14 @@ final class CoupleConnectViewController: UIViewController, View {
         view.addSubview(background)
         view.addSubview(scrollview)
         view.addSubview(connectButton)
-        view.addSubview(lookAroundButton)
+        view.addSubview(soloStartButton)
         scrollview.addSubview(contentsView)
     }
 
     private func setupFlexLayout() {
         contentsView.flex.paddingHorizontal(20).define {
             $0.addItem(titleLabel)
-                .marginTop(40)
+                .marginTop(84)
             
             $0.addItem(descriptionLabel1)
                 .marginTop(8)
@@ -205,10 +185,7 @@ final class CoupleConnectViewController: UIViewController, View {
             .all()
         
         scrollview.pin
-            .top(view.pin.safeArea.top)
-            .left()
-            .right()
-            .bottom()
+            .all()
         
         contentsView.pin
             .top()
@@ -219,7 +196,7 @@ final class CoupleConnectViewController: UIViewController, View {
             .bottom(108)
             .height(52)
         
-        lookAroundButton.pin
+        soloStartButton.pin
             .horizontally(20)
             .bottom(48)
             .height(52)
@@ -230,6 +207,20 @@ final class CoupleConnectViewController: UIViewController, View {
     }
     
     func bind(reactor: CoupleReactor) {
+        
+        reactor.action.onNext(.issueCoupleCode)
+        reactor.action.onNext(.checkIsJoined)
+        
+        reactor.state
+            .compactMap { $0.isAlreadyCouple }
+            .filter { $0 }
+            .distinctUntilChanged()
+            .subscribe(onNext: { [weak self] _ in
+                guard let self = self else { return }
+                self.showConnectAlert()
+            })
+            .disposed(by: disposeBag)
+        
         reactor.state
             .compactMap { $0.mycode }
             .distinctUntilChanged()
@@ -251,28 +242,35 @@ final class CoupleConnectViewController: UIViewController, View {
             .disposed(by: disposeBag)
         
         reactor.state
-            .map { $0.isCoupleConnectSuccess }
+            .compactMap { $0.isCoupleConnectSuccess }
             .distinctUntilChanged()
-            .filter { $0 }
             .subscribe(onNext: { [weak self] success in
                 guard let self = self else { return }
                 if success {
-                    showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
-                        self.coordinator?.showNickname(flowType: self.flowType)
-                    })
+                    showConnectAlert()
                 } else {
-                    showAlert(icon: UIImage(resource: .heart), title: "앗, 입력하신 코드가 올바르지 않아요", primaryButtonTitle: "다시 입력하기", primaryButtonAction: {})
+                    showAlert(icon: UIImage(resource: .warning), title: "앗, 입력하신 코드가 올바르지 않아요", primaryButtonTitle: "다시 입력하기", primaryButtonAction: {})
                 }
                      
             })
             .disposed(by: disposeBag)
         
         reactor.state
-            .map { $0.isMyCodeIssueFailed }
+            .compactMap { $0.isSoloStartSuccess }
             .distinctUntilChanged()
             .filter { $0 }
             .subscribe(onNext: { [weak self] _ in
                 guard let self = self else { return }
+                self.coordinator?.navigateToMain()
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .compactMap { $0.error }
+            .distinctUntilChanged { $0.localizedDescription == $1.localizedDescription }
+            .subscribe(onNext: { [weak self] _ in
+                guard let self = self else { return }
+                self.showAlert(icon: UIImage(resource: .warning), title: "에러가 발생하였습니다", primaryButtonTitle: "확인", primaryButtonAction: {})
                 self.coordinator?.navigateBack()
             })
             .disposed(by: disposeBag)
@@ -287,7 +285,7 @@ final class CoupleConnectViewController: UIViewController, View {
             .disposed(by: disposeBag)
         
         connectButton.rx.tap
-            .map { CoupleReactor.Action.tapConnectButton(self.partnerCodeTextField.getCode()) }
+            .map { CoupleReactor.Action.tapConnectButton(self.partnerCodeTextField.getCode().uppercased()) }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
@@ -298,11 +296,18 @@ final class CoupleConnectViewController: UIViewController, View {
             })
             .disposed(by: disposeBag)
         
-        lookAroundButton.rx.tap
-            .subscribe(onNext: { [weak self] _ in
-                self?.coordinator?.navigateToMain()
-            })
+        soloStartButton.rx.tap
+            .map { CoupleReactor.Action.tapSoloStartButton }
+            .bind(to: reactor.action)
             .disposed(by: disposeBag)
+    }
+    
+    func showConnectAlert() {
+        UserdefaultKey.couple = true
+        
+        showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
+            self.coordinator?.showNickname()
+        })
     }
 }
 
@@ -328,25 +333,32 @@ extension CoupleConnectViewController {
             let userInfo = notification.userInfo,
             let keyboardFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
         else { return }
+
+        let keyboardHeight = keyboardFrame.height - view.safeAreaInsets.bottom
+
+        scrollview.contentInset.bottom = keyboardHeight + 100
         
-        let bottomInset =
-            keyboardFrame.height
-            - view.safeAreaInsets.bottom
-            + 80
-        UIView.animate(withDuration: 0.1) {
-            self.scrollview.isScrollEnabled = true
-            self.scrollview.contentInset.bottom = bottomInset
-            self.scrollview.verticalScrollIndicatorInsets.bottom = bottomInset
-        }
+        scrollview.isScrollEnabled = true
+        scrollview.setContentOffset(CGPoint(x: 0, y: 100), animated: true)
     }
     
     @objc private func keyboardWillHide(_ notification: Notification) {
         UIView.animate(withDuration: 0.1) {
             self.scrollview.contentInset.bottom = 0
-            self.scrollview.verticalScrollIndicatorInsets.bottom = 0
             
             self.scrollview.setContentOffset(.zero, animated: false)
             self.scrollview.isScrollEnabled = false
         }
+    }
+}
+extension UIView {
+    func findFirstResponder() -> UIView? {
+        if isFirstResponder { return self }
+        for subview in subviews {
+            if let responder = subview.findFirstResponder() {
+                return responder
+            }
+        }
+        return nil
     }
 }

@@ -23,38 +23,35 @@ final class OurInfoView: UIView {
         $0.textColor = .white
     }
     
-    private let firstTitleLabel = TDLabel().then {
+    private let firstMetDateTitleLabel = TDLabel().then {
         $0.text = "처음 만난 날"
         $0.font = .pretenSemiBold(16)
         $0.textColor = .white
     }
     
-    private let secondTitleLabel = TDLabel().then {
+    private let sinceMetDateTitleLabel = TDLabel().then {
         $0.text = "우리가 만난지"
         $0.font = .pretenSemiBold(16)
         $0.textColor = .white
     }
     
-    private let thirdTitleLabel = TDLabel().then {
+    private let stageTitleLabel = TDLabel().then {
         $0.text = "우리의 관계"
         $0.font = .pretenSemiBold(16)
         $0.textColor = .white
     }
     
-    private let firstValueLabel = TDLabel().then {
-        $0.text = "24년 9월 1일"
+    private let firstMetDate = TDLabel().then {
         $0.font = .pretenRegular(16)
         $0.textColor = .white
     }
     
-    private let secondValueLabel = TDLabel().then {
-        $0.text = "1년 1개월 1일"
+    private let sinceMetDate = TDLabel().then {
         $0.font = .pretenRegular(16)
         $0.textColor = .white
     }
     
-    private let thirdValueLabel = TDLabel().then {
-        $0.text = "💝 결혼 준비중이에요"
+    private let stage = TDLabel().then {
         $0.font = .pretenRegular(16)
         $0.textColor = .white
     }
@@ -66,10 +63,6 @@ final class OurInfoView: UIView {
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
-    }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
     }
     
     func setupUI() {
@@ -93,29 +86,39 @@ final class OurInfoView: UIView {
                 $0.addItem()
                     .direction(.row)
                     .alignItems(.center)
+                    .justifyContent(.spaceBetween)
                     .define {
-                        $0.addItem(firstTitleLabel)
-                        $0.addItem().grow(1)
-                        $0.addItem(firstValueLabel)
+                        $0.addItem(firstMetDateTitleLabel)
+                        $0.addItem(firstMetDate)
                     }
                 
                 $0.addItem()
                     .direction(.row)
                     .alignItems(.center)
+                    .justifyContent(.spaceBetween)
                     .define {
-                        $0.addItem(secondTitleLabel)
-                        $0.addItem().grow(1)
-                        $0.addItem(secondValueLabel)
+                        $0.addItem(sinceMetDateTitleLabel)
+                        $0.addItem(sinceMetDate)
                     }
                 
                 $0.addItem()
                     .direction(.row)
                     .alignItems(.center)
+                    .justifyContent(.spaceBetween)
                     .define {
-                        $0.addItem(thirdTitleLabel)
-                        $0.addItem().grow(1)
-                        $0.addItem(thirdValueLabel)
+                        $0.addItem(stageTitleLabel)
+                        $0.addItem(stage)
                     }
             }
+    }
+    
+    func setOurInfo(info: CoupleInfo) {
+        firstMetDate.text = info.firstMetDate
+        sinceMetDate.text = info.sinceMetDate
+        stage.text = info.stage
+        
+        firstMetDate.flex.markDirty()
+        sinceMetDate.flex.markDirty()
+        stage.flex.markDirty()
     }
 }

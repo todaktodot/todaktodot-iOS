@@ -24,7 +24,7 @@ final class DashedBorderView: UIView {
         $0.textColor = .grayScale600
     }
     
-    private let connectButton = UIButton().then {
+    let connectButton = UIButton().then {
         $0.setTitle("커플 연결", for: .normal)
         $0.titleLabel?.font = .pretenSemiBold(14)
         $0.setTitleColor(.white, for: .normal)
