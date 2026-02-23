@@ -33,6 +33,7 @@ final class HomeReactor: Reactor {
         case fetchHistoryCards(startDate: String, endDate: String)
         case fetchWeeklyCards(startDate: String, endDate: String)
         case loadTodayCards
+        case assignCards
     }
     
     enum Mutation {
@@ -41,6 +42,7 @@ final class HomeReactor: Reactor {
         case setShowNotificationAlert(Bool)
         case setCoupleConnected(Bool)
         case setHistoryCards([QuestionCard])
+        case setHistoryCardsWithStatus([QuestionCard], AnswerStatus)
         case setTodayCards([QuestionCard])
         case setError(Error)
     }
@@ -49,14 +51,14 @@ final class HomeReactor: Reactor {
         var answerStatus: AnswerStatus = .bothUnanswered
         var isPoked: Bool = false
         var shouldShowNotificationAlert: Bool = true
-        var isCoupleConnected: Bool = UserdefaultKey.couple // TODO: 커플 여부 임시로 여기에 넣어둘게영
+        var isCoupleConnected: Bool = UserdefaultKey.coupleType == .connected
         var historyCards: [QuestionCard] = []
         var todayCards: [QuestionCard] = []
     }
     
     let initialState = State()
 
-    private func determineAnswerStatus(from cards: [QuestionCard]) -> AnswerStatus {
+    func determineAnswerStatus(from cards: [QuestionCard]) -> AnswerStatus {
         let selectedCard = cards.first(where: { $0.isSelected }) ?? cards.first
         
         guard let card = selectedCard else {
@@ -82,41 +84,30 @@ final class HomeReactor: Reactor {
         case .updateAnswerStatus(let status):
             return .just(.setAnswerStatus(status))
         case .tapPokeButton:
-            // TODO: 서버연결 - 콕 찌르기
             return .just(.setPoked(true))
         case .tapConnectCoupleButton:
-            // TODO: 서버연결 - 커플 연결
-            return .just(.setCoupleConnected(true))
+            return .just(.setCoupleConnected(UserdefaultKey.coupleType == .connected))
         case .checkFirstLaunch:
-            // TODO: 최초 실행 여부 확인
             return .just(.setShowNotificationAlert(true))
         case .dismissNotificationAlert:
             return .just(.setShowNotificationAlert(false))
         case .fetchHistoryCards(let startDate, let endDate):
             return cardUseCase.fetchHistoryCards(startDate: startDate, endDate: endDate)
-                .flatMap { result -> Observable<Mutation> in
+                .map { result -> Mutation in
                     switch result {
                     case .success(let cards):
-                        // TODO: 오늘 조회된 카드 없으면 둘 다 대답하지 않은것으로 지정. 확인필요. 해당 로직이면 카드 없을때 오늘 UI용 더미카드 만들어줘야함
-                        let today = Date()
+                        let today = CardService.shared.getCardSystemDate()
                         let calendar = Calendar.current
                         let todayCards = cards.filter { calendar.isDate($0.date, inSameDayAs: today) }
                         let status = todayCards.isEmpty ? .bothUnanswered : self.determineAnswerStatus(from: todayCards)
-                        return .concat([
-                            .just(.setHistoryCards(cards)),
-                            .just(.setAnswerStatus(status))
-                        ])
+                        return .setHistoryCardsWithStatus(cards, status)
                     case .failure(let error):
                         let mockCards = MockCardData.historyCards
                         let today = Date()
                         let calendar = Calendar.current
                         let todayCards = mockCards.filter { calendar.isDate($0.date, inSameDayAs: today) }
                         let status = todayCards.isEmpty ? .bothUnanswered : self.determineAnswerStatus(from: todayCards)
-                        return .concat([
-                            .just(.setHistoryCards(mockCards)),
-                            .just(.setAnswerStatus(status))
-                        ])
-//                        return .just(.setError(error))
+                        return .setHistoryCardsWithStatus(mockCards, status)
                     }
                 }
             
@@ -126,9 +117,9 @@ final class HomeReactor: Reactor {
                     switch result {
                     case .success(let cards):
                         print("주간 카드 패치 완료")
-                        CardStorageService.shared.saveWeeklyCards(cards)
+                        CardService.shared.saveWeeklyCards(cards)
                         UserdefaultKey.lastWeeklyCardDate = endDate.toDate()
-                        let todayCards = CardStorageService.shared.getTodayCards()
+                        let todayCards = CardService.shared.getTodayCards()
                         return .just(.setTodayCards(todayCards))
                     case .failure:
                         let mockCards = MockCardData.dailyCards
@@ -139,19 +130,22 @@ final class HomeReactor: Reactor {
 //                        return .just(.setError(error))
                     }
                 }
-            
         case .loadTodayCards:
-            let todayString = Date().toYYYYMMDD()
+            let todayString = CardService.shared.getCardSystemDate().toYYYYMMDD()
             return cardUseCase.fetchWeeklyCards(startDate: todayString, endDate: todayString)
                 .flatMap { result -> Observable<Mutation> in
                     switch result {
                     case .success(let cards):
-                        print("✅ 오늘 카드 패치 완료: \(cards.count)개")
-                        return .just(.setTodayCards(cards))
+                        print("✅ 오늘 카드 서버 패치 완료: \(cards.count)개")
+                        let status = cards.isEmpty ? .bothUnanswered : self.determineAnswerStatus(from: cards)
+                        return .concat([
+                            .just(.setTodayCards(cards)),
+                            .just(.setAnswerStatus(status))
+                        ])
                     case .failure:
-                        print("⚠️ 서버 실패 - 저장된 카드 확인")
-                        let savedTodayCards = CardStorageService.shared.getTodayCards()
-                        print("💾 저장된 카드: \(savedTodayCards.count)개")
+                        print("⚠️ 서버 실패 - 로컬 주간 카드 확인")
+                        let savedTodayCards = CardService.shared.getTodayCards()
+                        print("💾 로컬 저장된 오늘 카드: \(savedTodayCards.count)개")
                         
                         if savedTodayCards.isEmpty {
                             print("🔄 Mock 데이터 사용")
@@ -160,10 +154,39 @@ final class HomeReactor: Reactor {
                             let calendar = Calendar.current
                             let todayCards = mockCards.filter { calendar.isDate($0.date, inSameDayAs: today) }
                             print("📦 Mock 오늘 카드: \(todayCards.count)개")
-                            return .just(.setTodayCards(todayCards))
+                            let status = todayCards.isEmpty ? .bothUnanswered : self.determineAnswerStatus(from: todayCards)
+                            return .concat([
+                                .just(.setTodayCards(todayCards)),
+                                .just(.setAnswerStatus(status))
+                            ])
                         }
                         
-                        return .just(.setTodayCards(savedTodayCards))
+                        let status = savedTodayCards.isEmpty ? .bothUnanswered : self.determineAnswerStatus(from: savedTodayCards)
+                        return .concat([
+                            .just(.setTodayCards(savedTodayCards)),
+                            .just(.setAnswerStatus(status))
+                        ])
+                    }
+                }
+        case .assignCards:
+            let today = Date()
+            let calendar = Calendar.current
+            guard let nextSunday = calendar.nextDate(after: today, matching: DateComponents(weekday: 1), matchingPolicy: .nextTime) else {
+                return .empty()
+            }
+            
+            let startDate = today.toYYYYMMDD()
+            let endDate = nextSunday.toYYYYMMDD()
+            
+            return cardUseCase.assignCards(startDate: startDate, endDate: endDate)
+                .flatMap { result -> Observable<Mutation> in
+                    switch result {
+                    case .success:
+                        print("✅ 카드 할당 완료")
+                        return .empty()
+                    case .failure(let error):
+                        print("⚠️ 카드 할당 실패: \(error)")
+                        return .empty()
                     }
                 }
         }
@@ -182,6 +205,9 @@ final class HomeReactor: Reactor {
             newState.isCoupleConnected = connected
         case .setHistoryCards(let cards):
             newState.historyCards = cards
+        case .setHistoryCardsWithStatus(let cards, let status):
+            newState.historyCards = cards
+            newState.answerStatus = status
         case .setTodayCards(let cards):
             newState.todayCards = cards
         case .setError:

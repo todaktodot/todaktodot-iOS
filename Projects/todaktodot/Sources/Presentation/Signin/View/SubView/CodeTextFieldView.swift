@@ -14,116 +14,146 @@ import RxRelay
 final class CodeTextFieldView: UIView {
     let isCodeFull = PublishRelay<Bool>()
     
-    private var codeTextFields: [CodeTextField]
+    private let hiddenTextField = UITextField().then {
+        $0.keyboardType = .asciiCapable
+        $0.autocorrectionType = .no
+        $0.alpha = 0.01
+    }
     
-    init(frame: CGRect = .zero, code: [String]? = nil) {
-        
-        self.codeTextFields = (0..<6).map { _ in CodeTextField() }
-        
+    private var codeBoxes: [CodeBoxView] = []
+    
+    init(frame: CGRect = .zero, isPartnerCode: Bool? = nil) {
+        self.codeBoxes = (0..<6).map { _ in CodeBoxView() }
         super.init(frame: frame)
         
-        for i in 0..<codeTextFields.count {
-            codeTextFields[i].delegate = self
-    
-            if i > 0 {
-                codeTextFields[i].previousTextField = codeTextFields[i - 1]
-            }
-    
-            if i < codeTextFields.count - 1 {
-                codeTextFields[i].nextTextField = codeTextFields[i + 1]
-            }
+        if isPartnerCode != nil {
+            setupHiddenTextField()
+            
+            let tapGesture = UITapGestureRecognizer(target: self, action: #selector(viewTapped))
+            addGestureRecognizer(tapGesture)
         }
         
         setupFlexLayout()
-        layoutViews()
+        setupLongPressGesture()
     }
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
-    func setMyCodeStyle(_ code: String? = nil) {
-        guard let code else { return }
-        
-        for (index, char) in code.enumerated() {
-            guard index < codeTextFields.count else { break }
-            codeTextFields[index].setMyCodeStyle(char: String(char).uppercased())
-        }
-        
-        flex.markDirty()
+    func getCode() -> String {
+        return hiddenTextField.text ?? ""
     }
     
-    func getCode() -> String {
-        codeTextFields.compactMap(\.text).joined()
+    func setMyCodeStyle(_ code: String? = nil) {
+        guard let code else { return }
+        hiddenTextField.text = code
+        updateBoxesState(isMyCode: code)
+    }
+    
+    private func setupHiddenTextField() {
+        addSubview(hiddenTextField)
+        hiddenTextField.delegate = self
+        hiddenTextField.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
     }
     
     private func setupFlexLayout() {
-        self.flex.direction(.row).justifyContent(.spaceBetween).define { codeFlex in
-            
-            for textField in codeTextFields {
-                codeFlex.addItem(textField).width(44).height(48)
+       flex.direction(.row).justifyContent(.spaceBetween).define {
+            for box in codeBoxes {
+                $0.addItem(box)
+                    .width(44)
+                    .height(48)
             }
         }
     }
     
-    private func layoutViews() {
-        self.flex.layout()
+    private func updateBoxesState(isMyCode: String? = nil) {
+        if let code = isMyCode {
+            print(code)
+            for (i, char) in Array(code).enumerated() {
+                codeBoxes[i].configure(char: char, isMyCode: true)
+            }
+        } else {
+            let text = (hiddenTextField.text ?? "")
+            hiddenTextField.text = text
+            let chars = Array(text)
+            
+            for i in 0..<codeBoxes.count {
+                if i < chars.count {
+                    codeBoxes[i].configure(char: chars[i])
+                } else {
+                    codeBoxes[i].configure(char: nil)
+                }
+                
+                if hiddenTextField.isFirstResponder {
+                    if chars.count == 6 {
+                        codeBoxes[i].setActive(i == 5)
+                    } else {
+                        codeBoxes[i].setActive(i == chars.count)
+                    }
+                } else {
+                    codeBoxes[i].setActive(false)
+                }
+            }
+            
+            isCodeFull.accept(chars.count == 6)
+        }
+    }
+    
+    private func setupLongPressGesture() {
+        let longPress = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress))
+        self.addGestureRecognizer(longPress)
+    }
+
+    @objc private func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
+        guard gesture.state == .began else { return }
+        
+        hiddenTextField.becomeFirstResponder()
+        
+        let menu = UIMenuController.shared
+        if !menu.isMenuVisible {
+            menu.showMenu(from: self, rect: codeBoxes[0].frame)
+        }
+    }
+    
+    @objc private func viewTapped() {
+        hiddenTextField.becomeFirstResponder()
+    }
+    
+    @objc private func textFieldDidChange() {
+        updateBoxesState()
     }
 }
 
 extension CodeTextFieldView: UITextFieldDelegate {
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        let currentText = textField.text ?? ""
+        let allowed = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
+        let filteredString = string.components(separatedBy: allowed.inverted).joined()
         
-        let uppercased = string.uppercased()
-
-        let allowed = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-        let allowedSet = CharacterSet(charactersIn: allowed)
-
-        guard uppercased.rangeOfCharacter(from: allowedSet.inverted) == nil else {
-            return false
-        }
-
-        // 붙여넣기 처리 (여러 글자)
-        if uppercased.count > 1 {
-            let chars = Array(uppercased)
-            guard let startIndex = codeTextFields.firstIndex(where: { $0 === textField }) else {
-                return false
-            }
-
-            for (offset, char) in chars.enumerated() {
-                let index = startIndex + offset
-                guard index < codeTextFields.count else { break }
-                codeTextFields[index].text = String(char)
-            }
-
-            endEditing(true)
+        var updatedText: String
+        
+        if string.count > 1 {
+            updatedText = String(filteredString.prefix(6)).uppercased()
+            textField.endEditing(true)
         } else {
-            // 한 글자 입력
-            textField.text = String(uppercased.prefix(1))
-
-            if textField.text != "" {
-                if (textField as? CodeTextField)?.nextTextField == nil {
-                    endEditing(true)
-                } else {
-                    (textField as? CodeTextField)?.nextTextField?.becomeFirstResponder()
-                }
-            }
+            guard let stringRange = Range(range, in: currentText) else { return false }
+            updatedText = currentText.replacingCharacters(in: stringRange, with: filteredString).uppercased()
         }
-
-        if codeTextFields.filter({ $0.text != "" }).count >= 6 {
-            isCodeFull.accept(true)
-        } else {
-            isCodeFull.accept(false)
+        
+        if updatedText.count >= 6 {
+            updatedText = String(updatedText.prefix(6))
+            textField.endEditing(true)
         }
-
+        
+        textField.text = updatedText
+        
+        updateBoxesState()
+        
         return false
     }
     
-    func textFieldDidBeginEditing(_ textField: UITextField) {
-        textField.layer.borderColor = UIColor.mainPurple.cgColor
-    }
-    
     func textFieldDidEndEditing(_ textField: UITextField) {
-        textField.layer.borderColor = UIColor.grayScale200.cgColor
+        updateBoxesState()
     }
 }

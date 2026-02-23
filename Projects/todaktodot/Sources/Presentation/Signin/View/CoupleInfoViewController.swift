@@ -76,7 +76,7 @@ final class CoupleInfoViewController: UIViewController, View {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+        hiddenBackButton()
         hideKeyboardwhenTappedAround()
         setupViews()
         setupFlexLayout()
@@ -96,7 +96,7 @@ final class CoupleInfoViewController: UIViewController, View {
     private func setupFlexLayout() {
         contentsView.flex.paddingHorizontal(20).define {
             $0.addItem(titleLabel)
-                .marginTop(40)
+                .marginTop(84)
             
             $0.addItem(dateLabel)
                 .marginTop(40)
@@ -120,9 +120,7 @@ final class CoupleInfoViewController: UIViewController, View {
             .all()
         
         contentsView.pin
-            .top(view.pin.safeArea.top)
-            .horizontally()
-            .bottom()
+            .all()
         
         startButton.pin
             .horizontally(20)
@@ -134,17 +132,17 @@ final class CoupleInfoViewController: UIViewController, View {
     
     func bind(reactor: CoupleReactor) {
         reactor.state
-            .map { $0.isJoinSuccess }
-            .filter { $0 }
-            .distinctUntilChanged()
-            .subscribe(onNext: { [weak self] _ in
-                switch self?.flowType {
+            .compactMap { $0.updateCoupleInfo }
+            .subscribe(onNext: { [weak self] info in
+                guard let self = self else { return }
+                
+                coordinator?.onCoupleInfoUpdated?(info)
+                
+                switch self.flowType {
                 case .newUser:
-                    self?.coordinator?.navigateToMain()
+                    self.coordinator?.navigateToMain()
                 case .editUser:
-                    self?.coordinator?.navigateBack()
-                case .none:
-                    break
+                    self.coordinator?.navigateBack()
                 }
             })
             .disposed(by: disposeBag)
@@ -153,7 +151,7 @@ final class CoupleInfoViewController: UIViewController, View {
             .compactMap { [weak self] in
                 guard let date = self?.isDateSelected.value,
                       let step = self?.isRelationSelected.value else { return nil }
-                return CoupleReactor.Action.tapJoinButton(date, step.rawValue)
+                return CoupleReactor.Action.tapStartButton(date, step.rawValue)
             }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)

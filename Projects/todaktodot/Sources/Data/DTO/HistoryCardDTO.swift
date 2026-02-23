@@ -73,7 +73,7 @@ extension CardHistoryResponseDTO {
                 date: Self.dateFormatter.date(from: card.issuedDate ?? "") ?? Date(),
                 mode: card.mode ?? .whiskey,
                 subject: card.subject ?? .love,
-                type: card.type ?? .balance,
+                type: card.type ?? .none,
                 questions: card.questions?.map { q in
                     Question(
                         number: q.questionNo ?? -1,

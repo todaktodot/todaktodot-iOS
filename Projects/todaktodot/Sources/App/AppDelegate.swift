@@ -3,6 +3,7 @@ import RxKakaoSDKCommon
 import FirebaseCore
 import GoogleSignIn
 import FirebaseMessaging
+import NetworkKit
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -13,6 +14,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
     ) -> Bool {
+        NetworkManager.setup(tokenProvider: AppTokenProvider())
+        
         FirebaseApp.configure()
         
         let authOption: UNAuthorizationOptions = [.alert, .badge, .sound]
@@ -49,16 +52,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 extension AppDelegate: MessagingDelegate {
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
         print("FCM Token: \(fcmToken ?? "None")")
-
-        if let token = fcmToken {
-//            UserdefaultKey.deviceToken = token
-        }
     }
 }
 
 extension AppDelegate: UNUserNotificationCenterDelegate {
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         Messaging.messaging().apnsToken = deviceToken
+        let tokenString = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
+        print("Device Token (Hex): \(tokenString)")
     }
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {

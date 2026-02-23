@@ -71,6 +71,7 @@ final class CustomSwitch: UIView {
     }
     
     func setSwitch(isOn: Bool) {
+        guard self.isOn != isOn else { return }
         self.isOn = isOn
         updateUI()
     }

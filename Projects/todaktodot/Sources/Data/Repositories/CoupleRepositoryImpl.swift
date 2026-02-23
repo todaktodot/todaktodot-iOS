@@ -23,8 +23,7 @@ final class CoupleRepositoryImpl: CoupleRepository {
         let endpoint = Endpoint<CoupleCode>(
             baseURL: .todaktodotAPI,
             path: "/api/couple-link/issue",
-            method: .post,
-            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)]
+            method: .post
         )
 
         return networkManager.request(with: endpoint)
@@ -35,7 +34,6 @@ final class CoupleRepositoryImpl: CoupleRepository {
             baseURL: .todaktodotAPI,
             path: "/api/couple-link/connect",
             method: .post,
-            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
             parameters: ["linkCode": code]
         )
 
@@ -43,25 +41,23 @@ final class CoupleRepositoryImpl: CoupleRepository {
             .map { _ in true }
     }
     
-    func setNickname(nickname: String) -> Observable<Bool> {
-        let endpoint = Endpoint<Empty>(
+    func updateNickname(nickname: String) -> Observable<String> {
+        let endpoint = Endpoint<NicknameDTO>(
             baseURL: .todaktodotAPI,
             path: "/api/profile/nickname",
             method: .patch,
-            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
             parameters: ["nickname": nickname]
         )
-
+        
         return networkManager.request(with: endpoint)
-            .map { _ in true }
+            .map { $0.toNickname() }
     }
     
-    func setCoupleInfo(date: String, stage: String) -> Observable<Bool> {
-        let endpoint = Endpoint<Empty>(
+    func updateCoupleInfo(date: String, stage: String) -> Observable<CoupleInfo> {
+        let endpoint = Endpoint<CoupleInfoDto>(
             baseURL: .todaktodotAPI,
             path: "/api/couple/info",
             method: .patch,
-            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
             parameters: [
                 "firstMetDt": date,
                 "relationshipStage": stage,
@@ -69,24 +65,42 @@ final class CoupleRepositoryImpl: CoupleRepository {
         )
 
         return networkManager.request(with: endpoint)
-            .map { _ in true }
+            .map { $0.toCoupleInfo() }
     }
     
-    func setTerms(marketingAgree: Bool) -> Observable<Bool> {
+    func setTerms(infoAgree: Bool? = nil, marketingAgree: Bool? = nil, advertiesmentAgree: Bool? = nil) -> Observable<Bool> {
+        var parameters: [String: String] = [:]
+        
+        if let info = infoAgree { parameters["infoAlarmYN"] = (info ? "Y" : "N") }
+        if let marketing = marketingAgree { parameters["marketingAndAlarmYN"] = (marketing ? "Y" : "N") }
+        if let advertiesment = advertiesmentAgree { parameters["advertiesmentAlarmYN"] = (advertiesment ? "Y" : "N") }
+        
         let endpoint = Endpoint<Empty>(
             baseURL: .todaktodotAPI,
             path: "/api/term",
             method: .post,
-            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
-            parameters: [
-                "marketingAndAlarmYN": marketingAgree ? "Y" : "N"
-            ]
+            parameters: parameters
         )
 
         return networkManager.request(with: endpoint)
-            .do(onNext: { _ in
+            .map { _ in
                 UserdefaultKey.joined = true
-            })
-            .map { _ in true }
+                return true
+            }
+    }
+    
+    func soloStart() -> Observable<Bool> {
+        let endpoint = Endpoint<SoloDTO>(
+            baseURL: .todaktodotAPI,
+            path: "/api/solo/start",
+            method: .post
+        )
+
+        return networkManager.request(with: endpoint)
+            .map {
+                UserdefaultKey.coupleId = $0.coupleId
+                UserdefaultKey.coupleType = .solo
+                return true
+            }
     }
 }
