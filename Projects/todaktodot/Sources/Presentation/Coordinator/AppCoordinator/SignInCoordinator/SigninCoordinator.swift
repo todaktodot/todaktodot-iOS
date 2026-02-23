@@ -103,5 +103,6 @@ final class SigninCoordinator: Coordinator {
         if let coordinator = parentCoordinator as? TabBarCoordinator {
             coordinator.start()
         }
+        UserdefaultKey.isLoggedIn = true
     }
 }
