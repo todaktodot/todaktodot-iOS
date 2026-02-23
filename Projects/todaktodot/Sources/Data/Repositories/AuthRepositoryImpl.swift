@@ -7,6 +7,7 @@
 
 import RxSwift
 import NetworkKit
+import Foundation
 
 final class AuthRepositoryImpl: AuthRepository {
     
@@ -67,35 +68,48 @@ final class AuthRepositoryImpl: AuthRepository {
 
         let endpoint = Endpoint<LoginInfo>(
             baseURL: .todaktodotAPI,
-            path: "/login",
+            path: "/api/login",
             method: .post,
             parameters: parameters
         )
-
+        
         return networkManager.request(with: endpoint)
-            .do(onNext: { result in
-                UserdefaultKey.accessToken = result.accessToken
-                UserdefaultKey.couple = result.couple ?? false
-                UserdefaultKey.joined = result.joined ?? false
-            })
-            .map { _ in true }
-            .catchAndReturn(false)
+            .map {
+                UserdefaultKey.accessToken = $0.accessToken
+                UserdefaultKey.refreshToken = $0.refreshToken
+                UserdefaultKey.loginProvider = loginType.rawValue.uppercased()
+                return true
+            }
     }
     
-    func loginTest() -> Observable<Bool> {
-        let endpoint = Endpoint<LoginInfo>(
+    func fetchUserInfo() -> Observable<UserInfo> {
+        let endpoint = Endpoint<UserDTO>(
             baseURL: .todaktodotAPI,
-            path: "/login/test1",
-            method: .post
+            path: "/api/profile/detail",
+            method: .get
         )
         
         return networkManager.request(with: endpoint)
-            .do(onNext: { result in
-                UserdefaultKey.accessToken = result.accessToken
-                UserdefaultKey.couple = result.couple ?? false
-                UserdefaultKey.joined = result.joined ?? false
-            })
-            .map { _ in true }
-            .catchAndReturn(false)
+            .map {
+                $0.setUserDefaultUserInfo()
+                return $0.toUserInfo()
+            }
     }
+    
+//    func loginTest() -> Observable<Bool> {
+//        let endpoint = Endpoint<LoginInfo>(
+//            baseURL: .todaktodotAPI,
+//            path: "/login/test1",
+//            method: .post
+//        )
+//        
+//        return networkManager.request(with: endpoint)
+//            .do(onNext: { result in
+//                UserdefaultKey.accessToken = result.accessToken
+//                UserdefaultKey.couple = result.couple ?? false
+//                UserdefaultKey.joined = result.joined ?? false
+//            })
+//            .map { _ in true }
+//            .catchAndReturn(false)
+//    }
 }

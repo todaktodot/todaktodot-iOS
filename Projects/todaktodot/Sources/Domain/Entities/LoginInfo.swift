@@ -10,6 +10,4 @@ import Foundation
 struct LoginInfo: Codable {
     let accessToken: String
     let refreshToken: String
-    let couple: Bool?
-    let joined: Bool?
 }

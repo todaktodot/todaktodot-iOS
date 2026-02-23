@@ -41,9 +41,8 @@ class BaseViewController: UIViewController {
         personImageView.frame.origin.x = 20
         navigationItem.rightBarButtonItem = UIBarButtonItem(customView: personContainer)
         
-        personImageView.isUserInteractionEnabled = true
         let tap: UITapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(myPageButtonTapped))
-        personImageView.addGestureRecognizer(tap)
+        personContainer.addGestureRecognizer(tap)
         
         disableGlassStyle()
     }

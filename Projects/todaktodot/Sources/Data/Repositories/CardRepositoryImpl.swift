@@ -23,7 +23,6 @@ final class CardRepositoryImpl: CardRepository {
             baseURL: .todaktodotAPI,
             path: "/api/daily-card/select-type",
             method: .post,
-            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
             parameters: ["coupleCardId": coupleCardId]
         )
         
@@ -36,8 +35,11 @@ final class CardRepositoryImpl: CardRepository {
         let endpoint = Endpoint<Empty>(
             baseURL: .todaktodotAPI,
             path: "/api/daily-card/assign/me?startDate=\(startDate)&endDate=\(endDate)",
-            method: .post,
-            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)]
+            method: .post
+//            parameters: [
+//                "startDate": startDate,
+//                "endDate": endDate
+//            ]
         )
         
         return networkManager.request(with: endpoint)
@@ -56,7 +58,6 @@ final class CardRepositoryImpl: CardRepository {
             baseURL: .todaktodotAPI,
             path: "/api/daily-card/answer",
             method: .post,
-            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
             parameters: request.toDictionary()
         )
         
@@ -72,7 +73,6 @@ final class CardRepositoryImpl: CardRepository {
             baseURL: .todaktodotAPI,
             path: "/api/daily-card/weekly",
             method: .get,
-            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
             parameters: [
                 "startDate": startDate,
                 "endDate": endDate
@@ -91,7 +91,6 @@ final class CardRepositoryImpl: CardRepository {
             baseURL: .todaktodotAPI,
             path: "/api/daily-card/history/with-details",
             method: .get,
-            headers: [.authorization(bearerToken: UserdefaultKey.accessToken)],
             parameters: [
                 "startDate": startDate,
                 "endDate": endDate

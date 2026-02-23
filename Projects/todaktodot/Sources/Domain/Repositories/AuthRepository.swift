@@ -10,4 +10,5 @@ import RxSwift
 protocol AuthRepository {
     func login(type: LoginType) -> Observable<Bool>
     func loginTest() -> Observable<Bool>
+    func fetchUserInfo() -> Observable<UserInfo>
 }

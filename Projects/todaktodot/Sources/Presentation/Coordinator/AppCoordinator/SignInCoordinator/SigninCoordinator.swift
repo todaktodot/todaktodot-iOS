@@ -9,11 +9,12 @@ import UIKit
 import NetworkKit
 
 final class SigninCoordinator: Coordinator {
+    var onNicknameUpdated: ((String) -> Void)?
+    var onCoupleInfoUpdated: ((CoupleInfo) -> Void)?
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
     weak var parentCoordinator: Coordinator?
-    weak var tabBarCoordinator: TabBarCoordinator?
-    private let networkManager = NetworkManager() // TODO: AppDIContainer 사용? 고민
+    private let networkManager = NetworkManager.shared // TODO: AppDIContainer 사용? 고민
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
@@ -40,25 +41,13 @@ final class SigninCoordinator: Coordinator {
                 networkManager: networkManager
                 )
         )
-        let coupleConnectViewController = CoupleConnectViewController(flowType: .create)
+        let coupleConnectViewController = CoupleConnectViewController()
         coupleConnectViewController.coordinator = self
         coupleConnectViewController.reactor = CoupleReactor(coupleUseCase: useCase)
-        navigationController.setViewControllers([coupleConnectViewController], animated: true)
+        navigationController.pushViewController(coupleConnectViewController, animated: true)
     }
     
-    func showCoupleConnectOnly() {
-        let useCase = CoupleUseCase(
-            repository: CoupleRepositoryImpl(
-                networkManager: networkManager
-                )
-        )
-        let coupleConnectViewController = CoupleConnectViewController(flowType: .join)
-        coupleConnectViewController.coordinator = self
-        coupleConnectViewController.reactor = CoupleReactor(coupleUseCase: useCase)
-        navigationController.setViewControllers([coupleConnectViewController], animated: true)
-    }
-    
-    func showNickname(flowType: ConnectFlowType) {
+    func showNickname(flowType: ConnectFlowType? = nil) {
         let useCase = CoupleUseCase(
             repository: CoupleRepositoryImpl(
                 networkManager: networkManager
@@ -67,8 +56,11 @@ final class SigninCoordinator: Coordinator {
         let nicknameViewController = NicknameViewController(flowType: flowType)
         nicknameViewController.coordinator = self
         nicknameViewController.reactor = CoupleReactor(coupleUseCase: useCase)
-        self.navigationController.isNavigationBarHidden = true
-        navigationController.pushViewController(nicknameViewController, animated: true)
+        if flowType == nil {
+            navigationController.setViewControllers([nicknameViewController], animated: true)
+        } else {
+            navigationController.pushViewController(nicknameViewController, animated: true)
+        }
     }
     
     func showCoupleInfo(flowType: CoupleInfoFlowType = .newUser) {
@@ -80,7 +72,6 @@ final class SigninCoordinator: Coordinator {
         let coupleInfoViewController = CoupleInfoViewController(flowType: flowType)
         coupleInfoViewController.coordinator = self
         coupleInfoViewController.reactor = CoupleReactor(coupleUseCase: useCase)
-        self.navigationController.isNavigationBarHidden = true
         navigationController.pushViewController(coupleInfoViewController, animated: true)
     }
     

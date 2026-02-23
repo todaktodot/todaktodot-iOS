@@ -17,7 +17,6 @@ final class TermsModalViewController: UIViewController, View {
     var disposeBag = DisposeBag()
     private var selectedTerms = BehaviorRelay<Set<Int>>(value: [])
     private var isAcceptable = BehaviorRelay<Bool>(value: false)
-//    private var currentSelected = Set<Int>()
     
     private let dimView = UIView().then {
         $0.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.2)
@@ -28,12 +27,6 @@ final class TermsModalViewController: UIViewController, View {
         $0.clipsToBounds = true
         $0.layer.cornerRadius = 12
         $0.layer.maskedCorners = CACornerMask(arrayLiteral: .layerMinXMinYCorner, .layerMaxXMinYCorner)
-    }
-    
-    private let topToggleView = UIView().then {
-        $0.backgroundColor = UIColor(hex: "D9D9D9")
-        $0.layer.cornerRadius = 8
-        $0.layer.borderWidth = 1
     }
     
     private let allCheckButton = CheckButtonView(titleFont: .pretenSemiBold(16)).then {
@@ -53,6 +46,11 @@ final class TermsModalViewController: UIViewController, View {
     
     private let marketingButton = CheckButtonView().then {
         $0.configure(isBackground: false, title: "[선택] 마케팅 수신 및 앱 알림 동의")
+        $0.setState(isSelected: false)
+    }
+    
+    private let AdvertisinggButton = CheckButtonView().then {
+        $0.configure(isBackground: false, title: "[선택] 광고성 알림 수신 동의")
         $0.setState(isSelected: false)
     }
     
@@ -92,14 +90,11 @@ final class TermsModalViewController: UIViewController, View {
     
     private func setupFlexLayout() {
         modalView.flex.paddingHorizontal(20).define {
-            $0.addItem(topToggleView)
-                .marginTop(16)
-            
             $0.addItem(titleLabel)
-                .marginTop(22)
+                .marginTop(28)
             
             $0.addItem(allCheckButton)
-                .marginTop(24)
+                .marginTop(20)
                 .height(52)
             
             $0.addItem(termsButton)
@@ -112,6 +107,11 @@ final class TermsModalViewController: UIViewController, View {
             
             $0.addItem(marketingButton)
                 .marginTop(4)
+                .height(40)
+            
+            $0.addItem(AdvertisinggButton)
+                .marginTop(4)
+                .marginLeft(28)
                 .height(40)
             
             $0.addItem(acceptButton)
@@ -128,7 +128,7 @@ final class TermsModalViewController: UIViewController, View {
         modalView.pin
             .horizontally()
             .bottom()
-            .height(451)
+            .height(479)
         
         modalView.flex.layout()
     }
@@ -138,7 +138,7 @@ final class TermsModalViewController: UIViewController, View {
         allCheckButton.rx.tap
             .withLatestFrom(selectedTerms)
             .map { selected -> Set<Int> in
-                selected.count == 3 ? [] : [0, 1, 2]
+                selected.count == 4 ? [] : [0, 1, 2, 3]
             }
             .bind(to: selectedTerms)
             .disposed(by: disposeBag)
@@ -163,6 +163,14 @@ final class TermsModalViewController: UIViewController, View {
             .withLatestFrom(selectedTerms)
             .map { selected -> Set<Int> in
                 self.setSelectedTerms(selected: selected, termsIndex: 2)
+            }
+            .bind(to: selectedTerms)
+            .disposed(by: disposeBag)
+        
+        AdvertisinggButton.rx.tap
+            .withLatestFrom(selectedTerms)
+            .map { selected -> Set<Int> in
+                self.setSelectedTerms(selected: selected, termsIndex: 3)
             }
             .bind(to: selectedTerms)
             .disposed(by: disposeBag)
@@ -197,11 +205,23 @@ final class TermsModalViewController: UIViewController, View {
             })
             .disposed(by: disposeBag)
         
+        AdvertisinggButton.chevronButton.rx.tap
+            .subscribe(onNext: { [weak self] _ in
+                guard let self else { return }
+                
+                let webVC = WebViewController(url: "https://silver-curve-9aa.notion.site/304562bcddbd8059b8f7ee323b944f4f?pvs=73")
+                webVC.modalPresentationStyle = .formSheet
+                self.present(webVC, animated: true, completion: nil)
+            })
+            .disposed(by: disposeBag)
+        
         acceptButton.rx.tap
             .withLatestFrom(isAcceptable)
             .subscribe(with: self, onNext: { owner, isAcceptable in
                 if isAcceptable {
-                    owner.reactor?.action.onNext(.tapTemrsAgreeButtonWithMarketingAgree(owner.selectedTerms.value.contains(2)))
+                    owner.reactor?.action.onNext(.tapTemrsAgreeButton(
+                        owner.selectedTerms.value.contains(2), owner.selectedTerms.value.contains(3)
+                    ))
                 } else {
                     owner.isAcceptable.accept(true)
                     owner.setAllEnable(true)
@@ -210,7 +230,7 @@ final class TermsModalViewController: UIViewController, View {
             .disposed(by: disposeBag)
         
         reactor.state
-            .map { $0.isTermsAgreeSuccess }
+            .compactMap { $0.isTermsAgreeSuccess }
             .distinctUntilChanged()
             .subscribe(onNext: { [weak self] success in
                 if success {
@@ -226,18 +246,19 @@ final class TermsModalViewController: UIViewController, View {
                 termsButton.setState(isSelected: arr.contains(0))
                 personalInfoButton.setState(isSelected: arr.contains(1))
                 marketingButton.setState(isSelected: arr.contains(2))
+                AdvertisinggButton.setState(isSelected: arr.contains(3))
 
                 let requiredAccepted = arr.contains(0) && arr.contains(1)
                 isAcceptable.accept(requiredAccepted)
 
-                allCheckButton.setState(isSelected: arr.count == 3)
+                allCheckButton.setState(isSelected: arr.count == 4)
                 acceptButton.backgroundColor = requiredAccepted ? .mainPurple : .grayScale400
             })
             .disposed(by: disposeBag)
     }
     
     private func setAllEnable(_ selected: Bool) {
-        [termsButton, personalInfoButton, marketingButton, allCheckButton].forEach {
+        [termsButton, personalInfoButton, marketingButton, allCheckButton, AdvertisinggButton].forEach {
             $0.setState(isSelected: selected)
         }
         acceptButton.backgroundColor = .mainPurple
