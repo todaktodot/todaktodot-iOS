@@ -327,7 +327,7 @@ final class DailyCardDetailViewController: UIViewController, View {
         
         let textLabel = TDLabel().then {
             $0.text = text
-            $0.font = .pretenRegular(16)
+            $0.font = .pretenMedium(16)
             $0.textColor = .grayScale800
             $0.numberOfLines = 0
             $0.isUserInteractionEnabled = false
@@ -383,7 +383,7 @@ extension DailyCardDetailViewController {
         }
     
     @objc private func backButtonTapped() {
-        coordinator?.navigateBack()
+        coordinator?.navigateToHome()
     }
     
     @objc private func optionButtonTapped(_ sender: UIButton) {
@@ -400,12 +400,8 @@ extension DailyCardDetailViewController {
                 UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5) {
                     if button.tag == sender.tag {
                         button.layer.borderColor = UIColor.mainPurple.cgColor
-                        titleLabel?.textColor = .mainPurple
-                        titleLabel?.font = .pretenMedium(16)
                     } else {
                         button.layer.borderColor = UIColor.grayScale200.cgColor
-                        titleLabel?.textColor = .grayScale900
-                        titleLabel?.font = .pretenMedium(16)
                     }
                 }
             } else {
@@ -417,12 +413,12 @@ extension DailyCardDetailViewController {
                         button.layer.borderColor = UIColor.mainPurple.cgColor
                         radioButton?.image = radioOn
                         radioButton?.tintColor = .mainPurple
-                        textLabel?.textColor = .mainPurple
+//                        textLabel?.textColor = .mainPurple
                     } else {
                         button.layer.borderColor = UIColor.grayScale200.cgColor
                         radioButton?.image = radioOff
                         radioButton?.tintColor = .grayScale200
-                        textLabel?.textColor = .grayScale800
+//                        textLabel?.textColor = .grayScale800
                     }
                 }
             }
@@ -446,7 +442,8 @@ extension DailyCardDetailViewController {
         
         let titleLabel = TDLabel().then {
             $0.text = title
-            $0.font = .pretenSemiBold(16)
+            $0.font = .pretenRegular(14)
+//            $0.font = .pretenSemiBold(16)
             $0.textColor = .grayScale900
             $0.numberOfLines = 0
             $0.isUserInteractionEnabled = false

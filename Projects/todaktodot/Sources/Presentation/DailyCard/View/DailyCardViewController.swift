@@ -43,15 +43,19 @@ final class DailyCardViewController: UIViewController, View {
         setupUI()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+    }
+    
     func bind(reactor: DailyCardReactor) {
         // 초기 선택 상태 반영 (레이아웃 완료 후)
         reactor.state.map { $0.historySelectedType }
-            .take(1)
+            .take(2)
+//            .distinctUntilChanged()
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] historyType in
                 guard let self = self else { return }
                 DispatchQueue.main.async {
-                    // historySelectedType에 따라 버튼 스타일 적용
                     self.updateButtonStyle(self.situationButton, isSelected: historyType == .roleplay)
                     self.updateButtonStyle(self.balanceButton, isSelected: historyType == .balance)
                 }
@@ -61,11 +65,15 @@ final class DailyCardViewController: UIViewController, View {
         situationButton.rx.tap
             .withLatestFrom(reactor.state.map { $0.historySelectedType })
             .subscribe(onNext: { [weak self] historyType in
-                // historyType이 .balance면 알림
+                guard let self = self else { return }
                 if historyType == .balance {
-                    self?.showNotificationAlert()
+                    self.showNotificationAlert()
+                } else if historyType == .none {
+                    if let roleplayCard = CardService.shared.getTodayCards().first(where: { $0.type == .roleplay }) {
+                        reactor.action.onNext(.selectCardType(coupleCardId: roleplayCard.coupleCardId, cardType: .roleplay))
+                    }
+                    reactor.action.onNext(.tapSituationButton)
                 } else {
-                    // .none 또는 .roleplay면 이동
                     reactor.action.onNext(.tapSituationButton)
                 }
             })
@@ -74,11 +82,15 @@ final class DailyCardViewController: UIViewController, View {
         balanceButton.rx.tap
             .withLatestFrom(reactor.state.map { $0.historySelectedType })
             .subscribe(onNext: { [weak self] historyType in
-                // historyType이 .roleplay면 알림
+                guard let self = self else { return }
                 if historyType == .roleplay {
-                    self?.showNotificationAlert()
+                    self.showNotificationAlert()
+                } else if historyType == .none {
+                    if let balanceCard = CardService.shared.getTodayCards().first(where: { $0.type == .balance }) {
+                        reactor.action.onNext(.selectCardType(coupleCardId: balanceCard.coupleCardId, cardType: .balance))
+                    }
+                    reactor.action.onNext(.tapBalanceButton)
                 } else {
-                    // .none 또는 .balance면 이동
                     reactor.action.onNext(.tapBalanceButton)
                 }
             })
@@ -95,13 +107,10 @@ final class DailyCardViewController: UIViewController, View {
         
         reactor.state.map { $0.selectedCard }
             .compactMap { $0 }
-            .skip(1)
             .distinctUntilChanged { $0.id == $1.id }
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] card in
                 guard let self = self else { return }
-                
-                // 버튼 스타일 업데이트 제거 - historySelectedType만 기준으로 함
                 
                 switch card.type {
                 case .roleplay:
@@ -113,7 +122,17 @@ final class DailyCardViewController: UIViewController, View {
                 }
             })
             .disposed(by: disposeBag)
+        
+        // UI 업데이트 없을때 상대방이 모드 선택할 시
+        reactor.state.map { $0.shouldShowAlreadySelectedAlert }
+            .filter { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] _ in
+                self?.showNotificationAlert()
+            })
+            .disposed(by: disposeBag)
     }
+    
     
     private func setupUI() {
         view.backgroundColor = .lightPurple
@@ -191,19 +210,21 @@ extension DailyCardViewController {
     }
     
     private func updateButtonStyle(_ button: UIButton, isSelected: Bool) {
-        if isSelected {
-            button.layer.borderWidth = 1
-            button.layer.borderColor = UIColor.mainPurple.cgColor
-            button.layer.shadowColor = UIColor.mainPurple.withAlphaComponent(0.2).cgColor
-            button.layer.shadowOpacity = 1
-            button.layer.shadowOffset = CGSize(width: 0, height: 2)
-            button.layer.shadowRadius = 8
-        } else {
-            button.layer.borderWidth = 0
-            button.layer.shadowColor = UIColor.black.cgColor
-            button.layer.shadowOpacity = 0.05
-            button.layer.shadowOffset = CGSize(width: 0, height: 2)
-            button.layer.shadowRadius = 8
+        UIView.animate(withDuration: 0.3) {
+            if isSelected {
+                button.layer.borderWidth = 1
+                button.layer.borderColor = UIColor.mainPurple.cgColor
+                button.layer.shadowColor = UIColor.mainPurple.withAlphaComponent(0.2).cgColor
+                button.layer.shadowOpacity = 1
+                button.layer.shadowOffset = CGSize(width: 0, height: 2)
+                button.layer.shadowRadius = 8
+            } else {
+                button.layer.borderWidth = 0
+                button.layer.shadowColor = UIColor.black.cgColor
+                button.layer.shadowOpacity = 0.05
+                button.layer.shadowOffset = CGSize(width: 0, height: 2)
+                button.layer.shadowRadius = 8
+            }
         }
     }
 }

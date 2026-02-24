@@ -8,6 +8,7 @@
 import ReactorKit
 import RxSwift
 
+
 final class DailyCardReactor: Reactor {
     
     private let cardUseCase: CardUseCase
@@ -28,6 +29,7 @@ final class DailyCardReactor: Reactor {
         case tapBackButton
         case tapSituationButton
         case tapBalanceButton
+        case selectCardType(coupleCardId: Int, cardType: CardType)
         case submitAnswers(coupleCardId: Int, cardId: Int, answers: [Answer])
     }
     
@@ -37,6 +39,8 @@ final class DailyCardReactor: Reactor {
         case setLoading(Bool)
         case setSubmitSuccess(SubmitAnswerResult)
         case setSubmitError(Error)
+        case setCardTypeSelected(CardType)
+        case setCardTypeSelectionError
     }
     
     struct State {
@@ -47,6 +51,7 @@ final class DailyCardReactor: Reactor {
         var isLoading: Bool = false
         var submitResult: SubmitAnswerResult?
         var submitError: Error?
+        var shouldShowAlreadySelectedAlert: Bool = false
     }
     
     let initialState: State
@@ -59,21 +64,37 @@ final class DailyCardReactor: Reactor {
             guard let card = dailyCards.first(where: { $0.type == .roleplay }) else {
                 return .empty()
             }
-//            onCardSelected.onNext(())
             return .just(.navigateToDetail(card))
         case .tapBalanceButton:
             guard let card = dailyCards.first(where: { $0.type == .balance }) else {
                 return .empty()
             }
-//            onCardSelected.onNext(())
             return .just(.navigateToDetail(card))
-        case .submitAnswers(let coupleCardId, let cardId, let answers):
+        case .selectCardType(let coupleCardId, let cardType):
             return Observable.concat([
                 .just(.setLoading(true)),
                 cardUseCase.selectCardType(coupleCardId: coupleCardId)
-                    .flatMap { _ in
-                        return self.cardUseCase.submitAnswers(coupleCardId: coupleCardId, cardId: cardId, answers: answers)
-                    }
+                    .flatMap { result -> Observable<Mutation> in
+                        switch result {
+                        case .success:
+                            return .just(.setCardTypeSelected(cardType))
+                        case .failure(let error):
+                            // 에러 메시지에 "이미 유형이 선택된" 포함 여부로 판단
+                            let errorMessage = error.localizedDescription
+                            if errorMessage.contains("이미 유형이 선택된") || errorMessage.contains("400") {
+                                print("⚠️ 400 에러 - 이미 선택된 카드")
+                                return .just(.setCardTypeSelectionError)
+                            }
+                            print("❌ selectCardType 실패: \(error)")
+                            return .empty()
+                        }
+                    },
+                .just(.setLoading(false))
+            ])
+        case .submitAnswers(let coupleCardId, let cardId, let answers):
+            return Observable.concat([
+                .just(.setLoading(true)),
+                cardUseCase.submitAnswers(coupleCardId: coupleCardId, cardId: cardId, answers: answers)
                     .flatMap { result -> Observable<Mutation> in
                         switch result {
                         case .success(let submitResult):
@@ -103,6 +124,11 @@ final class DailyCardReactor: Reactor {
         case .setSubmitError(let error):
             newState.submitError = error
             newState.submitResult = nil
+        case .setCardTypeSelected(let cardType):
+            newState.historySelectedType = cardType
+            newState.shouldShowAlreadySelectedAlert = false
+        case .setCardTypeSelectionError:
+            newState.shouldShowAlreadySelectedAlert = true
         }
         return newState
     }
