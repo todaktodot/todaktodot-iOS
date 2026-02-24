@@ -1,0 +1,28 @@
+//
+//  AIReportUseCase.swift
+//  todaktodot
+//
+//  Created by 임대진 on 2/22/26.
+//
+
+import RxSwift
+
+final class AIReportUseCase {
+    private let repository: AIReportRepository
+
+    init(repository: AIReportRepository) {
+        self.repository = repository
+    }
+    func fetchLastWeekAIReportCreated() -> Observable<AIReportCreated> {
+        repository.fetchLastWeekAIReportCreated()
+    }
+    
+    func fetchAIReportDetail(id: Int) -> Observable<AIReportDetail> {
+//        repository.fetchAIReportDetail(id: id)
+        return .just(AIReportDetail.mock)
+    }
+    
+    func fetchAIReportList() -> Observable<AIReportList> {
+        repository.fetchAIReportList()
+    }
+}

@@ -7,6 +7,7 @@
 
 import RxSwift
 import ReactorKit
+import Foundation
 
 final class CoupleReactor: Reactor {
     let disposeBag = DisposeBag()
@@ -73,8 +74,12 @@ final class CoupleReactor: Reactor {
                 }
         case .tapConnectButton(let code):
             return coupleUseCase.connectCouple(code: code)
-                .map { Mutation.setCoupleConnectSuccess($0) }
-                .catchAndReturn(Mutation.setCoupleConnectSuccess(false))
+                .flatMap { _ -> Observable<Mutation> in
+                    return self.coupleUseCase.assignCards(endDate: self.calNextSunday())
+                        .map { .setCoupleConnectSuccess($0) }
+                        .catch { .just(.setError($0)) }
+                }
+                .catchAndReturn(.setCoupleConnectSuccess(false))
             
         case .tapNicknameButton(let nickname):
             return coupleUseCase.updateNickname(nickname: nickname)
@@ -94,7 +99,11 @@ final class CoupleReactor: Reactor {
             
         case .tapSoloStartButton:
             return coupleUseCase.soloStart()
-                .map { Mutation.setSoloStart($0) }
+                .flatMap { _ -> Observable<Mutation> in
+                    return self.coupleUseCase.assignCards(endDate: self.calNextSunday())
+                        .map { .setSoloStart($0) }
+                        .catch { .just(.setError($0)) }
+                }
                 .catch {
                     if let afError = $0.asCustomAFError, afError.isAleardySolo {
                         return .just(.setSoloStart(true))
@@ -140,5 +149,17 @@ final class CoupleReactor: Reactor {
         }
         
         return newState
+    }
+    
+    func calNextSunday() -> String {
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: Date())
+        let targetSunday = calendar.nextDate(
+            after: startOfToday.addingTimeInterval(-1),
+            matching: DateComponents(weekday: 1),
+            matchingPolicy: .nextTime
+        )
+        let endDate = targetSunday ?? Date()
+        return endDate.toYYYYMMDD()
     }
 }

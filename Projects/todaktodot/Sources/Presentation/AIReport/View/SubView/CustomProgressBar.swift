@@ -86,7 +86,7 @@ final class CustomProgressBar: UIView {
         progressView.layer.cornerRadius = barHeight / 2
     }
 
-    func setProgress(_ value: CGFloat, animated: Bool) {
+    func setProgress(_ value: CGFloat) {
         progressLabel.text = "\(Int(value * 100))%"
         
         let width = (UIScreen.main.bounds.width - 80) * value

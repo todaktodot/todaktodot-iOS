@@ -79,21 +79,17 @@ final class CircleProgressView: UIView {
         progressLayer.path = path.cgPath
     }
 
-    func setProgress(_ value: CGFloat, animated: Bool) {
+    func setProgress(_ value: CGFloat) {
         let clamped = max(0, min(value, 1))
 
-        if animated {
-            let animation = CABasicAnimation(keyPath: "strokeEnd")
-            animation.fromValue = progressLayer.presentation()?.strokeEnd ?? 0
-            animation.toValue = clamped
-            animation.duration = 0.6
-            animation.timingFunction = CAMediaTimingFunction(name: .easeOut)
+        let animation = CABasicAnimation(keyPath: "strokeEnd")
+        animation.fromValue = progressLayer.presentation()?.strokeEnd ?? 0
+        animation.toValue = clamped
+        animation.duration = 0.6
+        animation.timingFunction = CAMediaTimingFunction(name: .easeOut)
 
-            progressLayer.strokeEnd = clamped
-            progressLayer.add(animation, forKey: "progress")
-        } else {
-            progressLayer.strokeEnd = clamped
-        }
+        progressLayer.strokeEnd = clamped
+        progressLayer.add(animation, forKey: "progress")
         
         let numCount = String(Int(value * 100)).count
         let text = "대화 참여율\n\(Int(value * 100))%"

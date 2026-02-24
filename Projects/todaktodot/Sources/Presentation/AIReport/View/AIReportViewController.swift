@@ -13,7 +13,7 @@ import RxCocoa
 import Then
 import ReactorKit
 
-final class AIReportViewController: BaseViewController {
+final class AIReportViewController: BaseViewController, View {
     
     var disposeBag = DisposeBag()
     weak var coordinator: AIReportCoordinator?
@@ -67,13 +67,41 @@ final class AIReportViewController: BaseViewController {
         self.delegate = self
         setupViews()
         setupFlexLayout()
-        bindActions()
         showLastWeek()
     }
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         layoutViews()
+    }
+    
+    func bind(reactor: AIReportReactor) {
+        lastWeekButton.rx.tap
+            .subscribe(onNext: { [weak self] in
+                guard let self else { return }
+                
+                showLastWeek()
+            })
+            .disposed(by: disposeBag)
+
+        storageButton.rx.tap
+            .subscribe(onNext: { [weak self] in
+                guard let self else { return }
+                
+                showStorage()
+            })
+            .disposed(by: disposeBag)
+        
+        lastWeekAIReportView.reportDetailButton.rx.tap
+            .subscribe(onNext: { [weak self] in
+                guard let self else { return }
+                self.coordinator?.showNext(step: .first)
+            })
+            .disposed(by: disposeBag)
+        
+        storageAIReportView.onCardTap = { [weak self] _ in
+            self?.coordinator?.showDetail()
+        }
     }
     
     private func setupViews() {
@@ -149,35 +177,6 @@ final class AIReportViewController: BaseViewController {
         layoutSelectedLine(index: 0)
         
         scrollView.contentSize = CGSize(width: contentView.frame.width, height: contentView.frame.height + 100)
-    }
-    
-    private func bindActions() {
-        lastWeekButton.rx.tap
-            .subscribe(onNext: { [weak self] in
-                guard let self else { return }
-                
-                showLastWeek()
-            })
-            .disposed(by: disposeBag)
-
-        storageButton.rx.tap
-            .subscribe(onNext: { [weak self] in
-                guard let self else { return }
-                
-                showStorage()
-            })
-            .disposed(by: disposeBag)
-        
-        lastWeekAIReportView.reportDetailButton.rx.tap
-            .subscribe(onNext: { [weak self] in
-                guard let self else { return }
-                coordinator?.showLoading()
-            })
-            .disposed(by: disposeBag)
-        
-        storageAIReportView.onCardTap = { [weak self] _ in
-            self?.coordinator?.showDetail()
-        }
     }
     
     private func layoutSelectedLine(index: Int) {
