@@ -442,8 +442,7 @@ extension DailyCardDetailViewController {
         
         let titleLabel = TDLabel().then {
             $0.text = title
-            $0.font = .pretenRegular(14)
-//            $0.font = .pretenSemiBold(16)
+            $0.font = .pretenMedium(16)
             $0.textColor = .grayScale900
             $0.numberOfLines = 0
             $0.isUserInteractionEnabled = false
