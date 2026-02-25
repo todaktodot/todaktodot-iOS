@@ -26,17 +26,17 @@ final class AIReportCoordinator: Coordinator {
         navigationController.pushViewController(vc, animated: true)
     }
     
-    func showNext(step: AIReportViewStep) {
-        let vc = AIReportDetailViewController(step: step)
+    func showDetail(step: AIReportViewStep, detail: AIReportDetail) {
+        let vc = AIReportDetailViewController(step: step, detail: detail)
         vc.coordinator = self
         vc.reactor = reactor
         navigationController.pushViewController(vc, animated: true)
     }
     
-    func showDetail() {
-        let vc = AIReportDetailViewController(step: .full)
-        vc.coordinator = self
-        
+    func shoHistoryCard() {
+        let vc = UIViewController()
+        vc.view.backgroundColor = .white
+        vc.title = "히스토리 카드"
         navigationController.pushViewController(vc, animated: true)
     }
     

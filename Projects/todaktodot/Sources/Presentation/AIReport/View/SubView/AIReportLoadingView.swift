@@ -39,10 +39,12 @@ final class AIReportLoadingView: UIView {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+    
     override func layoutSubviews() {
         super.layoutSubviews()
         layoutViews()
     }
+    
     private func setupViews() {
         addSubview(background)
     }

@@ -31,24 +31,26 @@ final class AIReportRepositoryImpl: AIReportRepository {
     }
     
     func fetchAIReportDetail(id: Int) -> Observable<AIReportDetail> {
-        let endpoint = Endpoint<AIReportDetail>(
-            baseURL: .todaktodotAPI,
-            path: "/api/ai-report/detail/\(id)",
-            method: .get
-        )
-
-        return networkManager.request(with: endpoint)
-            .map { $0 }
+//        let endpoint = Endpoint<AIReportDetail>(
+//            baseURL: .todaktodotAPI,
+//            path: "/api/ai-report/detail/\(id)",
+//            method: .get
+//        )
+//
+//        return networkManager.request(with: endpoint)
+//            .map { $0 }
+        return .just(AIReportDetailDTO.mock.toDetail())
     }
     
-    func fetchAIReportList() -> Observable<AIReportList> {
-        let endpoint = Endpoint<AIReportList>(
-            baseURL: .todaktodotAPI,
-            path: "/api/ai-report/list",
-            method: .get
-        )
-
-        return networkManager.request(with: endpoint)
-            .map { $0 }
+    func fetchAIReportList() -> Observable<[AIReportList]> {
+//        let endpoint = Endpoint<AIReportList>(
+//            baseURL: .todaktodotAPI,
+//            path: "/api/ai-report/list",
+//            method: .get
+//        )
+//
+//        return networkManager.request(with: endpoint)
+//            .map { $0 }
+        return .just(AIReportList.mock)
     }
 }

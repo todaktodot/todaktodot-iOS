@@ -33,16 +33,26 @@ final class AIReportThirdView: UIView {
         $0.textColor = .grayScale900
     }
     
-    override init(frame: CGRect = .zero) {
-        super.init(frame: frame)
+    private var similarTopics: [TopicDetailButton] = []
+    private var differentTopics: [TopicDetailButton] = []
+    
+    func configure(detail: AIReportDetail, hiddenTitle: Bool) {
+        similarTopics = detail.similarSubjectList.map {
+            TopicDetailButton(date: $0.issuedDt.toKRFomatterEMMDD(), topic: "\($0.mode) · \($0.subject)")
+        }
+        
+        differentTopics = detail.differentSubjectList.map {
+            TopicDetailButton(date: $0.issuedDt.toKRFomatterEMMDD(), topic: "\($0.mode) · \($0.subject)")
+        }
+        
         setupViews()
+        
+        if hiddenTitle {
+            titleLabel.removeFromSuperview()
+        }
     }
     
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    func setupViews() {
+    private func setupViews() {
         
         self.flex.define {
             $0.addItem(titleLabel)
@@ -51,11 +61,10 @@ final class AIReportThirdView: UIView {
             $0.addItem(positiveTitleLabel)
                 .marginTop(28)
             
-            $0.addItem().marginTop(12).gap(8).define {
-                for _ in 0..<4 {
-                    let button = TopicDetailButton(date: "금 9/12", topic: "커피모드 · 경제관")
-                    button.addTarget(self, action: #selector(buttonTap(_:)), for: .touchUpInside)
-                    $0.addItem(button)
+            $0.addItem().marginTop(12).gap(8).define { item in
+                similarTopics.forEach { topic in
+                    topic.addTarget(self, action: #selector(buttonTap(_:)), for: .touchUpInside)
+                    item.addItem(topic)
                 }
             }
             
@@ -70,10 +79,6 @@ final class AIReportThirdView: UIView {
                 }
             }
         }
-    }
-    
-    func hiddenTitleLabel() {
-        titleLabel.removeFromSuperview()
     }
     
     @objc private func buttonTap(_ sender: TopicDetailButton) {

@@ -25,7 +25,8 @@ final class AIReportDetailViewController: CustomBackViewController, View {
     var disposeBag = DisposeBag()
     weak var coordinator: AIReportCoordinator?
     private var dataEmpty = false
-    private let aIReportLoadingView = AIReportLoadingView()
+    private let aireportDetail: AIReportDetail
+    private let aiReportLoadingView = AIReportLoadingView()
     private let firstDetailView = AIReportFirstView()
     private let secondDetailView = AIReportSecondView()
     private let thirdDetailView = AIReportThirdView()
@@ -50,8 +51,9 @@ final class AIReportDetailViewController: CustomBackViewController, View {
         $0.layer.borderColor = UIColor.mainPurple.cgColor
     }
     
-    init(step: AIReportViewStep) {
+    init(step: AIReportViewStep, detail: AIReportDetail) {
         self.step = step
+        self.aireportDetail = detail
         super.init(nibName: nil, bundle: nil)
         nextButton.setTitle(step == .third ? "한 눈에 보기" : "다음", for: .normal)
     }
@@ -64,14 +66,17 @@ final class AIReportDetailViewController: CustomBackViewController, View {
         super.viewDidLoad()
         self.delegate = self
         title = "주간 AI 리포트"
-        setupViews()
-        setupFlexLayout()
         
-        if step == .full || step == .history {
-            hiddenSubviesTitle()
-        }
         if step == .first {
             showLoading()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                self.aiReportLoadingView.isHidden = true
+                self.setupViews()
+                self.setupFlexLayout()
+            }
+        } else {
+            setupViews()
+            setupFlexLayout()
         }
     }
     
@@ -83,13 +88,14 @@ final class AIReportDetailViewController: CustomBackViewController, View {
     func bind(reactor: AIReportReactor) {
         nextButton.rx.tap
             .subscribe(onNext: { [weak self] in
-                switch self?.step {
+                guard let self else { return }
+                switch step {
                 case .first:
-                    self?.coordinator?.showNext(step: .second)
+                    coordinator?.showDetail(step: .second, detail: aireportDetail)
                 case .second:
-                    self?.coordinator?.showNext(step: .third)
+                    coordinator?.showDetail(step: .third, detail: aireportDetail)
                 case .third:
-                    self?.coordinator?.showNext(step: .full)
+                    coordinator?.showDetail(step: .full, detail: aireportDetail)
                 default:
                     break
                 }
@@ -97,7 +103,7 @@ final class AIReportDetailViewController: CustomBackViewController, View {
             .disposed(by: disposeBag)
         
         thirdDetailView.onTapTopic = {
-            self.coordinator?.showNext(step: .history)
+            self.coordinator?.shoHistoryCard()
         }
     }
     
@@ -105,6 +111,10 @@ final class AIReportDetailViewController: CustomBackViewController, View {
         view.addSubview(backgroundView)
         view.addSubview(scrollView)
         scrollView.addSubview(contentContainer)
+        
+        firstDetailView.configure(detail: aireportDetail, isInteration: step != .full && step != .history)
+        secondDetailView.configure(detail: aireportDetail, hiddenTitle: step == .full || step == .history)
+        thirdDetailView.configure(detail: aireportDetail, hiddenTitle: step == .full || step == .history)
     }
     
     private func setupFlexLayout() {
@@ -160,20 +170,11 @@ final class AIReportDetailViewController: CustomBackViewController, View {
         scrollView.contentSize = contentContainer.frame.size
     }
     
-    private func hiddenSubviesTitle() {
-        secondDetailView.hiddenTitleLabel()
-        thirdDetailView.hiddenTitleLabel()
-    }
-    
     private func showLoading() {
-        view.addSubview(aIReportLoadingView)
+        view.addSubview(aiReportLoadingView)
         
-        aIReportLoadingView.pin
+        aiReportLoadingView.pin
             .all()
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            self.aIReportLoadingView.isHidden = true
-        }
     }
 }
 

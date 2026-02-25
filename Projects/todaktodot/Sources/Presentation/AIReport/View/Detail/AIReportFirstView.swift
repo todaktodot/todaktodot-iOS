@@ -13,7 +13,7 @@ import Lottie
 
 final class AIReportFirstView: UIView {
     private let syncBoxBackground = UIImageView().then {
-        $0.image = UIImage(resource: .purpleBoxHigh)
+        $0.image = UIImage(resource: .purpleBoxHigh) // TODO: 퍼센트 별로 배경 달라야함
         $0.contentMode = .scaleAspectFit
     }
     
@@ -36,15 +36,17 @@ final class AIReportFirstView: UIView {
     }
     
     private let talkCountLabel = TDLabel().then {
-        $0.text = "127개"
+        $0.text = "000개"
         $0.font = .pretenSemiBold(28)
         $0.textColor = .grayScale800
+        $0.textAlignment = .right
     }
     
     private let syncPercentLabel = TDLabel().then {
-        $0.text = "78%"
+        $0.text = "000%"
         $0.font = .pretenMedium(68)
         $0.textColor = .white
+        $0.textAlignment = .right
     }
     
     private let progressBackground = UIView().then {
@@ -65,22 +67,37 @@ final class AIReportFirstView: UIView {
     override init(frame: CGRect = .zero) {
         super.init(frame: frame)
         setupViews()
-        configure(data: AIReportDetail.mock)
     }
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
-    func configure(data: AIReportDetail) {
-        dateLabel.text = "\(data.startDt) - \(data.endDt)"
-        syncPercentLabel.text = "\(data.totalSyncRate)%"
-        talkCountLabel.text = "\(data.totalDailycardAnswerCnt)개"
+    func configure(detail: AIReportDetail, isInteration: Bool) {
+        if isInteration {
+            let steps = 20
+            let duration: Double = 0.5
+            
+            for i in 0...steps {
+                let delay = Double(i) * (duration / Double(steps))
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                    let currentSyncPercent = (detail.totalSyncRate * i) / steps
+                    let currentTalkCount = (detail.totalDailycardAnswerCnt * i) / steps
+                    self.syncPercentLabel.text = "\(currentSyncPercent)%"
+                    self.talkCountLabel.text = "\(currentTalkCount)개"
+                }
+            }
+        } else {
+            syncPercentLabel.text = "\(detail.totalSyncRate)%"
+            talkCountLabel.text = "\(detail.totalDailycardAnswerCnt)개"
+        }
         
-        progressView1.setProgress(CGFloat(Int(data.economySyncRate)!) / 100)
-        progressView2.setProgress(CGFloat(Int(data.lifeSyncRate)!) / 100)
-        progressView3.setProgress(CGFloat(Int(data.loveSyncRate)!) / 100)
-        circleProgress.setProgress(CGFloat(Int(data.dailycardAnswerRate)!) / 100)
+        dateLabel.text = "\(detail.startDt) ~ \(detail.endDt)"
+        
+        progressView1.setProgress(detail.economySyncRate, animated: isInteration)
+        progressView2.setProgress(detail.lifeSyncRate, animated: isInteration)
+        progressView3.setProgress(detail.loveSyncRate, animated: isInteration)
+        circleProgress.setProgress(detail.dailycardAnswerRate, animated: isInteration)
     }
     
     private func setupViews() {

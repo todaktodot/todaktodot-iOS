@@ -13,7 +13,7 @@ import Then
 import Lottie
 
 final class AIReportStorageView: UIView {
-    var onCardTap: ((AIReportWeekCardView) -> Void)?
+    var onCardTap: ((Int) -> Void)?
     
     private let titleLabel = TDLabel().then {
         $0.text = "지난 우리의 대화를\nAI 리포트로 확인해보세요"
@@ -41,11 +41,22 @@ final class AIReportStorageView: UIView {
     private let monthContentView = UIView()
     private var monthButtons: [MonthButton] = []
     private var selectedMonth: Int = 1
+    private let cards: [AIReportWeekCardView] = [
+        AIReportWeekCardView(),
+        AIReportWeekCardView(),
+        AIReportWeekCardView(),
+        AIReportWeekCardView()
+    ]
     
     override init(frame: CGRect = .zero) {
         super.init(frame: frame)
         setupViews()
         setupMonthButtons()
+        for i in 0..<4 {
+            cards[i].configure(month: "1", week: String(i + 1), isActive: i % 2 == 0, reportId: i)
+            
+            flex.layout()
+        }
     }
     
     required init?(coder: NSCoder) {
@@ -59,7 +70,13 @@ final class AIReportStorageView: UIView {
         monthScrollView.contentSize = monthContentView.frame.size
     }
     
-    func setupViews() {
+    func configure(listData: [AIReportList]) {
+        for report in listData {
+            cards[Int(report.week)!-1].configure(month: report.month, week: report.week, isActive: true, reportId: report.reportId)
+        }
+    }
+    
+    private func setupViews() {
         monthScrollView.addSubview(monthContentView)
         
         self.flex.define {
@@ -74,16 +91,9 @@ final class AIReportStorageView: UIView {
                 .marginTop(20)
                 .marginHorizontal(-20)
             
-            let cards: [AIReportWeekCardView] = [
-                AIReportWeekCardView(title: "9월 4주차", state: .active),
-                AIReportWeekCardView(title: "9월 3주차", state: .inactive),
-                AIReportWeekCardView(title: "9월 2주차", state: .inactive),
-                AIReportWeekCardView(title: "9월 1주차", state: .active)
-            ]
-            
             cards.forEach { card in
-                card.onTap = { [weak self] in
-                    self?.onCardTap?(card)
+                card.onTap = { [weak self] reportId in
+                    self?.onCardTap?(reportId)
                 }
             }
 
@@ -98,7 +108,7 @@ final class AIReportStorageView: UIView {
         }
     }
     
-    func setupMonthButtons() {
+    private func setupMonthButtons() {
         let months = [1,2,3,4,5,6,7,8,9,10,11,12]
 
         monthButtons = months.map {
@@ -122,8 +132,8 @@ final class AIReportStorageView: UIView {
                 }
             }
     }
-
-    @objc private func monthTapped(_ sender: MonthButton) {
+    
+    private func updateMonthButtons(_ sender: MonthButton) {
         selectedMonth = sender.month
         monthButtons.forEach { $0.update(selected: sender.month) }
         let targetX =
@@ -140,5 +150,14 @@ final class AIReportStorageView: UIView {
             CGPoint(x: offsetX, y: 0),
             animated: true
         )
+    }
+
+    @objc private func monthTapped(_ sender: MonthButton) {
+        updateMonthButtons(sender)
+        for i in 0..<4 {
+            cards[i].configure(month: String(sender.month), week: String(i + 1), isActive: i % 2 == 0, reportId: i)
+            
+            flex.layout()
+        }
     }
 }

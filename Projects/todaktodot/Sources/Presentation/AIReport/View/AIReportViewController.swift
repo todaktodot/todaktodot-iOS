@@ -76,6 +76,25 @@ final class AIReportViewController: BaseViewController, View {
     }
     
     func bind(reactor: AIReportReactor) {
+        reactor.state
+            .compactMap { $0.reportData }
+            .subscribe { [weak self] detail, step in
+                switch step { // TODO: 생성 후 재 진입시 인터렉션 처리
+                case .first:
+                    self?.coordinator?.showDetail(step: .first, detail: detail)
+                case .history:
+                    self?.coordinator?.showDetail(step: .history, detail: detail)
+                default:
+                    break
+                }
+            }
+            .disposed(by: disposeBag)
+        
+        lastWeekAIReportView.reportDetailButton.rx.tap
+            .map { AIReportReactor.Action.tapReportDetailButton }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
         lastWeekButton.rx.tap
             .subscribe(onNext: { [weak self] in
                 guard let self else { return }
@@ -92,15 +111,8 @@ final class AIReportViewController: BaseViewController, View {
             })
             .disposed(by: disposeBag)
         
-        lastWeekAIReportView.reportDetailButton.rx.tap
-            .subscribe(onNext: { [weak self] in
-                guard let self else { return }
-                self.coordinator?.showNext(step: .first)
-            })
-            .disposed(by: disposeBag)
-        
-        storageAIReportView.onCardTap = { [weak self] _ in
-            self?.coordinator?.showDetail()
+        storageAIReportView.onCardTap = { id in
+            reactor.action.onNext(.tapStorageReport(id))
         }
     }
     
