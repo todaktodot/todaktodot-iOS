@@ -66,6 +66,7 @@ final class TabBarCoordinator: Coordinator {
 
 final class HomeCoordinator: Coordinator {
     let networkManager = NetworkManager.shared
+    private let cardUseCase: CardUseCase
     
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
@@ -73,12 +74,12 @@ final class HomeCoordinator: Coordinator {
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
+        
+        let cardRepository = CardRepositoryImpl(networkManager: networkManager)
+        self.cardUseCase = CardUseCase(repository: cardRepository)
     }
     
     func start() {
-        let cardRepository = CardRepositoryImpl(networkManager: networkManager)
-        let cardUseCase = CardUseCase(repository: cardRepository)
-        
         let reactor = HomeReactor(cardUseCase: cardUseCase)
         let homeViewController = HomeViewController(reactor: reactor)
         homeViewController.coordinator = self
@@ -88,8 +89,6 @@ final class HomeCoordinator: Coordinator {
     }
     
     func showDailyCard(todayCards: [QuestionCard], selectedType: CardType) {
-        let cardRepository = CardRepositoryImpl(networkManager: networkManager)
-        let cardUseCase = CardUseCase(repository: cardRepository)
         let reactor = DailyCardReactor(cardUseCase: cardUseCase, dailyCards: todayCards, selectedType: selectedType)
         let dailyCardViewController = DailyCardViewController(reactor: reactor)
         dailyCardViewController.coordinator = self
@@ -98,8 +97,6 @@ final class HomeCoordinator: Coordinator {
     }
     
     func showDailyCardDetail(card: QuestionCard) {
-        let cardRepository = CardRepositoryImpl(networkManager: networkManager)
-        let cardUseCase = CardUseCase(repository: cardRepository)
         let reactor = DailyCardReactor(cardUseCase: cardUseCase, dailyCards: [card], selectedType: .none)
         let dailyCardDetailViewController = DailyCardDetailViewController(card: card, reactor: reactor)
         dailyCardDetailViewController.coordinator = self
@@ -108,8 +105,6 @@ final class HomeCoordinator: Coordinator {
     }
     
     func showBalanceCardDetail(card: QuestionCard) {
-        let cardRepository = CardRepositoryImpl(networkManager: networkManager)
-        let cardUseCase = CardUseCase(repository: cardRepository)
         let reactor = DailyCardReactor(cardUseCase: cardUseCase, dailyCards: [card], selectedType: .none)
         let dailyCardDetailViewController = DailyCardDetailViewController(card: card, reactor: reactor)
         dailyCardDetailViewController.coordinator = self

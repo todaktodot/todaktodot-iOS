@@ -34,14 +34,14 @@ final class CardRepositoryImpl: CardRepository {
     func assignCards(startDate: String, endDate: String) -> Observable<Result<Void, Error>> {
         let endpoint = Endpoint<Empty>(
             baseURL: .todaktodotAPI,
-            //            path: "/api/daily-card/assign/me
-            path: "/api/daily-card/assign/me?startDate=\(startDate)&endDate=\(endDate)",
-            method: .post
-            //            encodingType: .url,
-            //            parameters: [
-            //                "startDate": startDate,
-            //                "endDate": endDate
-            //            ]
+//            path: "/api/daily-card/assign/me?startDate=\(startDate)&endDate=\(endDate)",
+            path: "/api/daily-card/assign/me",
+            method: .post,
+            encodingType: .body,
+            parameters: [
+                "startDate": startDate,
+                "endDate": endDate
+            ]
         )
         
         return networkManager.request(with: endpoint)
@@ -91,7 +91,7 @@ final class CardRepositoryImpl: CardRepository {
     func fetchHistoryCards(startDate: String, endDate: String) -> Observable<Result<[QuestionCard], Error>> {
         let endpoint = Endpoint<CardHistoryResponseDTO>(
             baseURL: .todaktodotAPI,
-            path: "/api/daily-card/history/with-details",
+            path: "/api/daily-card/history/with-details2",
             method: .get,
             parameters: [
                 "startDate": startDate,
