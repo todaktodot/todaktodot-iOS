@@ -22,7 +22,7 @@ final class MypageRepositoryImpl: MypageRepository {
         let endpoint = Endpoint<UserDTO>(
             baseURL: .todaktodotAPI,
             path: "/api/profile/detail",
-            method: .get,
+            method: .get
         )
 
         return networkManager.request(with: endpoint)
@@ -56,7 +56,7 @@ final class MypageRepositoryImpl: MypageRepository {
         let endpoint = Endpoint<Empty>(
             baseURL: .todaktodotAPI,
             path: "/api/couple/disconnect",
-            method: .post,
+            method: .post
         )
 
         return networkManager.request(with: endpoint)
