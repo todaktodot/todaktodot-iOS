@@ -12,6 +12,7 @@ struct CardService {
     
     private let calendar = Calendar.current
 
+    /// 메모리에 카드 저장
     func saveWeeklyCards(_ cards: [QuestionCard]) {
         guard let lastDate = UserdefaultKey.lastWeeklyCardDate else {
             UserdefaultKey.weeklyCards = cards
@@ -24,6 +25,7 @@ struct CardService {
         UserdefaultKey.weeklyCards = Array(keep) + cards
     }
     
+    /// 메모리에 저장된 오늘 카드 get
     func getTodayCards() -> [QuestionCard] {
         let today = getCardSystemDate()
         return UserdefaultKey.weeklyCards.filter { card in

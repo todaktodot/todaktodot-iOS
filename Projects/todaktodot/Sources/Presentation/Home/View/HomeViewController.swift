@@ -160,11 +160,10 @@ final class HomeViewController: BaseViewController, View {
     
     func bind(reactor: HomeReactor) {
         reactor.state.map { $0.historyCards }
-            .skip(2) // 초기값 + concat
+            .skip(1)
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] historyCards in
                 guard let self = self else { return }
-                print("🟢 패치패치")
                 self.HistoryCards = historyCards
                 self.isLoadingHistoryCards = false
                 self.updateWeekCards()
@@ -242,7 +241,6 @@ final class HomeViewController: BaseViewController, View {
                 
                 // 로컬에 저장된 오늘 카드 로드
                 let todayCards = CardService.shared.getTodayCards()
-                print("🔘 Arrow button tapped, todayCards count: \(todayCards.count), selectedType: \(selectedType)")
                 if todayCards.isEmpty {
                     print("⚠️ todayCards is empty!")
                 }
@@ -294,7 +292,6 @@ final class HomeViewController: BaseViewController, View {
             let endDate = today.toYYYYMMDD()
             
             print("📅 조회 범위: \(startDate) ~ \(endDate)")
-            print("🔥 fetchHistoryCards 호출됨")
             reactor?.action.onNext(.fetchHistoryCards(startDate: startDate, endDate: endDate))
     }
     
@@ -523,8 +520,6 @@ extension HomeViewController {
         chip1.flex.width(chip1.intrinsicContentSize.width)
         chip2.flex.width(chip2.intrinsicContentSize.width)
         chip1.superview?.flex.layout(mode: .adjustWidth)
-        
-        // TODO: 카드 모드 선택 완료시 다음줄에 칩뷰 1개 추가
     }
     
     private func updateMainCardFromHistory(_ cards: [QuestionCard]) {
@@ -694,7 +689,6 @@ extension HomeViewController {
                 },
                 completion: { [weak self] _ in
                     if index == self?.weekCardsContainer.subviews.count ?? 0 - 1 {
-                        print("✅ 애니메이션 완료")
                     }
                 }
             )

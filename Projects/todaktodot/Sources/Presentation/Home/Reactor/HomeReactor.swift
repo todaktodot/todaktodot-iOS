@@ -42,6 +42,7 @@ final class HomeReactor: Reactor {
         case setShowNotificationAlert(Bool)
         case setCoupleConnected(Bool)
         case setHistoryCards([QuestionCard])
+        case setHistoryCardsWithStatus([QuestionCard], AnswerStatus)
         case setTodayCards([QuestionCard])
         case setError(Error)
     }
@@ -92,28 +93,21 @@ final class HomeReactor: Reactor {
             return .just(.setShowNotificationAlert(false))
         case .fetchHistoryCards(let startDate, let endDate):
             return cardUseCase.fetchHistoryCards(startDate: startDate, endDate: endDate)
-                .flatMap { result -> Observable<Mutation> in
+                .map { result -> Mutation in
                     switch result {
                     case .success(let cards):
                         let today = CardService.shared.getCardSystemDate()
                         let calendar = Calendar.current
                         let todayCards = cards.filter { calendar.isDate($0.date, inSameDayAs: today) }
                         let status = todayCards.isEmpty ? .bothUnanswered : self.determineAnswerStatus(from: todayCards)
-                        return .concat([
-                            .just(.setHistoryCards(cards)),
-                            .just(.setAnswerStatus(status))
-                        ])
+                        return .setHistoryCardsWithStatus(cards, status)
                     case .failure(let error):
                         let mockCards = MockCardData.historyCards
                         let today = Date()
                         let calendar = Calendar.current
                         let todayCards = mockCards.filter { calendar.isDate($0.date, inSameDayAs: today) }
                         let status = todayCards.isEmpty ? .bothUnanswered : self.determineAnswerStatus(from: todayCards)
-                        return .concat([
-                            .just(.setHistoryCards(mockCards)),
-                            .just(.setAnswerStatus(status))
-                        ])
-//                        return .just(.setError(error))
+                        return .setHistoryCardsWithStatus(mockCards, status)
                     }
                 }
             
@@ -211,6 +205,9 @@ final class HomeReactor: Reactor {
             newState.isCoupleConnected = connected
         case .setHistoryCards(let cards):
             newState.historyCards = cards
+        case .setHistoryCardsWithStatus(let cards, let status):
+            newState.historyCards = cards
+            newState.answerStatus = status
         case .setTodayCards(let cards):
             newState.todayCards = cards
         case .setError:
