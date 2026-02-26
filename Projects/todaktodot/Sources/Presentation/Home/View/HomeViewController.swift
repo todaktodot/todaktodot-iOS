@@ -23,7 +23,7 @@ final class HomeViewController: BaseViewController, View {
     private let rootFlexContainer = UIView()
     private let scrollView = UIScrollView()
     private let contentContainer = UIView()
-
+    private var firstAnimation = true
     private let mainCard = UIView().then {
         $0.backgroundColor = .white
         $0.layer.cornerRadius = 20
@@ -128,7 +128,6 @@ final class HomeViewController: BaseViewController, View {
         super.viewDidLoad()
 // 테스트용 배치
 // reactor?.action.onNext(.assignCards)
-
         setupUI()
         showMainCardSkeleton()
         fetchAllCards()
@@ -160,16 +159,20 @@ final class HomeViewController: BaseViewController, View {
     }
     
     func bind(reactor: HomeReactor) {
-
-        // 히스토리 카드만 구독
         reactor.state.map { $0.historyCards }
-            .skip(1)
+            .skip(2) // 초기값 + concat
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] historyCards in
-                self?.HistoryCards = historyCards
-                self?.isLoadingHistoryCards = false
-                self?.updateWeekCards()
-                self?.updateMainCardFromHistory(historyCards)
+                guard let self = self else { return }
+                print("🟢 패치패치")
+                self.HistoryCards = historyCards
+                self.isLoadingHistoryCards = false
+                self.updateWeekCards()
+                self.updateMainCardFromHistory(historyCards)
+                if firstAnimation {
+                    cardAmimation()
+                    firstAnimation = false
+                }
             })
             .disposed(by: disposeBag)
         
@@ -291,6 +294,7 @@ final class HomeViewController: BaseViewController, View {
             let endDate = today.toYYYYMMDD()
             
             print("📅 조회 범위: \(startDate) ~ \(endDate)")
+            print("🔥 fetchHistoryCards 호출됨")
             reactor?.action.onNext(.fetchHistoryCards(startDate: startDate, endDate: endDate))
     }
     
@@ -643,6 +647,7 @@ extension HomeViewController {
     }
     
     private func setupHistoryCards() {
+        
         weekCardsContainer.subviews.forEach { $0.removeFromSuperview() }
         weekCardsContainer.layer.sublayers?.removeAll(where: { $0 is CAGradientLayer })
         
@@ -652,7 +657,10 @@ extension HomeViewController {
         }
         
         weekCardsContainer.flex.define { flex in
-            if !HistoryCards.isEmpty {
+            if UserdefaultKey.coupleType == .solo || HistoryCards.isEmpty {
+                let emptyView = createEmptyWeekView()
+                flex.addItem(emptyView)
+            } else {
                 let sortedCards = HistoryCards.sorted { $0.date > $1.date }
                 sortedCards.enumerated().forEach { index, card in
                     let cardView = createWeekCard(card: card, index: index)
@@ -661,15 +669,15 @@ extension HomeViewController {
                         .height(isLast ? 83 : 83 + 60)
                         .marginTop(index == 0 ? 0 : -60)
                 }
-            } else {
-                let emptyView = createEmptyWeekView()
-                flex.addItem(emptyView)
             }
         }
         
         weekCardsContainer.flex.layout()
         weekCardsContainer.pin.width(view.frame.width - 40)
         
+    }
+    
+    func cardAmimation() {
         weekCardsContainer.subviews.enumerated().forEach { index, view in
             view.transform = CGAffineTransform(translationX: 0, y: -50)
             view.alpha = 0
@@ -679,11 +687,17 @@ extension HomeViewController {
                 delay: Double(index) * 0.1,
                 usingSpringWithDamping: 0.8,
                 initialSpringVelocity: 0.3,
-                options: .curveEaseOut
-            ) {
-                view.transform = .identity
-                view.alpha = 1
-            }
+                options: .curveEaseOut,
+                animations: {
+                    view.transform = .identity
+                    view.alpha = 1
+                },
+                completion: { [weak self] _ in
+                    if index == self?.weekCardsContainer.subviews.count ?? 0 - 1 {
+                        print("✅ 애니메이션 완료")
+                    }
+                }
+            )
         }
     }
     

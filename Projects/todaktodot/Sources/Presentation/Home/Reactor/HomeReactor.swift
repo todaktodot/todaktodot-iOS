@@ -50,7 +50,7 @@ final class HomeReactor: Reactor {
         var answerStatus: AnswerStatus = .bothUnanswered
         var isPoked: Bool = false
         var shouldShowNotificationAlert: Bool = true
-        var isCoupleConnected: Bool = UserdefaultKey.couple // TODO: 커플 여부 임시로 여기에 넣어둘게영
+        var isCoupleConnected: Bool = UserdefaultKey.coupleType == .connected
         var historyCards: [QuestionCard] = []
         var todayCards: [QuestionCard] = []
     }
@@ -83,13 +83,10 @@ final class HomeReactor: Reactor {
         case .updateAnswerStatus(let status):
             return .just(.setAnswerStatus(status))
         case .tapPokeButton:
-            // TODO: 서버연결 - 콕 찌르기
             return .just(.setPoked(true))
         case .tapConnectCoupleButton:
-            // TODO: 서버연결 - 커플 연결
-            return .just(.setCoupleConnected(true))
+            return .just(.setCoupleConnected(UserdefaultKey.coupleType == .connected))
         case .checkFirstLaunch:
-            // TODO: 최초 실행 여부 확인
             return .just(.setShowNotificationAlert(true))
         case .dismissNotificationAlert:
             return .just(.setShowNotificationAlert(false))
@@ -98,8 +95,7 @@ final class HomeReactor: Reactor {
                 .flatMap { result -> Observable<Mutation> in
                     switch result {
                     case .success(let cards):
-                        // TODO: 오늘 조회된 카드 없으면 둘 다 대답하지 않은것으로 지정. 확인필요. 해당 로직이면 카드 없을때 오늘 UI용 더미카드 만들어줘야함
-                        let today = Date()
+                        let today = CardService.shared.getCardSystemDate()
                         let calendar = Calendar.current
                         let todayCards = cards.filter { calendar.isDate($0.date, inSameDayAs: today) }
                         let status = todayCards.isEmpty ? .bothUnanswered : self.determineAnswerStatus(from: todayCards)
@@ -140,9 +136,8 @@ final class HomeReactor: Reactor {
 //                        return .just(.setError(error))
                     }
                 }
-            //TODO: 저장된 카드 중 오늘 카드 패치?
         case .loadTodayCards:
-            let todayString = Date().toYYYYMMDD()
+            let todayString = CardService.shared.getCardSystemDate().toYYYYMMDD()
             return cardUseCase.fetchWeeklyCards(startDate: todayString, endDate: todayString)
                 .flatMap { result -> Observable<Mutation> in
                     switch result {
