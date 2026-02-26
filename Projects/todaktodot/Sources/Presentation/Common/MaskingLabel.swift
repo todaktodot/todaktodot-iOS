@@ -143,7 +143,7 @@ final class MaskingLabel: UILabel {
     @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
         guard isMasked else { return }
         
-        let haptic = UIImpactFeedbackGenerator(style: .soft)
+        let haptic = UIImpactFeedbackGenerator(style: .medium)
         haptic.impactOccurred()
         
         lastTouchPoint = gesture.location(in: self)
@@ -307,21 +307,21 @@ extension MaskingLabel {
         // Start
         let bubblesPerBatch: Int = 70 /// 타임(bubbleBatchInterval)당 생성할 버블. 근데 글자 전체에서 80개라서 글자수 당 몇개  생성할지 바꿔야할지도
         let bubbleBatchInterval: TimeInterval = 0.05  /// 버블 생성 간격
-        let bubbleStartOffsetXRange: CGFloat = 5 /// 한 글자 중심 랜덤 버블 생성 반경.
+        let bubbleStartOffsetXRange: CGFloat = 6 /// 한 글자 중심 랜덤 버블 생성 반경.
         let bubbleStartOffsetYRange: CGFloat = 4
         
         // During
         let bubbleAnimateMinDuration: Double = 1.0 /// 버블 직선 운동 최소 지속시간
         let bubbleAnimateMaxDuration: Double = 1.0 /// 버블 직선 운동 최대 지속시간
         let minBubbleDistance: CGFloat = 7 /// 버블 직선 운동 최소 거리
-        let maxBubbleDistance: CGFloat = 13/// 버블 직선 운동 최대 거리
+        let maxBubbleDistance: CGFloat = 12/// 버블 직선 운동 최대 거리
         let bubbleStartOpacity: Double = 1.0/// 버블 시작 투명도
         let bubbleEndOpacity: Double = 0.4 /// 버블 마지막 투명도
         let bubbleStartSize: Double = 1.3/// 버블 시작 크기
         let bubbleEndSize: Double = 0.3 /// 버블 마지막 크기
         
         // End
-        let bubbleExplosionDistance: CGFloat = 15  /// 터치부근 버블 파동반경
-        let bubbleExplosionDuration: Double = 1.0 /// 터치시 버블 파동 애니메이션 지속시간
+        let bubbleExplosionDistance: CGFloat = 20  /// 터치부근 버블 파동반경
+        let bubbleExplosionDuration: Double = 0.8 /// 터치시 버블 파동 애니메이션 지속시간
     }
 }
