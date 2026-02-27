@@ -48,17 +48,10 @@ final class DailyCardViewController: UIViewController, View {
     }
     
     func bind(reactor: DailyCardReactor) {
-        reactor.state.map { $0.historySelectedType }
-            .distinctUntilChanged()
-            .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] historyType in
-                guard let self = self else { return }
-                self.updateButtonStyle(self.situationButton, isSelected: historyType == .roleplay)
-                self.updateButtonStyle(self.balanceButton, isSelected: historyType == .balance)
-            })
-            .disposed(by: disposeBag)
-        
         situationButton.rx.tap
+            .do(onNext: { [weak self] in
+                self?.animateButtonTap(self?.situationButton)
+            })
             .map { CardType.roleplay }
             .withLatestFrom(reactor.state.map { $0.historySelectedType }) { ($0, $1) }
             .subscribe(onNext: { [weak self] selectedType, historyType in
@@ -67,6 +60,9 @@ final class DailyCardViewController: UIViewController, View {
             .disposed(by: disposeBag)
         
         balanceButton.rx.tap
+            .do(onNext: { [weak self] in
+                self?.animateButtonTap(self?.balanceButton)
+            })
             .map { CardType.balance }
             .withLatestFrom(reactor.state.map { $0.historySelectedType }) { ($0, $1) }
             .subscribe(onNext: { [weak self] selectedType, historyType in
@@ -218,6 +214,28 @@ extension DailyCardViewController {
         } else {
             let action: DailyCardReactor.Action = selectedType == .roleplay ? .tapSituationButton : .tapBalanceButton
             reactor.action.onNext(action)
+        }
+    }
+    
+    
+    private func animateButtonTap(_ button: UIButton?) {
+        guard let button = button else { return }
+        
+        UIView.animate(withDuration: 0.15, animations: {
+            button.layer.borderWidth = 1
+            button.layer.borderColor = UIColor.mainPurple.cgColor
+            button.layer.shadowColor = UIColor.mainPurple.withAlphaComponent(0.2).cgColor
+            button.layer.shadowOpacity = 1
+            button.layer.shadowOffset = CGSize(width: 0, height: 2)
+            button.layer.shadowRadius = 8
+        }) { _ in
+            UIView.animate(withDuration: 0.15) {
+                button.layer.borderWidth = 0
+                button.layer.shadowColor = UIColor.black.cgColor
+                button.layer.shadowOpacity = 0.05
+                button.layer.shadowOffset = CGSize(width: 0, height: 2)
+                button.layer.shadowRadius = 8
+            }
         }
     }
     
