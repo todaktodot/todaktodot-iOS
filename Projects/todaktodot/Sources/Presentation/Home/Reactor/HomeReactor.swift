@@ -45,6 +45,7 @@ final class HomeReactor: Reactor {
         case setHistoryCardsWithStatus([QuestionCard], AnswerStatus)
         case setTodayCards([QuestionCard])
         case setError(Error)
+        case setShowTooltip(Bool)
     }
     
     struct State {
@@ -54,6 +55,7 @@ final class HomeReactor: Reactor {
         var isCoupleConnected: Bool = UserdefaultKey.coupleType == .connected
         var historyCards: [QuestionCard] = []
         var todayCards: [QuestionCard] = []
+        var shouldShowTooltip: Bool = false
     }
     
     let initialState = State()
@@ -78,7 +80,6 @@ final class HomeReactor: Reactor {
             return .bothUnanswered
         }
     }
-    
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .updateAnswerStatus(let status):
@@ -93,21 +94,32 @@ final class HomeReactor: Reactor {
             return .just(.setShowNotificationAlert(false))
         case .fetchHistoryCards(let startDate, let endDate):
             return cardUseCase.fetchHistoryCards(startDate: startDate, endDate: endDate)
-                .map { result -> Mutation in
+                .flatMap { result -> Observable<Mutation> in
                     switch result {
                     case .success(let cards):
                         let today = CardService.shared.getCardSystemDate()
                         let calendar = Calendar.current
                         let todayCards = cards.filter { calendar.isDate($0.date, inSameDayAs: today) }
                         let status = todayCards.isEmpty ? .bothUnanswered : self.determineAnswerStatus(from: todayCards)
-                        return .setHistoryCardsWithStatus(cards, status)
+                        
+                        let todayString = today.toYYYYMMDD()
+                        let shouldShow = status == .bothAnswered && UserdefaultKey.lastTooltipShownDate != todayString
+                        
+                        if shouldShow {
+                            UserdefaultKey.lastTooltipShownDate = todayString
+                        }
+                        
+                        return .concat([
+                            .just(.setHistoryCardsWithStatus(cards, status)),
+                            .just(.setShowTooltip(shouldShow))
+                        ])
                     case .failure(let error):
                         let mockCards = MockCardData.historyCards
                         let today = Date()
                         let calendar = Calendar.current
                         let todayCards = mockCards.filter { calendar.isDate($0.date, inSameDayAs: today) }
                         let status = todayCards.isEmpty ? .bothUnanswered : self.determineAnswerStatus(from: todayCards)
-                        return .setHistoryCardsWithStatus(mockCards, status)
+                        return .just(.setHistoryCardsWithStatus(mockCards, status))
                     }
                 }
             
@@ -212,6 +224,8 @@ final class HomeReactor: Reactor {
             newState.todayCards = cards
         case .setError:
             break
+        case .setShowTooltip(let show):
+            newState.shouldShowTooltip = show
         }
         return newState
     }

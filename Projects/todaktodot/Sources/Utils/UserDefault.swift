@@ -61,6 +61,9 @@ enum UserdefaultKey {
     @UserDefault(key: "lastWeeklyCardDate", defaultValue: nil)
     static var lastWeeklyCardDate: Date?
     
+    @UserDefault(key: "lastTooltipShownDate", defaultValue: nil)
+    static var lastTooltipShownDate: String?
+    
     static func resetUserDefaults() {
         let domain = Bundle.main.bundleIdentifier!
         UserDefaults.standard.removePersistentDomain(forName: domain)

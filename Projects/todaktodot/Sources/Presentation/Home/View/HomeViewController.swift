@@ -109,6 +109,25 @@ final class HomeViewController: BaseViewController, View {
         $0.numberOfLines = 0
     }
     
+    private let tooltipContainer = UIView().then {
+        $0.isHidden = true
+        $0.clipsToBounds = false
+    }
+
+    private let tooltipImageView = UIImageView().then {
+        $0.image = UIImage(named: "tooltip")
+        $0.contentMode = .scaleToFill
+    }
+
+    private let tooltipLabel = TDLabel().then {
+        $0.text = "방금 완성된 오늘의 대화예요!\n눌러서 확인해보세요 🙂"
+        $0.font = .pretenMedium(14)
+        $0.textColor = .grayScale800
+        $0.textAlignment = .left
+        $0.numberOfLines = 0
+        $0.lineBreakMode = .byWordWrapping
+    }
+    
     private let weekCardsContainer = UIView()
     var HistoryCards: [QuestionCard] = []
     private var isLoadingHistoryCards = true
@@ -172,6 +191,14 @@ final class HomeViewController: BaseViewController, View {
                     cardAmimation()
                     firstAnimation = false
                 }
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state.map { $0.shouldShowTooltip }
+            .distinctUntilChanged()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] shouldShow in
+                self?.tooltipContainer.isHidden = !shouldShow
             })
             .disposed(by: disposeBag)
         
@@ -264,13 +291,30 @@ final class HomeViewController: BaseViewController, View {
         
         setupMainCard()
         
+        tooltipContainer.addSubview(tooltipImageView)
+        tooltipContainer.flex.define { flex in
+            flex.addItem(tooltipLabel)
+        }
+        
         contentContainer.flex
             .paddingHorizontal(20)
             .paddingBottom(150)
             .define { flex in
                 flex.addItem(mainCard).marginVertical(20)
                 flex.addItem(mainCardSkeleton).marginVertical(20).position(.absolute).top(0).left(20).right(20)
-                flex.addItem(weekCardsContainer).marginTop(36)
+                flex.addItem().marginTop(36).width(100%).define { wrapperFlex in
+                    wrapperFlex.view?.clipsToBounds = false
+                    wrapperFlex.addItem(weekCardsContainer)
+                    
+                    wrapperFlex.addItem(tooltipContainer)
+                        .paddingLeft(40)
+                        .paddingRight(50)
+                        .paddingTop(30)
+                        .paddingBottom(45)
+                        .top(-35)
+                        .right(-20)
+                        .position(.absolute)
+                }
             }
     }
     
