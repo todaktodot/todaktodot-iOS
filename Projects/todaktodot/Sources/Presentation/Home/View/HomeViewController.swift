@@ -129,7 +129,7 @@ final class HomeViewController: BaseViewController, View {
     }
     
     private let weekCardsContainer = UIView()
-    var HistoryCards: [QuestionCard] = []
+    var historyCards: [QuestionCard] = []
     private var isLoadingHistoryCards = true
     private let shimmerLayer = CAGradientLayer()
     
@@ -183,7 +183,7 @@ final class HomeViewController: BaseViewController, View {
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] historyCards in
                 guard let self = self else { return }
-                self.HistoryCards = historyCards
+                self.historyCards = historyCards
                 self.isLoadingHistoryCards = false
                 self.updateWeekCards()
                 self.updateMainCardFromHistory(historyCards)
@@ -263,7 +263,7 @@ final class HomeViewController: BaseViewController, View {
                 guard let self = self else { return }
                 // 히스토리에서 오늘 카드 찾기 (8시 기준)
                 let cardSystemDate = CardService.shared.getCardSystemDate()
-                let todayCard = self.HistoryCards.first { Calendar.current.isDate($0.date, inSameDayAs: cardSystemDate) }
+                let todayCard = self.historyCards.first { Calendar.current.isDate($0.date, inSameDayAs: cardSystemDate) }
                 let selectedType = todayCard?.type ?? .none
                 
                 // 로컬에 저장된 오늘 카드 로드
@@ -387,6 +387,9 @@ final class HomeViewController: BaseViewController, View {
         
         let previousHeight = contentContainer.frame.height
         contentContainer.flex.layout(mode: .adjustHeight)
+        
+        tooltipContainer.flex.layout(mode: .adjustHeight)
+        tooltipImageView.frame = tooltipContainer.bounds
         
         if previousHeight != contentContainer.frame.height {
             scrollView.contentSize = contentContainer.frame.size
@@ -675,7 +678,7 @@ extension HomeViewController {
     
     @objc private func weekCardTapped(_ sender: UITapGestureRecognizer) {
         guard let tappedView = sender.view,
-              let card = HistoryCards.first(where: { $0.id == tappedView.tag }) else {
+              let card = historyCards.first(where: { $0.id == tappedView.tag }) else {
             return
         }
         if !card.user1Answered && !card.user2Answered {
@@ -696,11 +699,11 @@ extension HomeViewController {
         }
         
         weekCardsContainer.flex.define { flex in
-            if UserdefaultKey.coupleType == .solo || HistoryCards.isEmpty {
+            if UserdefaultKey.coupleType == .solo || historyCards.isEmpty {
                 let emptyView = createEmptyWeekView()
                 flex.addItem(emptyView)
             } else {
-                let sortedCards = HistoryCards.sorted { $0.date > $1.date }
+                let sortedCards = historyCards.sorted { $0.date > $1.date }
                 sortedCards.enumerated().forEach { index, card in
                     let cardView = createWeekCard(card: card, index: index)
                     let isLast = index == sortedCards.count - 1
