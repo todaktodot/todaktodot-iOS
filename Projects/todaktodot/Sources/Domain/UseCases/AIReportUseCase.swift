@@ -24,4 +24,8 @@ final class AIReportUseCase {
     func fetchAIReportList() -> Observable<[AIReportList]> {
         repository.fetchAIReportList()
     }
+    
+    func fetchHistoryCardDetail(coupleCardId: Int) -> Observable<QuestionCard?> {
+        repository.fetchHistoryCardDetail(coupleCardId: coupleCardId)
+    }
 }

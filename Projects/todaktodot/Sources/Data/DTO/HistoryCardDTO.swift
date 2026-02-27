@@ -10,8 +10,8 @@ import Foundation
 import Foundation
 
 struct CardHistoryResponseDTO: Decodable {
-    let startDate: String
-    let endDate: String
+    let startDate: String?
+    let endDate: String?
     let historyCards: [HistoryCardDTO]?
 }
 

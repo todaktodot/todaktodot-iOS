@@ -16,11 +16,15 @@ final class AIReportWeekCardView: UIView {
         case inactive
     }
     
-    var onTap: (() -> Void)?
+    var onTap: ((Int) -> Void)?
     
+    private var week: Int?
+    private var reportId: Int?
     private let titleLabel = UILabel().then {
+        $0.text = "1월 1주차"
         $0.font = .pretenSemiBold(18)
     }
+    
     private let dotView = UIView().then {
         $0.backgroundColor = .mainPurple
         $0.layer.cornerRadius = 4
@@ -40,40 +44,57 @@ final class AIReportWeekCardView: UIView {
         effect: UIBlurEffect(style: .light)
     )
     
-    init(title: String, state: State) {
+    init() {
         super.init(frame: .zero)
-        setupUI(title: title, state: state)
+        setupUI()
         
-        if state == .active {
-            let tapGesture = UITapGestureRecognizer(target: self, action: #selector(weekCardTapped))
-            addGestureRecognizer(tapGesture)
-        }   
     }
 
     required init?(coder: NSCoder) {
         fatalError()
     }
-
-    private func setupUI(title: String, state: State) {
-        layer.cornerRadius = 20
+    
+    func markDirty() {
+        titleLabel.flex.markDirty()
+        dotView.flex.markDirty()
+        subtitleLabel.flex.markDirty()
+    }
+    
+    func configure(month: Int, week: Int, isActive: Bool, reportId id: Int? = nil) {
+        self.week = week
+        titleLabel.text = "\(month)월 \(week)주차"
+        reportId = id
+        applyState(isActive)
         
-        titleLabel.text = title
+        dotView.flex.display(isActive ? .flex : .none)
+        subtitleLabel.flex.display(isActive ? .none : .flex)
+        
+        titleLabel.flex.markDirty()
+        dotView.flex.markDirty()
+        subtitleLabel.flex.markDirty()
+        
+        if isActive {
+            let tapGesture = UITapGestureRecognizer(target: self, action: #selector(weekCardTapped))
+            addGestureRecognizer(tapGesture)
+        }
+    }
+
+    private func setupUI() {
+        layer.cornerRadius = 20
         
         flex.define {
             $0.addItem().direction(.row).paddingHorizontal(20).define {
                 $0.addItem(titleLabel)
                     .marginTop(20)
                 
-                if state == .active {
-                    $0.addItem(dotView)
-                        .size(4)
-                        .marginLeft(4)
-                        .marginTop(20)
-                } else {
-                    $0.addItem(subtitleLabel)
-                        .marginLeft(8)
-                        .marginTop(20)
-                }
+                $0.addItem(dotView)
+                    .size(4)
+                    .marginLeft(4)
+                    .marginTop(20)
+                
+                $0.addItem(subtitleLabel)
+                    .marginLeft(8)
+                    .marginTop(20)
                 
                 $0.addItem().grow(1)
                 
@@ -84,33 +105,29 @@ final class AIReportWeekCardView: UIView {
             
             $0.addItem().grow(1)
         }
-
-        applyState(state)
     }
 
-    private func applyState(_ state: State) {
-        switch state {
-        case .active:
+    private func applyState(_ isActive: Bool) {
+        if isActive {
             backgroundColor = .subPurple
+            titleLabel.textColor = .grayScale900
             chevron.tintColor  = .grayScale800
-
-        case .inactive:
+        } else {
             backgroundColor = .grayScale100
             titleLabel.textColor = .grayScale400
             chevron.tintColor  = .grayScale400
-            
+        }
+        
+        if week != 1 {
             layer.shadowColor = UIColor(hex: "774F9E").cgColor
             layer.shadowOpacity = 0.15
             layer.shadowOffset = CGSize(width: 0, height: -2)
             layer.shadowRadius = 20
         }
     }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-    }
     
     @objc private func weekCardTapped() {
-        onTap?()
+        guard let reportId else { return }
+        onTap?(reportId)
     }
 }

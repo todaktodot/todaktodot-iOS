@@ -12,7 +12,7 @@ import Then
 import Lottie//
 
 final class AIReportThirdView: UIView {
-    var onTapTopic: (() -> Void)?
+    var onTapTopic: ((Int) -> Void)?
     
     private let titleLabel = TDLabel().then {
         $0.text = "어떤 부분에서\n생각이 같았고, 또 달랐을까요?"
@@ -38,11 +38,11 @@ final class AIReportThirdView: UIView {
     
     func configure(detail: AIReportDetail, hiddenTitle: Bool) {
         similarTopics = detail.similarSubjectList.map {
-            TopicDetailButton(date: $0.issuedDt.toKRFomatterEMMDD(), topic: "\($0.mode) · \($0.subject)")
+            TopicDetailButton(date: $0.issuedDt.toKRFomatterEMMDD(), topic: "\($0.mode) · \($0.subject)", coupleCardId: $0.coupleCardId)
         }
         
         differentTopics = detail.differentSubjectList.map {
-            TopicDetailButton(date: $0.issuedDt.toKRFomatterEMMDD(), topic: "\($0.mode) · \($0.subject)")
+            TopicDetailButton(date: $0.issuedDt.toKRFomatterEMMDD(), topic: "\($0.mode) · \($0.subject)", coupleCardId: $0.coupleCardId)
         }
         
         setupViews()
@@ -71,17 +71,16 @@ final class AIReportThirdView: UIView {
             $0.addItem(negativeTitleLabel)
                 .marginTop(28)
             
-            $0.addItem().marginTop(12).gap(8).define {
-                for _ in 0..<4 {
-                    let button = TopicDetailButton(date: "금 9/12", topic: "커피모드 · 경제관")
-                    button.addTarget(self, action: #selector(buttonTap(_:)), for: .touchUpInside)
-                    $0.addItem(button)
+            $0.addItem().marginTop(12).gap(8).define { item in
+                differentTopics.forEach { topic in
+                    topic.addTarget(self, action: #selector(buttonTap(_:)), for: .touchUpInside)
+                    item.addItem(topic)
                 }
             }
         }
     }
     
     @objc private func buttonTap(_ sender: TopicDetailButton) {
-        onTapTopic?()
+        onTapTopic?(sender.coupleCardId)
     }
 }

@@ -30,21 +30,24 @@ final class AIReportCoordinator: Coordinator {
         let vc = AIReportDetailViewController(step: step, detail: detail)
         vc.coordinator = self
         vc.reactor = reactor
-        navigationController.pushViewController(vc, animated: true)
+        
+        if step == .full {
+            var vcs = navigationController.viewControllers
+            vcs.removeAll(where: { $0 is AIReportDetailViewController })
+            vcs.append(vc)
+            navigationController.setViewControllers(vcs, animated: true)
+        } else {
+            navigationController.pushViewController(vc, animated: true)
+        }
     }
     
-    func shoHistoryCard() {
-        let vc = UIViewController()
-        vc.view.backgroundColor = .white
-        vc.title = "히스토리 카드"
-        navigationController.pushViewController(vc, animated: true)
+    func showHistoryCard(card: QuestionCard) {
+        let coordinator = HomeCoordinator(navigationController: navigationController)
+        addChild(coordinator)
+        coordinator.showHistoryCardDetail(card: card)
     }
     
     func navigateBack() {
         navigationController.popViewController(animated: true)
-    }
-    
-    func navigateRoot() {
-        navigationController.popToRootViewController(animated: true)
     }
 }

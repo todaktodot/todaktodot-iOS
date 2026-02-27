@@ -15,6 +15,9 @@ import Lottie
 final class AIReportStorageView: UIView {
     var onCardTap: ((Int) -> Void)?
     
+    private var monthButtons: [MonthButton] = []
+    private var selectedMonth: Int = 1
+    private var listData: [AIReportList]? = nil
     private let titleLabel = TDLabel().then {
         $0.text = "지난 우리의 대화를\nAI 리포트로 확인해보세요"
         $0.font = .pretenSemiBold(24)
@@ -29,7 +32,7 @@ final class AIReportStorageView: UIView {
         $0.customImage.tintColor = .black
         
         let item = UIAction(title: "2026년", handler: { _ in
-            })
+        })
         
         $0.menu = UIMenu(title: "년도 선택", children: [item])
         $0.showsMenuAsPrimaryAction = true
@@ -39,8 +42,6 @@ final class AIReportStorageView: UIView {
         $0.showsHorizontalScrollIndicator = false
     }
     private let monthContentView = UIView()
-    private var monthButtons: [MonthButton] = []
-    private var selectedMonth: Int = 1
     private let cards: [AIReportWeekCardView] = [
         AIReportWeekCardView(),
         AIReportWeekCardView(),
@@ -52,33 +53,24 @@ final class AIReportStorageView: UIView {
         super.init(frame: frame)
         setupViews()
         setupMonthButtons()
-        for i in 0..<4 {
-            cards[i].configure(month: "1", week: String(i + 1), isActive: i % 2 == 0, reportId: i)
-            
-            flex.layout()
-        }
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        monthContentView.flex.layout(mode: .adjustWidth)
+        monthScrollView.contentSize = monthContentView.frame.size
     }
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        flex.layout(mode: .adjustHeight)
-        monthContentView.flex.layout(mode: .adjustWidth)
-        monthScrollView.contentSize = monthContentView.frame.size
-    }
-    
     func configure(listData: [AIReportList]) {
-        for report in listData {
-            cards[Int(report.week)!-1].configure(month: report.month, week: report.week, isActive: true, reportId: report.reportId)
-        }
+        self.listData = listData
+        configCards(listData: listData)
     }
     
     private func setupViews() {
-        monthScrollView.addSubview(monthContentView)
-        
         self.flex.define {
             $0.addItem(titleLabel)
                 .marginTop(12)
@@ -96,7 +88,7 @@ final class AIReportStorageView: UIView {
                     self?.onCardTap?(reportId)
                 }
             }
-
+            
             $0.addItem().marginTop(20).define { flex in
                 for (index, card) in cards.enumerated() {
                     flex.addItem(card)
@@ -106,18 +98,20 @@ final class AIReportStorageView: UIView {
                 }
             }
         }
+        
+        monthScrollView.addSubview(monthContentView)
     }
     
     private func setupMonthButtons() {
-        let months = [1,2,3,4,5,6,7,8,9,10,11,12]
-
+        let months = Array(1...Calendar.current.component(.month, from: Date()))
+        
         monthButtons = months.map {
             let button = MonthButton(month: $0)
             button.addTarget(self, action: #selector(monthTapped(_:)), for: .touchUpInside)
             return button
         }
         monthButtons.first?.update(selected: selectedMonth)
-
+        
         monthContentView.flex
             .direction(.row)
             .gap(8)
@@ -137,27 +131,63 @@ final class AIReportStorageView: UIView {
         selectedMonth = sender.month
         monthButtons.forEach { $0.update(selected: sender.month) }
         let targetX =
-            sender.center.x
-            - monthScrollView.bounds.width / 2
-
+        sender.center.x
+        - monthScrollView.bounds.width / 2
+        
         let maxOffsetX =
-            monthScrollView.contentSize.width
-            - monthScrollView.bounds.width
-
+        monthScrollView.contentSize.width
+        - monthScrollView.bounds.width
+        
         let offsetX = max(0, min(targetX, maxOffsetX))
-
+        
         monthScrollView.setContentOffset(
             CGPoint(x: offsetX, y: 0),
             animated: true
         )
     }
-
+    
+    private func configCards(listData: [AIReportList]) {
+        for weekNumber in (1...4) {
+            if let report = listData.first(where: {
+                $0.month == selectedMonth &&
+                $0.week == weekNumber
+            }) {
+                cards[weekNumber - 1].configure(
+                    month: selectedMonth,
+                    week: weekNumber,
+                    isActive: true,
+                    reportId: report.reportId
+                )
+            } else {
+                cards[weekNumber - 1].configure(
+                    month: selectedMonth,
+                    week: weekNumber,
+                    isActive: false
+                )
+            }
+        }
+    }
+    
+    private func updateCards() {
+        guard let listData else {
+            for i in 0..<4 {
+                cards[i].configure(
+                    month: selectedMonth,
+                    week: i + 1,
+                    isActive: false
+                )
+            }
+            flex.layout()
+            return
+        }
+        
+        configCards(listData: listData)
+        
+        flex.layout()
+    }
+    
     @objc private func monthTapped(_ sender: MonthButton) {
         updateMonthButtons(sender)
-        for i in 0..<4 {
-            cards[i].configure(month: String(sender.month), week: String(i + 1), isActive: i % 2 == 0, reportId: i)
-            
-            flex.layout()
-        }
+        updateCards()
     }
 }

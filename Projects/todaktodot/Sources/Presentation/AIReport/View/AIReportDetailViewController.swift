@@ -86,6 +86,15 @@ final class AIReportDetailViewController: CustomBackViewController, View {
     }
     
     func bind(reactor: AIReportReactor) {
+        if step == .third || step == .full {
+            reactor.state
+                .compactMap { $0.historyData }
+                .subscribe { [weak self] data in
+                    self?.coordinator?.showHistoryCard(card: data)
+                }
+                .disposed(by: disposeBag)
+        }
+        
         nextButton.rx.tap
             .subscribe(onNext: { [weak self] in
                 guard let self else { return }
@@ -102,8 +111,8 @@ final class AIReportDetailViewController: CustomBackViewController, View {
             })
             .disposed(by: disposeBag)
         
-        thirdDetailView.onTapTopic = {
-            self.coordinator?.shoHistoryCard()
+        thirdDetailView.onTapTopic = { id in
+            reactor.action.onNext(.tapTopicCard(id))
         }
     }
     
@@ -180,10 +189,6 @@ final class AIReportDetailViewController: CustomBackViewController, View {
 
 extension AIReportDetailViewController: CustomBackViewControllerDelegate {
     func navigateBack() {
-        if step == .full {
-            coordinator?.navigateRoot()
-        } else {
-            coordinator?.navigateBack()
-        }
+        coordinator?.navigateBack()
     }
 }
