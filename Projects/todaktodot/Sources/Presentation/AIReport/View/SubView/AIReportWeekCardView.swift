@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import CoreText
 import FlexLayout
 import PinLayout
 import Then
@@ -21,8 +22,16 @@ final class AIReportWeekCardView: UIView {
     private var week: Int?
     private var reportId: Int?
     private let titleLabel = UILabel().then {
-        $0.text = "1월 1주차"
-        $0.font = .pretenSemiBold(18)
+        let baseFont = UIFont.pretenSemiBold(18)
+        let descriptor = baseFont.fontDescriptor.addingAttributes([
+            .featureSettings: [
+                [
+                    UIFontDescriptor.FeatureKey.type: kNumberSpacingType,
+                    UIFontDescriptor.FeatureKey.selector: kMonospacedNumbersSelector
+                ]
+            ]
+        ])
+        $0.font = UIFont(descriptor: descriptor, size: 18)
     }
     
     private let dotView = UIView().then {
@@ -52,12 +61,6 @@ final class AIReportWeekCardView: UIView {
 
     required init?(coder: NSCoder) {
         fatalError()
-    }
-    
-    func markDirty() {
-        titleLabel.flex.markDirty()
-        dotView.flex.markDirty()
-        subtitleLabel.flex.markDirty()
     }
     
     func configure(month: Int, week: Int, isActive: Bool, reportId id: Int? = nil) {

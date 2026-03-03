@@ -34,6 +34,7 @@ final class CustomProgressBar: UIView {
     }
     
     private let progressLabel = TDLabel().then {
+        $0.text = "000%"
         $0.font = .pretenRegular(16)
         $0.textColor = .grayScale800
     }

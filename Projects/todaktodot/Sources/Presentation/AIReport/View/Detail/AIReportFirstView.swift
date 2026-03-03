@@ -12,6 +12,8 @@ import Then
 import Lottie
 
 final class AIReportFirstView: UIView {
+    private var detail: AIReportDetail? = nil
+    private var isInteration: Bool = true
     private let syncBoxBackground = UIImageView().then {
         $0.contentMode = .scaleAspectFit
     }
@@ -70,11 +72,22 @@ final class AIReportFirstView: UIView {
         setupViews()
     }
     
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        setupData(isInteration: isInteration)
+    }
+    
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
     func configure(detail: AIReportDetail, isInteration: Bool) {
+        self.detail = detail
+        self.isInteration = isInteration
+    }
+    
+    private func setupData(isInteration: Bool) {
+        guard let detail else { return }
         if isInteration {
             syncCountAnimator.start(to: Double(detail.totalSyncRate)) { [weak self] value in
                 self?.syncPercentLabel.text = "\(value)%"
