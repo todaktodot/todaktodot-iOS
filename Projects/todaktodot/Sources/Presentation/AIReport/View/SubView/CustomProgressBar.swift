@@ -92,7 +92,7 @@ final class CustomProgressBar: UIView {
         let width = (UIScreen.main.bounds.width - 80) * value
         
         if animated {
-            UIView.animate(withDuration: 0.75) {
+            UIView.animate(withDuration: 1, delay: 0, options: .curveEaseInOut) {
                 self.progressView.frame = CGRect(x: 0, y: 0, width: width, height: 10)
             }
         } else {

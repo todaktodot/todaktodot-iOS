@@ -13,7 +13,6 @@ import Lottie
 
 final class AIReportFirstView: UIView {
     private let syncBoxBackground = UIImageView().then {
-        $0.image = UIImage(resource: .purpleBoxHigh) // TODO: 퍼센트 별로 배경 달라야함
         $0.contentMode = .scaleAspectFit
     }
     
@@ -59,6 +58,8 @@ final class AIReportFirstView: UIView {
         $0.layer.cornerRadius = 16
     }
     
+    private let syncCountAnimator = CountUpAnimator()
+    private let talkCountAnimator = CountUpAnimator()
     private let circleProgress = CircleProgressView()
     private let progressView1 = CustomProgressBar(type: .economy)
     private let progressView2 = CustomProgressBar(type: .life)
@@ -75,25 +76,22 @@ final class AIReportFirstView: UIView {
     
     func configure(detail: AIReportDetail, isInteration: Bool) {
         if isInteration {
-            let steps = 20
-            let duration: Double = 0.5
-            
-            for i in 0...steps {
-                let delay = Double(i) * (duration / Double(steps))
-                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                    let currentSyncPercent = (detail.totalSyncRate * i) / steps
-                    let currentTalkCount = (detail.totalDailycardAnswerCnt * i) / steps
-                    self.syncPercentLabel.text = "\(currentSyncPercent)%"
-                    self.talkCountLabel.text = "\(currentTalkCount)개"
-                }
+            syncCountAnimator.start(to: Double(detail.totalSyncRate)) { [weak self] value in
+                self?.syncPercentLabel.text = "\(value)%"
+            }
+            talkCountAnimator.start(to: Double(detail.totalDailycardAnswerCnt)) { [weak self] value in
+                self?.talkCountLabel.text = "\(value)개"
             }
         } else {
             syncPercentLabel.text = "\(detail.totalSyncRate)%"
             talkCountLabel.text = "\(detail.totalDailycardAnswerCnt)개"
         }
         
-        dateLabel.text = "\(detail.startDt) ~ \(detail.endDt)"
+        syncBoxBackground.image =
+        detail.totalSyncRate > 67 ? UIImage(resource: .purpleBoxHigh) :
+        detail.totalSyncRate > 33 ? UIImage(resource: .purpleBoxMedium) : UIImage(resource: .purpleBoxLow)
         
+        dateLabel.text = "\(detail.startDt) ~ \(detail.endDt)"
         progressView1.setProgress(detail.economySyncRate, animated: isInteration)
         progressView2.setProgress(detail.lifeSyncRate, animated: isInteration)
         progressView3.setProgress(detail.loveSyncRate, animated: isInteration)

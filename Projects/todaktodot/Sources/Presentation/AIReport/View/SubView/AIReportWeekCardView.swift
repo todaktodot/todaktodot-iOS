@@ -27,7 +27,7 @@ final class AIReportWeekCardView: UIView {
     
     private let dotView = UIView().then {
         $0.backgroundColor = .mainPurple
-        $0.layer.cornerRadius = 4
+        $0.layer.cornerRadius = 2
     }
     
     private let subtitleLabel = TDLabel().then {

@@ -90,10 +90,11 @@ final class AIReportStorageView: UIView {
             }
             
             $0.addItem().marginTop(20).define { flex in
-                for (index, card) in cards.enumerated() {
+                for (displayIndex, weekNumber) in (1...4).reversed().enumerated() {
+                    let card = cards[weekNumber - 1]
                     flex.addItem(card)
-                        .height(index == 3 ? 62 : 62 + 31)
-                        .marginTop(index != 0 ? -31 : 0)
+                        .height(displayIndex == 3 ? 62 : 62 + 31)
+                        .marginTop(displayIndex != 0 ? -31 : 0)
                         .marginHorizontal(0)
                 }
             }

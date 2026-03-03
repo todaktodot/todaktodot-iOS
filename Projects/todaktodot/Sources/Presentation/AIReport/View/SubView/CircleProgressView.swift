@@ -27,7 +27,8 @@ final class CircleProgressView: UIView {
         $0.textAlignment = .center
         $0.textColor = .white
     }
-    
+    private let countAnimator = CountUpAnimator()
+
     private var radius: CGFloat {
         return min(bounds.width, bounds.height) / 2
     }
@@ -95,21 +96,17 @@ final class CircleProgressView: UIView {
             let animation = CABasicAnimation(keyPath: "strokeEnd")
             animation.fromValue = progressLayer.presentation()?.strokeEnd ?? 0
             animation.toValue = clamped
-            animation.duration = 0.6
-            animation.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            animation.duration = 1
+            animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
             
             progressLayer.strokeEnd = clamped
             progressLayer.add(animation, forKey: "progress")
-            
-            let steps = 20
-            let duration: Double = 0.5
-
-            for i in 0...steps {
-                let delay = Double(i) * (duration / Double(steps))
-                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                    let currentValue = (Int(value * 100) * i) / steps
-                    self.percentLabel.text = "\(currentValue)%"
-                }
+            countAnimator.start(
+                to: Double(clamped * 100),
+                duration: 1,
+                easing: .easeInOut
+            ) { [weak self] value in
+                self?.percentLabel.text = "\(value)%"
             }
         } else {
             progressLayer.strokeEnd = clamped

@@ -73,4 +73,34 @@ final class MypageRepositoryImpl: MypageRepository {
         return networkManager.requestOptional(with: endpoint)
             .map { _ in true }
     }
+    
+    func updateTerms(infoAgree: Bool? = nil, marketingAgree: Bool? = nil, advertiesmentAgree: Bool? = nil) -> Observable<Bool> {
+        var result: Bool = true
+        var parameters: [String: String] = [:]
+        
+        if let info = infoAgree {
+            parameters["infoAlarmYN"] = (info ? "Y" : "N")
+            result = info
+        }
+        if let marketing = marketingAgree {
+            parameters["marketingAlarmYN"] = (marketing ? "Y" : "N")
+            result = marketing
+        }
+        if let advertiesment = advertiesmentAgree {
+            parameters["advertiesmentAlarmYN"] = (advertiesment ? "Y" : "N")
+            result = advertiesment
+        }
+        
+        let endpoint = Endpoint<Empty>(
+            baseURL: .todaktodotAPI,
+            path: "/api/term",
+            method: .post,
+            parameters: parameters
+        )
+
+        return networkManager.request(with: endpoint)
+            .map { _ in
+                return result
+            }
+    }
 }

@@ -22,7 +22,7 @@ final class AIReportReactor: Reactor {
         case fetchReportIsCreated
         case fetchStorageListData
         
-        case tapReportDetailButton
+        case tapReportDetailButton(Int)
         case tapStorageReport(Int)
         case tapTopicCard(Int)
     }
@@ -44,16 +44,16 @@ final class AIReportReactor: Reactor {
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
-        case .tapReportDetailButton:
+        case .tapReportDetailButton(let id):
             return Observable.concat([
-                useCase.fetchAIReportDetail(id: 1)
+                useCase.fetchAIReportDetail(id: id)
                     .map { Mutation.setReportSuccess($0, .first) },
                 .just(Mutation.setReportSuccess(nil, nil))
             ])
             
-        case .tapStorageReport:
+        case .tapStorageReport(let id):
             return Observable.concat([
-                useCase.fetchAIReportDetail(id: 1)
+                useCase.fetchAIReportDetail(id: id)
                     .map { Mutation.setReportSuccess($0, .history) },
                 .just(Mutation.setReportSuccess(nil, nil))
             ])
@@ -66,9 +66,9 @@ final class AIReportReactor: Reactor {
             return useCase.fetchLastWeekAIReportCreated()
                 .map { Mutation.setReportCreated($0) }
             
-        case .tapTopicCard:
+        case .tapTopicCard(let id):
             return Observable.concat([
-                useCase.fetchHistoryCardDetail(coupleCardId: 102)
+                useCase.fetchHistoryCardDetail(coupleCardId: id)
                     .map { Mutation.setHistoryDetail($0) },
                 .just(Mutation.setHistoryDetail(nil))
             ])

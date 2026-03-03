@@ -7,7 +7,7 @@
 
 import RxSwift
 import NetworkKit
-import Foundation
+import Alamofire
 
 final class AuthRepositoryImpl: AuthRepository {
     
@@ -15,6 +15,10 @@ final class AuthRepositoryImpl: AuthRepository {
     private let kakaoAuthProvider: KakaoAuthProvider
     private let googleAuthProvider: GoogleAuthProvider
     private let appleAuthProvider: AppleAuthProvider
+    
+    enum AuthError: Error {
+        case deviceTokenIsNil
+    }
     
     init(
         kakaoAuthProvider: KakaoAuthProvider,
@@ -96,18 +100,24 @@ final class AuthRepositoryImpl: AuthRepository {
             }
     }
     
-    func loginTest() -> Observable<Bool> {
-        let endpoint = Endpoint<LoginInfo>(
+    func updateDeviceToken(token: String?) -> Observable<Bool> {
+        guard let token else {
+                return Observable.error(AuthError.deviceTokenIsNil)
+            }
+        
+        let parameters: [String: Any] = [
+            "fcmToken": token,
+            "deviceType" : "IOS"
+        ]
+        
+        let endpoint = Endpoint<Empty>(
             baseURL: .todaktodotAPI,
-            path: "/login/test2",
-            method: .post
+            path: "/api/device-token",
+            method: .post,
+            parameters: parameters
         )
         
-        return networkManager.request(with: endpoint)
-            .do(onNext: { result in
-                UserdefaultKey.accessToken = result.accessToken
-            })
+        return networkManager.requestOptional(with: endpoint)
             .map { _ in true }
-            .catchAndReturn(false)
     }
 }

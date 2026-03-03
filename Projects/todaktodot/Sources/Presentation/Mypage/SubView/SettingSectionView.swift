@@ -14,12 +14,6 @@ import RxSwift
 final class SettingSectionView: UIView {
     private var disposeBag = DisposeBag()
 
-    private let pushTitleLabel = TDLabel().then {
-        $0.text = "푸시 알림"
-        $0.font = .pretenMedium(16)
-        $0.textColor = .grayScale900
-    }
-
     private let versionTitleLabel = TDLabel().then {
         $0.text = "버전 정보"
         $0.font = .pretenMedium(16)
@@ -32,7 +26,9 @@ final class SettingSectionView: UIView {
         $0.textColor = .grayScale400
     }
     
-    let notiSwitch = CustomSwitch()
+    let infoNotiSwitch = CustomSwitch(title: "정보성 알림")
+    let advertiesmentNotiSwitch = CustomSwitch(title: "광고성 알림 수신 동의")
+    let marketingNotiSwitch = CustomSwitch(title: "마케팅 수신 동의")
     let serviceTermButton = ModalButton().then {
         $0.setTitle(title: "서비스 이용 약관")
     }
@@ -61,33 +57,40 @@ final class SettingSectionView: UIView {
     func setupUI() {
         backgroundColor = .white
         layer.cornerRadius = 16
+        let rowHeight: CGFloat = 58
 
         flex.paddingHorizontal(20)
-            .paddingVertical(16)
-            .gap(16)
             .define {
                 
                 $0.addItem(serviceTermButton)
+                    .height(rowHeight)
 
                 $0.addItem(divider())
                     .height(1)
                     .marginHorizontal(-20)
 
-                $0.addItem()
-                    .direction(.row)
-                    .alignItems(.center)
-                    .define {
-                        $0.addItem(pushTitleLabel)
-                        $0.addItem().grow(1)
-                        $0.addItem(notiSwitch)
-                    }
-
+                $0.addItem(infoNotiSwitch)
+                    .height(rowHeight)
+                
+                $0.addItem(divider()).height(1)
+                    .marginHorizontal(-20)
+                
+                $0.addItem(advertiesmentNotiSwitch)
+                    .height(rowHeight)
+                
+                $0.addItem(divider()).height(1)
+                    .marginHorizontal(-20)
+                
+                $0.addItem(marketingNotiSwitch)
+                    .height(rowHeight)
+                
                 $0.addItem(divider()).height(1)
                     .marginHorizontal(-20)
 
                 $0.addItem()
                     .direction(.row)
                     .alignItems(.center)
+                    .height(rowHeight)
                     .define {
                         $0.addItem(versionTitleLabel)
                         $0.addItem().grow(1)

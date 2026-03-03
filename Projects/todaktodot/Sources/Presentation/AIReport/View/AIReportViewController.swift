@@ -20,6 +20,7 @@ final class AIReportViewController: BaseViewController, View {
     weak var coordinator: AIReportCoordinator?
     private var creatable = true
     private var isInitial = false
+    private var reportId: Int?
     private var currentSegment = BehaviorRelay<SeletedSegment>(value: .lastWeek)
     
     private let scrollView = UIScrollView().then {
@@ -93,6 +94,7 @@ final class AIReportViewController: BaseViewController, View {
                 guard let self else { return }
                 creatable = created.creatable
                 isInitial = created.initialize
+                reportId = created.reportId
                 switchSegment(segment: .lastWeek)
             }
             .disposed(by: disposeBag)
@@ -148,7 +150,11 @@ final class AIReportViewController: BaseViewController, View {
             .disposed(by: disposeBag)
         
         lastWeekAIReportView.reportDetailButton.rx.tap
-            .map { AIReportReactor.Action.tapReportDetailButton }
+            .compactMap { [weak self] _ in
+                guard let self = self,
+                      let reportId = self.reportId else { return nil }
+                return .tapReportDetailButton(reportId)
+            }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         

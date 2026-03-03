@@ -29,7 +29,7 @@ final class LoginUseCase {
         repository.fetchUserInfo()
     }
     
-    func loginTest() -> Observable<Bool> {
-        return repository.loginTest()
+    func updateDeviceToken(token: String?) -> Observable<Bool> {
+        return repository.updateDeviceToken(token: token)
     }
 }

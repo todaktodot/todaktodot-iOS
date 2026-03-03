@@ -42,6 +42,9 @@ enum UserdefaultKey {
     @UserDefault(key: "refreshToken", defaultValue: nil)
     static var refreshToken: String?
     
+    @UserDefault(key: "diviceToken", defaultValue: nil)
+    static var diviceToken: String?
+    
     @UserDefaultCodable(key: "coupleType", defaultValue: .null)
     static var coupleType: CoupleType
     
