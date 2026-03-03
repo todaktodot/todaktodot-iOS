@@ -65,6 +65,7 @@ final class AIReportReactor: Reactor {
         case .fetchReportIsCreated:
             return useCase.fetchLastWeekAIReportCreated()
                 .map { Mutation.setReportCreated($0) }
+                .catchAndReturn(.setReportCreated(AIReportCreated(reportId: 0, creatable: false, initialize: false)))
             
         case .tapTopicCard(let id):
             return Observable.concat([

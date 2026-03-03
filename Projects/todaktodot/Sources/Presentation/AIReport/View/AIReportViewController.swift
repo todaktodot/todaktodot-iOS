@@ -18,7 +18,7 @@ final class AIReportViewController: BaseViewController, View {
     
     var disposeBag = DisposeBag()
     weak var coordinator: AIReportCoordinator?
-    private var creatable = true
+    private var creatable = false
     private var isInitial = false
     private var reportId: Int?
     private var currentSegment = BehaviorRelay<SeletedSegment>(value: .lastWeek)
