@@ -81,6 +81,8 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
             return
         }
         
+        window.subviews.filter({ $0 is InAppNotificationView }).forEach({ $0.removeFromSuperview() })
+        
         let pushView = InAppNotificationView(title: title, body: body)
         window.addSubview(pushView)
         
@@ -89,12 +91,14 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
             .horizontally(20)
             .height(80)
         
-        UIView.animate(withDuration: 0.3, delay: 0) {
+        UIView.animate(withDuration: 0.3, delay: 0) { [weak self] in
+            guard let self else { return }
             pushView.pin
                 .top(window.pin.safeArea.top)
                 .horizontally(20)
                 .height(80)
-        } completion: { _ in
+        } completion: { [weak self] _ in
+            guard let self else { return }
             UIView.animate(withDuration: 0.3, delay: 2.0) {
                 pushView.pin.top(-100)
             } completion: { _ in

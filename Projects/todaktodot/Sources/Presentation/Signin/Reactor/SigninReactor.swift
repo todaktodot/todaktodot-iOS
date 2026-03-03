@@ -79,6 +79,10 @@ final class SigninReactor: Reactor {
             loginUseCase.execute(type: type)
                 .flatMap { _ in
                     self.loginUseCase.updateDeviceToken(token: UserdefaultKey.diviceToken)
+                        .catch { error in
+                            print("FCM token update failed \(error.localizedDescription)")
+                            return .just(false)
+                        }
                 }
                 .flatMap { _ in
                     self.loginUseCase.fetchUserInfo()
