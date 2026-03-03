@@ -73,7 +73,7 @@ final class CoupleRepositoryImpl: CoupleRepository {
         var parameters: [String: String] = [:]
         
         if let info = infoAgree { parameters["infoAlarmYN"] = (info ? "Y" : "N") }
-        if let marketing = marketingAgree { parameters["marketingAndAlarmYN"] = (marketing ? "Y" : "N") }
+        if let marketing = marketingAgree { parameters["marketingAlarmYN"] = (marketing ? "Y" : "N") }
         if let advertiesment = advertiesmentAgree { parameters["advertiesmentAlarmYN"] = (advertiesment ? "Y" : "N") }
         
         let endpoint = Endpoint<Empty>(

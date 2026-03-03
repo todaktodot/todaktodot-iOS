@@ -65,9 +65,13 @@ enum UserdefaultKey {
     static var lastWeeklyCardDate: Date?
     
     static func resetUserDefaults() {
+        let preservedDeviceToken = self.diviceToken
+
         let domain = Bundle.main.bundleIdentifier!
         UserDefaults.standard.removePersistentDomain(forName: domain)
         UserDefaults.standard.synchronize()
+
+        self.diviceToken = preservedDeviceToken
     }
     
     static func resetAuthUserDefaults() {

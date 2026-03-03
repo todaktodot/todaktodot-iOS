@@ -325,14 +325,6 @@ final class HomeViewController: BaseViewController, View {
         }
     }
     
-    private func openAppSettings() {
-        if let appSettings = URL(string: UIApplication.openSettingsURLString) {
-            if UIApplication.shared.canOpenURL(appSettings) {
-                UIApplication.shared.open(appSettings)
-            }
-        }
-    }
-    
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         
@@ -851,7 +843,7 @@ extension HomeViewController {
             description: "• 상대방이 답변하면 바로 알 수 있어요\n• 서로의 답변이 공개되면 알림을 받아요\n• 상대방의 쿡 찌르기를 받을 수 있어요",
             primaryButtonTitle: "알림켜기",
             primaryButtonAction: { [weak self] in
-                self?.openAppSettings()
+                self?.reactor?.action.onNext(.notiAgree)
             },
             secondaryButtonTitle: "나중에 할게요",
             secondaryButtonAction: { [weak self] in

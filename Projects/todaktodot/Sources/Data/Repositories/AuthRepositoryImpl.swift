@@ -63,13 +63,13 @@ final class AuthRepositoryImpl: AuthRepository {
                 }
         }
     }
-
+    
     private func requestLogin(accessToken: String, loginType: LoginType) -> Observable<Bool> {
         let parameters: [String: Any] = [
             "provider": loginType.rawValue.uppercased(),
             "token": accessToken
         ]
-
+        
         let endpoint = Endpoint<LoginInfo>(
             baseURL: .todaktodotAPI,
             path: "/api/login",
@@ -102,8 +102,9 @@ final class AuthRepositoryImpl: AuthRepository {
     
     func updateDeviceToken(token: String?) -> Observable<Bool> {
         guard let token else {
-                return Observable.error(AuthError.deviceTokenIsNil)
-            }
+            print("FCM 토큰 없음")
+            return Observable.error(AuthError.deviceTokenIsNil)
+        }
         
         let parameters: [String: Any] = [
             "fcmToken": token,

@@ -105,6 +105,22 @@ final class CardRepositoryImpl: CardRepository {
             }
             .catch { error in .just(.failure(error)) }
     }
+    
+    func notiAgree() -> Observable<Bool> {
+        var parameters: [String: String] = [ "infoAlarmYN" : "Y" ]
+        
+        let endpoint = Endpoint<Empty>(
+            baseURL: .todaktodotAPI,
+            path: "/api/term",
+            method: .post,
+            parameters: parameters
+        )
+
+        return networkManager.request(with: endpoint)
+            .map { _ in
+                return true
+            }
+    }
 }
 
 extension Encodable {
