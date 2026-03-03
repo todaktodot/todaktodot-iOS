@@ -14,12 +14,12 @@ extension String {
         return formatter.date(from: self)
     }
     
-    func toKRFomatter() -> String {
+    func toKRFomatter(excepYear: Bool = false) -> String {
         guard let date = self.toDate() else {
             return self
         }
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy년 MM월 dd일"
+        formatter.dateFormat = excepYear ? "M월 d일" : "yyyy년 M월 d일"
         return formatter.string(from: date)
     }
     
@@ -28,7 +28,7 @@ extension String {
             return self
         }
         let formatter = DateFormatter()
-        formatter.dateFormat = "E MM월 dd일"
+        formatter.dateFormat = "E M월 d일"
         return formatter.string(from: date)
     }
 }

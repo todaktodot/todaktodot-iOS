@@ -20,39 +20,39 @@ final class AIReportRepositoryImpl: AIReportRepository {
     }
     
     func fetchLastWeekAIReportCreated() -> Observable<AIReportCreated> {
-//        let endpoint = Endpoint<AIReportCreated>(
-//            baseURL: .todaktodotAPI,
-//            path: "/api/ai-report",
-//            method: .post
-//        )
-//
-//        return networkManager.request(with: endpoint)
-//            .map { $0 }
-        return .just(AIReportCreated.mock)
+        let endpoint = Endpoint<AIReportCreated>(
+            baseURL: .todaktodotAPI,
+            path: "/api/ai-report",
+            method: .post
+        )
+
+        return networkManager.request(with: endpoint)
+            .map { $0 }
+//        return .just(AIReportCreated.mock)
     }
     
     func fetchAIReportDetail(id: Int) -> Observable<AIReportDetail> {
-//        let endpoint = Endpoint<AIReportDetailDTO>(
-//            baseURL: .todaktodotAPI,
-//            path: "/api/ai-report/detail/\(id)",
-//            method: .get
-//        )
-//
-//        return networkManager.request(with: endpoint)
-//            .map { $0.toDetail() }
-        return .just(AIReportDetailDTO.mock.toDetail())
+        let endpoint = Endpoint<AIReportDetailDTO>(
+            baseURL: .todaktodotAPI,
+            path: "/api/ai-report/detail/\(id)",
+            method: .get
+        )
+
+        return networkManager.request(with: endpoint)
+            .map { $0.toDetail() }
+//        return .just(AIReportDetailDTO.mock.toDetail())
     }
     
     func fetchAIReportList() -> Observable<[AIReportList]> {
-//        let endpoint = Endpoint<[AIReportListDTO]>(
-//            baseURL: .todaktodotAPI,
-//            path: "/api/ai-report/list",
-//            method: .get
-//        )
-//
-//        return networkManager.request(with: endpoint)
-//            .map { $0.map { $0.toAIReportList() } }
-        return .just(AIReportList.mock)
+        let endpoint = Endpoint<[AIReportListDTO]>(
+            baseURL: .todaktodotAPI,
+            path: "/api/ai-report/list",
+            method: .get
+        )
+
+        return networkManager.request(with: endpoint)
+            .map { $0.map { $0.toAIReportList() } }
+//        return .just(AIReportList.mock)
     }
     
     func fetchHistoryCardDetail(coupleCardId: Int) -> Observable<QuestionCard?> {

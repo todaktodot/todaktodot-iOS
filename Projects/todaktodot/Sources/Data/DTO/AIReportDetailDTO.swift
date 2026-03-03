@@ -40,7 +40,7 @@ extension AIReportDetailDTO {
     func toDetail() -> AIReportDetail {
         AIReportDetail(reportId: reportId,
                        startDt: startDt.toKRFomatter(),
-                       endDt: endDt.toKRFomatter(),
+                       endDt: endDt.toKRFomatter(excepYear: true),
                        totalSyncRate: Int(totalSyncRate) ?? 0,
                        economySyncRate: CGFloat((Double(economySyncRate) ?? 0) / 100.0),
                        lifeSyncRate: CGFloat((Double(lifeSyncRate) ?? 0) / 100.0),
@@ -53,8 +53,8 @@ extension AIReportDetailDTO {
     }
     static let mock = AIReportDetailDTO(
         reportId: 1,
-        startDt: "2026-02-16",
-        endDt: "2026-02-22",
+        startDt: "2026-03-02",
+        endDt: "2026-03-08",
         totalDailycardAnswerCnt: "14",
         totalSyncRate: "68",
         economySyncRate: "45",
