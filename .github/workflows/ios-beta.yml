@@ -28,10 +28,10 @@ jobs:
 
       # 3️⃣ Tuist 설치
       - name: Install Tuist
-      run: |
-        curl https://mise.run | sh
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
-        mise install
+        run: |
+          curl https://mise.run | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          mise install
 
       # 4️⃣ Tuist 프로젝트 생성
       - name: Tuist Generate
