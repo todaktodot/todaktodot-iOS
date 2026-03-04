@@ -28,7 +28,7 @@ jobs:
 
       # 3️⃣ Tuist 설치
       - name: Install Tuist
-        run: curl -Ls https://install.tuist.io | bash
+        uses: tuist/tuist-action@v1
 
       # 4️⃣ Tuist 프로젝트 생성
       - name: Tuist Generate
