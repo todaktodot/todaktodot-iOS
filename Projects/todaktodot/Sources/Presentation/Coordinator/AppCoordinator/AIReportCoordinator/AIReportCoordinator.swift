@@ -26,25 +26,28 @@ final class AIReportCoordinator: Coordinator {
         navigationController.pushViewController(vc, animated: true)
     }
     
-    func showNext(step: AIReportViewStep) {
-        let vc = AIReportDetailViewController(step: step)
+    func showDetail(step: AIReportViewStep, detail: AIReportDetail) {
+        let vc = AIReportDetailViewController(step: step, detail: detail)
         vc.coordinator = self
         vc.reactor = reactor
-        navigationController.pushViewController(vc, animated: true)
+        
+        if step == .full {
+            var vcs = navigationController.viewControllers
+            vcs.removeAll(where: { $0 is AIReportDetailViewController })
+            vcs.append(vc)
+            navigationController.setViewControllers(vcs, animated: true)
+        } else {
+            navigationController.pushViewController(vc, animated: true)
+        }
     }
     
-    func showDetail() {
-        let vc = AIReportDetailViewController(step: .full)
-        vc.coordinator = self
-        
-        navigationController.pushViewController(vc, animated: true)
+    func showHistoryCard(card: QuestionCard) {
+        let coordinator = HomeCoordinator(navigationController: navigationController)
+        addChild(coordinator)
+        coordinator.showHistoryCardDetail(card: card)
     }
     
     func navigateBack() {
         navigationController.popViewController(animated: true)
-    }
-    
-    func navigateRoot() {
-        navigationController.popToRootViewController(animated: true)
     }
 }

@@ -11,17 +11,29 @@ import PinLayout
 import Then
 
 final class CustomSwitch: UIView {
-
-    private var isOn: Bool
+    
+    var onTap: ((Bool) -> Void)?
+    private var isOn: Bool = false
+    
+    private let titleLabel = TDLabel().then {
+        $0.font = .pretenMedium(16)
+        $0.textColor = .grayScale900
+    }
+    
+    private let trackView = UIView().then {
+        $0.backgroundColor = .grayScale200
+        $0.layer.cornerRadius = 12
+    }
+    
     private let thumbView = UIView().then {
         $0.backgroundColor = .white
         $0.layer.cornerRadius = 10
     }
+    
+    private let touchOverlay = UIView()
 
-    var onTap: ((Bool) -> Void)?
-
-    init(isOn: Bool = false) {
-        self.isOn = isOn
+    init(title: String) {
+        self.titleLabel.text = title
         super.init(frame: .zero)
         setupUI()
         setupGesture()
@@ -31,52 +43,57 @@ final class CustomSwitch: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    override func layoutSubviews() {
-        super.layoutSubviews()
-
-        layoutThumb()
-    }
-
     private func setupUI() {
-        flex.width(44).height(24).define { flex in
-            flex.addItem(thumbView)
-                .size(20)
-                .left(2)
-                .vertically(2)
+        flex.direction(.row).alignItems(.center).define {
+            $0.addItem(titleLabel)
+            
+            $0.addItem().grow(1)
+            
+            $0.addItem(touchOverlay)
+                .position(.relative)
+                .width(64).height(44)
+                .all(0)
+                .define {
+                    $0.addItem(trackView)
+                        .position(.absolute)
+                        .width(44).height(24)
+                        .all(10)
+                    
+                    $0.addItem(thumbView)
+                        .size(20)
+                        .vertically(12)
+                }
         }
-
-        self.backgroundColor = isOn ? .mainPurple : .grayScale200
-        self.layer.cornerRadius = 12
+        
     }
-
-    private func layoutThumb() {
-        let x: CGFloat = isOn
-            ? bounds.width - 20 - 2
-            : 2
-
-        let apply = {
-            self.thumbView.frame.origin.x = x
-        }
-        UIView.animate(withDuration: 0.2, animations: apply)
+    
+    func setSwitch(isOn: Bool) {
+        self.isOn = isOn
+        updateUI()
     }
     
     private func setupGesture() {
         let tap = UITapGestureRecognizer(target: self, action: #selector(tapSwitch))
-        addGestureRecognizer(tap)
+        touchOverlay.addGestureRecognizer(tap)
+    }
+
+    private func layoutThumb() {
+        let leftValue: CGFloat = isOn
+        ? 64 - 20 - 12
+            : 12
+        self.thumbView.flex.left(leftValue).markDirty()
+        UIView.animate(withDuration: 0.2) {
+            self.flex.layout()
+        }
     }
     
     private func updateUI() {
-        backgroundColor = isOn ? .mainPurple : .grayScale200
+        trackView.backgroundColor = isOn ? .mainPurple : .grayScale200
         layoutThumb()
-    }
-    
-    func setSwitch(isOn: Bool) {
-        guard self.isOn != isOn else { return }
-        self.isOn = isOn
-        updateUI()
     }
 
     @objc func tapSwitch() {
         onTap?(isOn)
+        updateUI()
     }
 }

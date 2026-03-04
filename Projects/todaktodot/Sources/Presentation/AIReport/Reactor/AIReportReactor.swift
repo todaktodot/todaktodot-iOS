@@ -12,24 +12,26 @@ final class AIReportReactor: Reactor {
     let disposeBag = DisposeBag()
     
     struct State {
-        var currentStep: DetailStep = .syncReport
-        var reportData: AIReportDetail?
-    }
-    
-    enum DetailStep {
-        case syncReport
-        case insightReport
-        case topicReport
+        var reportData: (AIReportDetail?, AIReportViewStep?)?
+        var storageData: [AIReportList]?
+        var historyData: QuestionCard?
+        var reportCreated: AIReportCreated?
     }
     
     enum Action {
-        case tapReportDetailButton
-        case tapNextButton
+        case fetchReportIsCreated
+        case fetchStorageListData
+        
+        case tapReportDetailButton(Int)
+        case tapStorageReport(Int)
+        case tapTopicCard(Int)
     }
     
     enum Mutation {
-        case setReportSuccess(AIReportDetail)
-        case setNextStep
+        case setReportSuccess(AIReportDetail?, AIReportViewStep?)
+        case setStorageReport([AIReportList])
+        case setReportCreated(AIReportCreated)
+        case setHistoryDetail(QuestionCard?)
     }
     
     let initialState = State()
@@ -42,11 +44,35 @@ final class AIReportReactor: Reactor {
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
-        case .tapReportDetailButton:
-            return useCase.fetchAIReportDetail(id: 1)
-                .map { Mutation.setReportSuccess($0) }
-        case .tapNextButton:
-            return .just(.setNextStep)
+        case .tapReportDetailButton(let id):
+            return Observable.concat([
+                useCase.fetchAIReportDetail(id: id)
+                    .map { Mutation.setReportSuccess($0, .first) },
+                .just(Mutation.setReportSuccess(nil, nil))
+            ])
+            
+        case .tapStorageReport(let id):
+            return Observable.concat([
+                useCase.fetchAIReportDetail(id: id)
+                    .map { Mutation.setReportSuccess($0, .history) },
+                .just(Mutation.setReportSuccess(nil, nil))
+            ])
+            
+        case .fetchStorageListData:
+            return useCase.fetchAIReportList()
+                .map { Mutation.setStorageReport($0) }
+            
+        case .fetchReportIsCreated:
+            return useCase.fetchLastWeekAIReportCreated()
+                .map { Mutation.setReportCreated($0) }
+                .catchAndReturn(.setReportCreated(AIReportCreated(reportId: 0, creatable: false, initialize: false)))
+            
+        case .tapTopicCard(let id):
+            return Observable.concat([
+                useCase.fetchHistoryCardDetail(coupleCardId: id)
+                    .map { Mutation.setHistoryDetail($0) },
+                .just(Mutation.setHistoryDetail(nil))
+            ])
         }
     }
     
@@ -54,19 +80,15 @@ final class AIReportReactor: Reactor {
         var newState = state
         
         switch mutation {
-        case .setReportSuccess(let report):
-            newState.reportData = report
-        case .setNextStep:
-            switch state.currentStep {
-            case .syncReport:
-                newState.currentStep = .insightReport
-            case .insightReport:
-                newState.currentStep = .topicReport
-            case .topicReport:
-                newState.currentStep = .insightReport
-            }
+        case .setReportSuccess(let report, let step):
+            newState.reportData = (report, step)
+        case .setStorageReport(let list):
+            newState.storageData = list
+        case .setReportCreated(let created):
+            newState.reportCreated = created
+        case .setHistoryDetail(let history):
+            newState.historyData = history
         }
-        
         return newState
     }
 }

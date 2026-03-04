@@ -39,4 +39,8 @@ final class CardUseCase {
             answers: answers
         )
     }
+    
+    func notiAgree() -> Observable<Bool> {
+        repository.notiAgree()
+    }
 }

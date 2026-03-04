@@ -12,4 +12,7 @@ struct MypageInfo {
     let partnerNickname: String?
     let isCouple: Bool
     let coupleInfo: CoupleInfo
+    let infoAgree: Bool
+    let advertAgree: Bool
+    let marketingAgree: Bool
 }

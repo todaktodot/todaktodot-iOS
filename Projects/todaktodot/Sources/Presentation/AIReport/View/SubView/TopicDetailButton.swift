@@ -13,6 +13,8 @@ import FlexLayout
 import PinLayout
 
 final class TopicDetailButton: UIButton {
+    let coupleCardId: Int
+    
     private let dateLabel = TDLabel().then {
         $0.font = .pretenSemiBold(16)
         $0.textColor = .grayScale900
@@ -27,8 +29,8 @@ final class TopicDetailButton: UIButton {
         $0.tintColor  = .grayScale800
     }
 
-    init(frame: CGRect = .zero, date: String, topic: String) {
-        
+    init(frame: CGRect = .zero, date: String, topic: String, coupleCardId: Int) {
+        self.coupleCardId = coupleCardId
         super.init(frame: frame)
         self.backgroundColor = .white
         self.layer.cornerRadius = 16
@@ -36,7 +38,6 @@ final class TopicDetailButton: UIButton {
         self.topicLabel.text = topic
         
         setupFlexLayout()
-        layoutViews()
     }
     
     required init?(coder: NSCoder) {
@@ -54,10 +55,6 @@ final class TopicDetailButton: UIButton {
             
             $0.addItem(chevronImageView)
         }
-    }
-    
-    private func layoutViews() {
-        self.flex.layout()
     }
 }
 

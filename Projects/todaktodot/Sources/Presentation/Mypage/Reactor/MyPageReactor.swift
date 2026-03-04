@@ -18,14 +18,19 @@ final class MyPageReactor: Reactor {
         var isLogout: Bool?
         var isDisconnectCouple: Bool?
         var isWithdrawal: Bool?
+        var isInfoNotice: Bool?
+        var isAdvertNoti: Bool?
+        var isMarketingNoti: Bool?
     }
     
     enum Action {
         case fetchInfo
-//        case tapTerms
         case tapLogout
         case tapDisconnectCouple
         case tapWitdrawal
+        case tapInfoNoti(Bool)
+        case tapAdvertNoti(Bool)
+        case tapMarketingNoti(Bool)
     }
 
     enum Mutation {
@@ -34,6 +39,9 @@ final class MyPageReactor: Reactor {
         case setLogout(Bool)
         case setDisconnectCouple(Bool)
         case setWithdrawal(Bool)
+        case setInfoNoti(Bool)
+        case setAdvertNoti(Bool)
+        case setMarketingNoti(Bool)
     }
     
     let initialState = State()
@@ -53,7 +61,6 @@ final class MyPageReactor: Reactor {
                 .just(.setLoading(false))
             ])
             .catchAndReturn(.setLoading(false))
-//        case .tapTerms:
             
         case .tapDisconnectCouple:
             return useCase.disconnectCouple()
@@ -67,6 +74,17 @@ final class MyPageReactor: Reactor {
             return useCase.withdrawal()
                 .map { .setWithdrawal($0) }
             
+        case .tapInfoNoti(let isOn):
+            return useCase.updateTerms(infoAgree: isOn)
+                .map { .setInfoNoti($0) }
+            
+        case .tapAdvertNoti(let isOn):
+            return useCase.updateTerms(advertiesmentAgree: isOn)
+                .map { .setAdvertNoti($0) }
+            
+        case .tapMarketingNoti(let isOn):
+            return useCase.updateTerms(marketingAgree: isOn)
+                .map { .setMarketingNoti($0) }
         }
     }
     
@@ -83,6 +101,12 @@ final class MyPageReactor: Reactor {
             newState.isLogout = success
         case .setWithdrawal(let success):
             newState.isWithdrawal = success
+        case .setInfoNoti(let isOn):
+            newState.isInfoNotice = isOn
+        case .setAdvertNoti(let isOn):
+            newState.isAdvertNoti = isOn
+        case .setMarketingNoti(let isOn):
+            newState.isMarketingNoti = isOn
         }
         return newState
     }

@@ -12,4 +12,5 @@ protocol MypageRepository {
     func logout() -> Observable<Bool>
     func disconnectCouple() -> Observable<Bool>
     func withdrawal() -> Observable<Bool>
+    func updateTerms(infoAgree: Bool?, marketingAgree: Bool?, advertiesmentAgree: Bool?) -> Observable<Bool>
 }

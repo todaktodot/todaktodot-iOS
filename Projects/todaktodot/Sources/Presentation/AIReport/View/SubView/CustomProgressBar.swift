@@ -34,6 +34,7 @@ final class CustomProgressBar: UIView {
     }
     
     private let progressLabel = TDLabel().then {
+        $0.text = "000%"
         $0.font = .pretenRegular(16)
         $0.textColor = .grayScale800
     }
@@ -86,13 +87,17 @@ final class CustomProgressBar: UIView {
         progressView.layer.cornerRadius = barHeight / 2
     }
 
-    func setProgress(_ value: CGFloat) {
+    func setProgress(_ value: CGFloat, animated: Bool) {
         progressLabel.text = "\(Int(value * 100))%"
         
         let width = (UIScreen.main.bounds.width - 80) * value
         
-        UIView.animate(withDuration: 0.75) {
-            self.progressView.frame = CGRect(x: 0, y: 0, width: width, height: 10)
+        if animated {
+            UIView.animate(withDuration: 1, delay: 0, options: .curveEaseInOut) {
+                self.progressView.frame = CGRect(x: 0, y: 0, width: width, height: 10)
+            }
+        } else {
+            progressView.frame = CGRect(x: 0, y: 0, width: width, height: 10)
         }
     }
 }

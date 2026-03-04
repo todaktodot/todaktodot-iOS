@@ -56,7 +56,10 @@ extension UserDTO {
                 firstMetDate: dateToKR(coupleDetailInfo?.firstMetDt) ?? "",
                 sinceMetDate: coupleDetailInfo?.sinceMetDt ?? "",
                 stage: CoupleStage(rawValue: coupleDetailInfo?.relationshipStage ?? "")?.title ?? ""
-            )
+            ),
+            infoAgree: infoAlarmYN == "Y",
+            advertAgree: adAlarmYN == "Y",
+            marketingAgree: marketingAlarmYN == "Y"
         )
     }
     
