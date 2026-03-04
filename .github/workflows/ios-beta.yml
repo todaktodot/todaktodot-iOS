@@ -35,7 +35,20 @@ jobs:
 
       - name: Install Tuist Dependencies
         run: mise exec -- tuist install
-
+        
+      - name: Create xcconfig files
+        run: |
+          mkdir -p Projects/todaktodot/Config  
+          cat <<EOF > Projects/todaktodot/Config/Debug.xcconfig
+          EOF  
+          cat <<EOF > Projects/todaktodot/Config/Release.xcconfig
+          KAKAO_APP_KEY = ${{ secrets.KAKAO_APP_KEY }}
+          KAKAO_URL_KEY = ${{ secrets.KAKAO_URL_KEY }}
+          GOOGLE_URL_KEY = ${{ secrets.GOOGLE_URL_KEY }}
+          TODAKTODOT_API = ${{ secrets.TODAKTODOT_API }}
+          PRODUCT_BUNDLE_IDENTIFIER = ${{ secrets.PRODUCT_BUNDLE_IDENTIFIER }}
+          EOF
+          
       - name: Generate project
         run: mise exec -- tuist generate
 
