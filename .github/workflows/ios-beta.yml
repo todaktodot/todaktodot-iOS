@@ -27,20 +27,14 @@ jobs:
           gem install bundler
           bundle install
 
-      # 3️⃣ Tuist 설치 (mise를 통한 설치 최적화)
       - name: Install Tuist
-        run: |
-          curl https://mise.run | sh
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          # mise가 정상적으로 인식되도록 shell을 새로 고침하는 효과
-          export PATH="$HOME/.local/bin:$PATH"
-          mise install tuist 
+        run: curl -Ls https://install.tuist.io | bash
 
-      # 4️⃣ Tuist 프로젝트 생성
-      - name: Tuist Generate
-        run: |
-          export PATH="$HOME/.local/bin:$PATH"
-          tuist generate
+      - name: Add Tuist to PATH
+        run: echo "$HOME/.tuist/bin" >> $GITHUB_PATH
+
+      - name: Generate project
+        run: tuist generate
 
       # 5️⃣ fastlane beta 실행
       - name: Run Fastlane Beta
