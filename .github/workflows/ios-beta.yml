@@ -1,50 +1,53 @@
 name: iOS Beta Deploy
 
 on:
-    push:
+  push:
     branches: [ "CI/CD" ]
-    pull_request:
+  pull_request:
     branches: [ "CI/CD" ]
 
 jobs:
-    build:
+  build:
     runs-on: macos-latest
-    
+
     steps:
-        # 1️⃣ 코드 체크아웃
-        - name: Checkout Repository
+      # 1️⃣ 코드 체크아웃
+      - name: Checkout Repository
         uses: actions/checkout@v4
-        
-        # 2️⃣ Ruby & Bundler 설치 (fastlane용)
-        - name: Setup Ruby
+
+      # 2️⃣ Ruby & Bundler 설치
+      - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-            ruby-version: '3.2'
-        
-        - name: Install Bundler & Gems
+          ruby-version: '3.2'
+          bundler-cache: true # 캐시를 사용하면 속도가 빨라집니다.
+
+      - name: Install Bundler & Gems
         run: |
           gem install bundler
           bundle install
-        
-        # 3️⃣ Tuist 설치
-        - name: Install Tuist
+
+      # 3️⃣ Tuist 설치 (mise를 통한 설치 최적화)
+      - name: Install Tuist
         run: |
           curl https://mise.run | sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-          mise install
-        
-        # 4️⃣ Tuist 프로젝트 생성
-        # 4️⃣ Tuist 프로젝트 생성
-        - name: Tuist Generate
+          # mise가 정상적으로 인식되도록 shell을 새로 고침하는 효과
+          export PATH="$HOME/.local/bin:$PATH"
+          mise install tuist 
+
+      # 4️⃣ Tuist 프로젝트 생성
+      - name: Tuist Generate
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           tuist generate
-        
-        # 5️⃣ fastlane beta 실행
-        - name: Run Fastlane Beta
+
+      # 5️⃣ fastlane beta 실행
+      - name: Run Fastlane Beta
         env:
-            MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-            FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
-            MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
-            FASTLANE_USER: ${{ secrets.APPLE_ID }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          FASTLANE_USER: ${{ secrets.APPLE_ID }}
+          # App Store Connect API Key를 사용한다면 여기에 추가
         run: bundle exec fastlane beta
