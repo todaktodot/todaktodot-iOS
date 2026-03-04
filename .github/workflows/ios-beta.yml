@@ -28,7 +28,7 @@ jobs:
           bundle install
 
       - name: Install Tuist
-        run: curl -Ls https://install.tuist.io | bash
+        run: curl -Ls https://install.tuist.io | zsh
 
       - name: Add Tuist to PATH
         run: echo "$HOME/.tuist/bin" >> $GITHUB_PATH
