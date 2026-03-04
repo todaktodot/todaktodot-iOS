@@ -49,5 +49,5 @@ jobs:
           FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
           MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
           FASTLANE_USER: ${{ secrets.APPLE_ID }}
-          # App Store Connect API Key를 사용한다면 여기에 추가
+          
         run: bundle exec fastlane beta
