@@ -82,6 +82,7 @@ final class MypageViewController: CustomBackViewController, View {
         $0.layer.cornerRadius = 13
     }
     
+    
     private let coupleDisconnectButton = UIButton().then {
         $0.setTitle("커플 해제", for: .normal)
         $0.titleLabel?.font = .pretenRegular(16)
