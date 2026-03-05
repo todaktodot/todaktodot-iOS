@@ -61,7 +61,7 @@ platform :ios do
       clean: true,
       export_options: {
         provisioningProfiles: {
-          "info.todaktodot" => "match AppStore info.todaktodot"
+          "match AppStore info.todaktodot"
         }
       }
     )
