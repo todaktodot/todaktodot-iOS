@@ -56,7 +56,7 @@ platform :ios do
       workspace: "todaktodotWorkspace.xcworkspace",
       scheme: "todaktodot",
       export_method: "app-store",
-      clean: true # 빌드 전 클린 권장
+      clean: true,
       export_options: {
         provisioningProfiles: {
           "info.todaktodot" => "match AppStore info.todaktodot"
