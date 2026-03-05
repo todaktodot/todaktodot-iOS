@@ -1,47 +1,47 @@
 name: iOS Beta Deploy
 
 on:
-  push:
+    push:
     branches: [ "CI/CD" ]
-  pull_request:
+    pull_request:
     branches: [ "CI/CD" ]
 
 jobs:
-  build:
+    build:
     runs-on: macos-latest
-
+    
     steps:
-      # 1️⃣ 코드 체크아웃
-      - name: Checkout Repository
+        # 1️⃣ 코드 체크아웃
+        - name: Checkout Repository
         uses: actions/checkout@v4
-
-      # 2️⃣ Ruby & Bundler 설치
-      - name: Setup Ruby
+        
+        # 2️⃣ Ruby & Bundler 설치
+        - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.2'
-          bundler-cache: true # 캐시를 사용하면 속도가 빨라집니다.
-
-      - name: Install Bundler & Gems
+            ruby-version: '3.2'
+            bundler-cache: true # 캐시를 사용하면 속도가 빨라집니다.
+        
+        - name: Install Bundler & Gems
         run: |
           gem install bundler
           bundle install
-
-      - name: Setup mise
+        
+        - name: Setup mise
         uses: jdx/mise-action@v2
-
-      - name: Install Tools via mise
+        
+        - name: Install Tools via mise
         run: mise install
-
-      - name: Install Tuist Dependencies
+        
+        - name: Install Tuist Dependencies
         run: mise exec -- tuist install
         
-      - name: Create xcconfig files
+        - name: Create xcconfig files
         run: |
           mkdir -p Projects/todaktodot/Config
-
+          
           printf "" > Projects/todaktodot/Config/Debug.xcconfig
-
+          
           printf "KAKAO_APP_KEY = %s\nKAKAO_URL_KEY = %s\nGOOGLE_URL_KEY = %s\nTODAKTODOT_API = %s\nPRODUCT_BUNDLE_IDENTIFIER = %s\n" \
           "${{ secrets.KAKAO_APP_KEY }}" \
           "${{ secrets.KAKAO_URL_KEY }}" \
@@ -49,26 +49,26 @@ jobs:
           "${{ secrets.TODAKTODOT_API }}" \
           "${{ secrets.PRODUCT_BUNDLE_IDENTIFIER }}" \
           > Projects/todaktodot/Config/Release.xcconfig
-          
-      - name: Generate project
+        
+        - name: Generate project
         run: mise exec -- tuist generate
-
-      - name: Create App Store Connect API Key
+        
+        - name: Create App Store Connect API Key
         run: |
           echo "${{ secrets.APP_STORE_CONNECT_API_KEY }}" | base64 --decode > AuthKey.p8
-
-      - name: Run Fastlane Beta
+        
+        - name: Run Fastlane Beta
         env:
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
-          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
-          FASTLANE_USER: ${{ secrets.APPLE_ID }}
-          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
-          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          
+            MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+            FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+            MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+            FASTLANE_USER: ${{ secrets.APPLE_ID }}
+            APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+            APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        
         run: bundle exec fastlane beta
         
-      - name: Print xcodebuild log
+        - name: Print xcodebuild log
         if: failure()
-          run: |
+            run: |
             cat /Users/runner/Library/Logs/gym/*.log || true
