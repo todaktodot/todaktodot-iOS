@@ -53,6 +53,10 @@ jobs:
       - name: Generate project
         run: mise exec -- tuist generate
 
+      - name: Create App Store Connect API Key
+        run: |
+          echo "${{ secrets.APP_STORE_CONNECT_API_KEY }}" | base64 --decode > AuthKey.p8
+
       # 5️⃣ fastlane beta 실행
       - name: Run Fastlane Beta
         env:
@@ -60,5 +64,7 @@ jobs:
           FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
           MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
           FASTLANE_USER: ${{ secrets.APPLE_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           
         run: bundle exec fastlane beta
