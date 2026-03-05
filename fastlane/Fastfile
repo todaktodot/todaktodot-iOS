@@ -59,11 +59,7 @@ platform :ios do
       scheme: "todaktodot",
       export_method: "app-store",
       clean: true,
-      export_options: {
-        provisioningProfiles: {
-          "match AppStore info.todaktodot"
-        }
-      }
+      export_xcargs: "-allowProvisioningUpdates"
     )
 
     # 4. 테스트플라이트 업로드
