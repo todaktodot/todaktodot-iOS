@@ -36,7 +36,8 @@ platform :ios do
 
     match(
       type: "appstore",
-      readonly: true
+      readonly: true,
+      git_url: "https://github.com/todaktodot/fastlane-match-iOS.git"
     )
 
     # 1. 최신 빌드 넘버 가져오기
