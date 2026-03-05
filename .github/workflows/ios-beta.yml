@@ -70,4 +70,10 @@ jobs:
         
       - name: Print xcodebuild log
         if: failure()
-        run: cat /Users/runner/Library/Logs/gym/*.log
+        run: |
+          ls -R /Users/runner/Library/Logs || true
+          
+      - name: Print gym log
+        if: failure()
+        run: |
+          find /Users/runner -name "*.log" | grep gym || true
