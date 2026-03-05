@@ -36,9 +36,7 @@ platform :ios do
 
     match(
       type: "appstore",
-      readonly: true,
-      git_url: "https://github.com/todaktodot/fastlane-match-iOS",
-      git_basic_authorization: ENV["MATCH_GIT_BASIC_AUTHORIZATION"]
+      readonly: true
     )
 
     # 1. 최신 빌드 넘버 가져오기
@@ -59,6 +57,11 @@ platform :ios do
       scheme: "todaktodot",
       export_method: "app-store",
       clean: true
+      export_options: {
+        provisioningProfiles: {
+          "info.todaktodot" => "match AppStore info.todaktodot"
+        }
+      }
     )
 
     # 4. 테스트플라이트 업로드
