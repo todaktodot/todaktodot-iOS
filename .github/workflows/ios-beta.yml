@@ -67,3 +67,8 @@ jobs:
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           
         run: bundle exec fastlane beta
+        
+      - name: Print xcodebuild log
+        if: failure()
+          run: |
+            cat /Users/runner/Library/Logs/gym/*.log || true
