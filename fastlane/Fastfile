@@ -58,8 +58,7 @@ platform :ios do
       workspace: "todaktodotWorkspace.xcworkspace",
       scheme: "todaktodot",
       export_method: "app-store",
-      clean: true,
-      export_xcargs: "-allowProvisioningUpdates"
+      clean: true
     )
 
     # 4. 테스트플라이트 업로드
