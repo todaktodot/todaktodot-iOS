@@ -57,7 +57,6 @@ jobs:
         run: |
           echo "${{ secrets.APP_STORE_CONNECT_API_KEY }}" | base64 --decode > AuthKey.p8
 
-      # 5️⃣ fastlane beta 실행
       - name: Run Fastlane Beta
         env:
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
