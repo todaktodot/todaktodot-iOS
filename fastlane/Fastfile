@@ -33,6 +33,12 @@ platform :ios do
       issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
       key_filepath: "./AuthKey.p8"
     )
+
+    match(
+      type: "appstore",
+      readonly: true
+    )
+
     # 1. 최신 빌드 넘버 가져오기
     latest_build = latest_testflight_build_number(
       api_key: api_key,
@@ -51,6 +57,11 @@ platform :ios do
       scheme: "todaktodot",
       export_method: "app-store",
       clean: true # 빌드 전 클린 권장
+      export_options: {
+        provisioningProfiles: {
+          "info.todaktodot" => "match AppStore info.todaktodot"
+        }
+      }
     )
 
     # 4. 테스트플라이트 업로드
