@@ -57,11 +57,6 @@ platform :ios do
       scheme: "todaktodot",
       export_method: "app-store",
       clean: true
-      export_options: {
-        provisioningProfiles: {
-          "info.todaktodot" => "match AppStore info.todaktodot"
-        }
-      }
     )
 
     # 4. 테스트플라이트 업로드
