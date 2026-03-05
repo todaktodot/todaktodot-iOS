@@ -69,6 +69,6 @@ jobs:
         run: bundle exec fastlane beta
         
       - name: Print xcodebuild log
-        if: failure()
-          run: |
+      if: failure()
+        run: |
           cat /Users/runner/Library/Logs/gym/*.log || true
