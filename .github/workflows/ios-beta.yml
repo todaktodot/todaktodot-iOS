@@ -92,10 +92,6 @@ jobs:
       - name: Create App Store Connect API Key
         run: |
           echo "${{ secrets.APP_STORE_CONNECT_API_KEY }}" | base64 --decode > AuthKey.p8
-          
-      - name: Find Tuist Cache Path
-        run: |
-          tuist cache location # ✅ Tuist가 어디에 캐시를 저장하는지 출력해줍니다.
 
       - name: Run Fastlane Beta
         env:
@@ -106,7 +102,7 @@ jobs:
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           
-        run: bundle exec fastlane beta
+#        run: bundle exec fastlane beta
         
       - name: Print xcodebuild log
         if: failure()
