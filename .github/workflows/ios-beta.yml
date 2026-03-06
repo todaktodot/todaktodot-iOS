@@ -44,7 +44,9 @@ jobs:
           path: |
             ~/.tuist
             ~/.local/share/Tuist
+            ~/.local/share/tuist
             ~/Library/Caches/Tuist
+            ~/Library/Caches/tuist
           key: ${{ runner.os }}-tuist-${{ hashFiles('Tuist/**/*.swift') }}
           restore-keys: |
             ${{ runner.os }}-tuist-
