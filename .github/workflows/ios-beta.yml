@@ -36,6 +36,10 @@ jobs:
       - name: Install Tuist Dependencies
         run: mise exec -- tuist install
         
+        - name: Decode GoogleService-Info.plist
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}" | base64 --decode > Projects/todaktodot/Resources/GoogleService-Info-Release.plist
+          
       - name: Create xcconfig files
         run: |
           mkdir -p Projects/todaktodot/Config
