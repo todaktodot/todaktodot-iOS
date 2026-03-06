@@ -3,8 +3,10 @@ name: iOS Beta Deploy
 on:
   push:
     branches: [ "CI/CD" ]
-  pull_request:
-    branches: [ "CI/CD" ]
+
+concurrency:
+  group: ios-beta
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -31,6 +33,31 @@ jobs:
         run: |
           gem install bundler
           bundle install
+
+      - name: Cache mise tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/mise
+            ~/.cache/mise
+          key: ${{ runner.os }}-mise-${{ hashFiles('.tool-versions') }}
+
+      - name: Cache Tuist
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.tuist/Cache
+            ~/Library/Caches/tuist
+          key: ${{ runner.os }}-tuist-${{ hashFiles('Tuist/Dependencies.swift') }}
+
+      - name: Cache SwiftPM
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData
+            ~/Library/Caches/org.swift.swiftpm
+            ~/Library/Developer/Xcode/SourcePackages
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
 
       - name: Setup mise
         uses: jdx/mise-action@v2
