@@ -29,18 +29,13 @@ jobs:
           ruby-version: '3.2'
           bundler-cache: true # 캐시를 사용하면 속도가 빨라집니다.
 
-      - name: Install Bundler & Gems
-        run: |
-          gem install bundler
-          bundle install
-
       - name: Cache mise tools
         uses: actions/cache@v4
         with:
           path: |
             ~/.local/share/mise
             ~/.cache/mise
-          key: ${{ runner.os }}-mise-${{ hashFiles('.tool-versions') }}
+          key: ${{ runner.os }}-mise-${{ hashFiles('.mise.toml', '.tool-versions') }}
 
       - name: Cache Tuist
         uses: actions/cache@v4
@@ -48,6 +43,7 @@ jobs:
           path: |
             ~/Library/Application Support/Tuist
             ~/Library/Caches/tuist
+            ~/.tuist
           key: ${{ runner.os }}-tuist-${{ hashFiles('Tuist/**/*.swift') }}
           restore-keys: |
             ${{ runner.os }}-tuist-
@@ -56,10 +52,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/Library/Developer/Xcode/DerivedData
             ~/Library/Developer/Xcode/SourcePackages
             ~/Library/Caches/org.swift.swiftpm
-          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved', 'Tuist/**/*.swift') }}
           restore-keys: |
             ${{ runner.os }}-spm-
 
