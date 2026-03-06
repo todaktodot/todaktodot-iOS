@@ -72,13 +72,6 @@ jobs:
       - name: Install Tuist Dependencies
         run: mise exec -- tuist install
 
-      - name: Generate project
-        run: mise exec -- tuist generate
-
-      - name: Decode GoogleService-Info.plist
-        run: |
-          echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}" | base64 --decode > Projects/todaktodot/Resources/GoogleService-Info-Release.plist
-          
       - name: Create xcconfig files
         run: |
           mkdir -p Projects/todaktodot/Config
@@ -92,8 +85,14 @@ jobs:
           "${{ secrets.TODAKTODOT_API }}" \
           "${{ secrets.PRODUCT_BUNDLE_IDENTIFIER }}" \
           > Projects/todaktodot/Config/Release.xcconfig
-          
 
+      - name: Decode GoogleService-Info.plist
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}" | base64 --decode > Projects/todaktodot/Resources/GoogleService-Info-Release.plist
+
+      - name: Generate project
+        run: mise exec -- tuist generate
+          
       - name: Create App Store Connect API Key
         run: |
           echo "${{ secrets.APP_STORE_CONNECT_API_KEY }}" | base64 --decode > AuthKey.p8
