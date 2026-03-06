@@ -59,7 +59,12 @@ platform :ios do
       workspace: "todaktodotWorkspace.xcworkspace",
       scheme: "todaktodot",
       export_method: "app-store",
-      clean: true
+      xcargs: "CODE_SIGN_STYLE=Manual",
+      export_options: {
+        provisioningProfiles: {
+          "info.todaktodot" => "match AppStore info.todaktodot 1772725343"
+        }
+      }
     )
 
     # 4. 테스트플라이트 업로드
