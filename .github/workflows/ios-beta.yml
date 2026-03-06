@@ -38,7 +38,7 @@ jobs:
         
       - name: Decode GoogleService-Info.plist
         run: |
-          echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}" | base64 --decode > Projects/todaktodot/Resources/GoogleService-Info-Release.plist
+          echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}" | base64 --decode > Projects/todaktodot/Resources/GoogleService-Info.plist
           
       - name: Create xcconfig files
         run: |
