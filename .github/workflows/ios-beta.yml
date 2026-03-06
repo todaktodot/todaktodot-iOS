@@ -3,6 +3,7 @@ name: iOS Beta Deploy
 on:
   push:
     branches: [ "CI/CD" ]
+  workflow_dispatch:
 
 concurrency:
   group: ios-beta
