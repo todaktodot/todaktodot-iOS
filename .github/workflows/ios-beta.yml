@@ -38,19 +38,6 @@ jobs:
             ~/.cache/mise
           key: ${{ runner.os }}-mise-${{ hashFiles('.mise.toml', '.tool-versions') }}
 
-      - name: Cache Tuist
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.tuist
-            ~/.local/share/Tuist
-            ~/.local/share/tuist
-            ~/Library/Caches/Tuist
-            ~/Library/Caches/tuist
-          key: ${{ runner.os }}-tuist-${{ hashFiles('Tuist/**/*.swift') }}
-          restore-keys: |
-            ${{ runner.os }}-tuist-
-
       - name: Cache SwiftPM
         uses: actions/cache@v4
         with:
@@ -87,10 +74,6 @@ jobs:
       - name: Decode GoogleService-Info.plist
         run: |
           echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}" | base64 --decode > Projects/todaktodot/Resources/GoogleService-Info-Release.plist
-
-
-      - name: Warm Tuist Cache
-        run: mise exec -- tuist cache
         
       - name: Generate project
         run: mise exec -- tuist generate
@@ -99,16 +82,16 @@ jobs:
         run: |
           echo "${{ secrets.APP_STORE_CONNECT_API_KEY }}" | base64 --decode > AuthKey.p8
 
-#      - name: Run Fastlane Beta
-#        env:
-#          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-#          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
-#          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
-#          FASTLANE_USER: ${{ secrets.APPLE_ID }}
-#          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
-#          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-#          
-#        run: bundle exec fastlane beta
+      - name: Run Fastlane Beta
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          FASTLANE_USER: ${{ secrets.APPLE_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          
+        run: bundle exec fastlane beta
         
       - name: Print xcodebuild log
         if: failure()
