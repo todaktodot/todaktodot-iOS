@@ -93,6 +93,26 @@ jobs:
           
         run: bundle exec fastlane beta
         
+      - name: Get App Version
+        id: app_version
+        run: |
+          MARKETING_VERSION=$(agvtool what-marketing-version -terse1 2>/dev/null || echo "unknown")
+          BUILD_VERSION=$(agvtool what-version -terse 2>/dev/null || echo "unknown")
+          echo "marketing=$MARKETING_VERSION" >> $GITHUB_OUTPUT
+          echo "build=$BUILD_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Discord Notification
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          BRANCH="${{ github.ref_name }}"
+          VERSION="${{ steps.app_version.outputs.marketing }}"
+          BUILD="${{ steps.app_version.outputs.build }}"
+
+          curl -H "Content-Type: application/json" \
+          -d "{\"content\": \"🚀 iOS 베타 배포\\n브랜치: $BRANCH\\n버전: $VERSION\\n빌드: $BUILD\\n업로드 결과: $STATUS\"}" \
+          ${{ secrets.DISCORD_WEBHOOK_URL }}
+
       - name: Print xcodebuild log
         if: failure()
         run: |
