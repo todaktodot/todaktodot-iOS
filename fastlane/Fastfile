@@ -17,6 +17,54 @@ default_platform(:ios)
 
 platform :ios do
 
+  # --- 알림 전송 공통 함수 ---
+  def send_discord_message(status: nil, exception: nil)
+    webhook_url = ENV["DISCORD_WEBHOOK_URL"]
+    return unless webhook_url # URL이 없으면 스킵
+
+    # 빌드 정보 가져오기 (xcodeproj 경로 명시)
+    proj_path = "Projects/todaktodot/todaktodot.xcodeproj"
+    version = get_version_number(xcodeproj: proj_path)
+    build = get_build_number(xcodeproj: proj_path)
+    branch = ENV["GITHUB_REF_NAME"] || "unknown"
+
+    if status == "success"
+      title = "✅ iOS 베타 배포 성공"
+      color = 306699 # 파란색
+      description = "새로운 버전이 TestFlight에 업로드되었습니다."
+    else
+      title = "❌ iOS 베타 배포 실패"
+      color = 15158332 # 빨간색
+      description = "빌드 중 에러가 발생했습니다: #{exception}"
+    end
+
+    payload = {
+      embeds: [{
+        title: title,
+        description: description,
+        color: color,
+        fields: [
+          { name: "Version", value: "#{version} (#{build})", inline: true },
+          { name: "Branch", value: branch, inline: true }
+        ],
+        footer: { text: "todaktodot-iOS" },
+        timestamp: Time.now.utc.iso8601
+      }]
+    }.to_json
+
+    sh("curl -H 'Content-Type: application/json' -d '#{payload}' #{webhook_url}")
+  end
+
+  # 모든 작업 성공 후 실행
+  after_all do |lane|
+    send_discord_message(status: "success")
+  end
+
+  # 에러 발생 시 실행
+  error do |lane, exception|
+    send_discord_message(status: "failure", exception: exception)
+  end
+
   desc "PR 빌드용"
   lane :ci do
     scan(
@@ -42,19 +90,16 @@ platform :ios do
       git_url: "https://github.com/todaktodot/fastlane-match-iOS.git"
     )
 
-    # 1. 최신 빌드 넘버 가져오기
     latest_build = latest_testflight_build_number(
       api_key: api_key,
       app_identifier: "info.todaktodot"
     ) || 0
 
-    # 2. 빌드 넘버 증가 (xcodeproj 경로 명시)
     increment_build_number(
       build_number: latest_build + 1,
       xcodeproj: "Projects/todaktodot/todaktodot.xcodeproj"
     )
 
-    # 3. 앱 빌드
     build_app(
       workspace: "todaktodotWorkspace.xcworkspace",
       scheme: "todaktodot",
@@ -67,7 +112,6 @@ platform :ios do
       }
     )
 
-    # 4. 테스트플라이트 업로드
     upload_to_testflight(
       skip_waiting_for_build_processing: true
     )
