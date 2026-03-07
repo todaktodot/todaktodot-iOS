@@ -24,7 +24,7 @@ platform :ios do
 
     # 빌드 정보 가져오기 (xcodeproj 경로 명시)
     proj_path = "Projects/todaktodot/todaktodot.xcodeproj"
-    version = get_version_number(xcodeproj: proj_path)
+    version = get_version_number(xcodeproj: proj_path, target: "todaktodot")
     build = get_build_number(xcodeproj: proj_path)
     branch = ENV["GITHUB_REF_NAME"] || "unknown"
 
