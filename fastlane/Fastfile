@@ -73,10 +73,33 @@ platform :ios do
       clean: true
     )
   end
-
+  
+  desc "모든 환경 배포 (Release & Dev)"
+  lane :deploy_all do
+    # 1. Dev 배포
+    beta(
+      scheme: "todaktodot",
+      bundle_id: "info.todaktodot.dev",
+      display_name: "투닥투닷 dev"
+    )
+    
+    # 2. Release 배포
+    beta(
+      scheme: "todaktodot",
+      bundle_id: "info.todaktodot",
+      display_name: "투닥투닷"
+    )
+  end
+  
   desc "TestFlight 배포"
-  lane :beta do
+  lane :beta do |options|
+    bundle_id = options[:bundle_id] || "info.todaktodot"
+    display_name = options[:display_name] || "투닥투닷"
+    scheme = options[:scheme] || "todaktodot"
+    
     setup_ci if is_ci
+    
+    app_identifier = ENV["APP_IDENTIFIER"] || "info.todaktodot"
 
     api_key = app_store_connect_api_key(
       key_id: ENV["APP_STORE_CONNECT_KEY_ID"],
@@ -86,13 +109,14 @@ platform :ios do
 
     match(
       type: "appstore",
+      app_identifier: bundle_id,
       readonly: true,
       git_url: "https://github.com/todaktodot/fastlane-match-iOS.git"
     )
 
     latest_build = latest_testflight_build_number(
       api_key: api_key,
-      app_identifier: "info.todaktodot"
+      app_identifier: app_identifier
     ) || 0
 
     increment_build_number(
@@ -104,15 +128,17 @@ platform :ios do
       workspace: "todaktodotWorkspace.xcworkspace",
       scheme: "todaktodot",
       export_method: "app-store",
-      xcargs: "CODE_SIGN_STYLE=Manual",
+      xcargs: "INFOPLIST_KEY_CFBundleDisplayName='#{display_name}'",
       export_options: {
         provisioningProfiles: {
-          "info.todaktodot" => "match AppStore info.todaktodot 1772725343"
+          "info.todaktodot" => "match AppStore info.todaktodot 1772725343",
+          "info.todaktodot.dev" => "match AppStore info.todaktodot.dev"
         }
       }
     )
 
     upload_to_testflight(
+      app_identifier: bundle_id,
       skip_waiting_for_build_processing: true
     )
   end
