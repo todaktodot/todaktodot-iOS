@@ -124,6 +124,8 @@ platform :ios do
       xcodeproj: "Projects/todaktodot/todaktodot.xcodeproj"
     )
 
+    profile_name = Actions.lane_context[SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING][bundle_id]
+
     build_app(
       workspace: "todaktodotWorkspace.xcworkspace",
       scheme: "todaktodot",
@@ -132,12 +134,13 @@ platform :ios do
         "CODE_SIGN_STYLE=Manual",
         "CODE_SIGN_IDENTITY='Apple Distribution'",
         "PRODUCT_BUNDLE_IDENTIFIER=#{bundle_id}",
-        "INFOPLIST_KEY_CFBundleDisplayName='#{display_name}'",
-        "PROVISIONING_PROFILE_SPECIFIER='match AppStore #{bundle_id}'"
+        "INFOPLIST_KEY_CFBundleDisplayName='#{display_name}'"
       ].join(" "),
       export_options: {
+        method: "app-store",
+        signingStyle: "manual",
         provisioningProfiles: {
-          bundle_id => Actions.lane_context[SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING][bundle_id]
+          bundle_id => profile_name
         }
       }
     )
