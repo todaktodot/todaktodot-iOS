@@ -77,7 +77,11 @@ jobs:
           "info.todaktodot" \
           > Projects/todaktodot/Config/Release.xcconfig
 
-      - name: Decode GoogleService-Info.plist
+      - name: Decode GoogleService-Info Debug.plist
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_DEV_BASE64 }}" | base64 --decode > Projects/todaktodot/Resources/GoogleService-Info-Debug.plist
+
+      - name: Decode GoogleService-Info Release.plist
         run: |
           echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}" | base64 --decode > Projects/todaktodot/Resources/GoogleService-Info-Release.plist
         
