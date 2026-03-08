@@ -105,6 +105,7 @@ let project = Project(
                     "DEVELOPMENT_TEAM": "5HY2NNF4HY",
                     "VERSIONING_SYSTEM": "apple-generic",
                     "CURRENT_PROJECT_VERSION": "1",
+                    "PROVISIONING_PROFILE_SPECIFIER": "match AppStore info.todaktodot.dev",
                     "MARKETING_VERSION": "1.0.0"
                 ],
                 configurations: [
