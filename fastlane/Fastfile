@@ -128,11 +128,15 @@ platform :ios do
       workspace: "todaktodotWorkspace.xcworkspace",
       scheme: "todaktodot",
       export_method: "app-store",
-      xcargs: "INFOPLIST_KEY_CFBundleDisplayName='#{display_name}'",
+      xcargs: [
+        "CODE_SIGN_STYLE=Manual",
+        "CODE_SIGN_IDENTITY='Apple Distribution'",
+        "PRODUCT_BUNDLE_IDENTIFIER=#{bundle_id}",
+        "INFOPLIST_KEY_CFBundleDisplayName='#{display_name}'"
+      ].join(" "),
       export_options: {
         provisioningProfiles: {
-          "info.todaktodot" => "match AppStore info.todaktodot 1772725343",
-          "info.todaktodot.dev" => "match AppStore info.todaktodot.dev"
+          bundle_id => Actions.lane_context[SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING][bundle_id]
         }
       }
     )
