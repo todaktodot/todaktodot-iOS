@@ -379,9 +379,11 @@ final class HomeViewController: BaseViewController, View {
     
     private func updatePokeButton(isPoked: Bool) {
         if isPoked {
+            pokeButton.setTitle("찌르기 완료", for: .normal)
             pokeButton.backgroundColor = .grayScale300
             pokeButton.isEnabled = false
         } else {
+            pokeButton.setTitle("콕 찌르기", for: .normal)
             pokeButton.backgroundColor = TodotColors.Button.purpleButton1
             pokeButton.isEnabled = true
         }
