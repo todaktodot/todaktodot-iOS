@@ -123,7 +123,7 @@ let project = Project(
                     "VERSIONING_SYSTEM": "apple-generic",
                     "CURRENT_PROJECT_VERSION": "1",
                     "MARKETING_VERSION": "1.0.0",
-                    "DEBUG_INFORMATION_FORMAT": "dwarf-with-dsym",
+                    "DEBUG_INFORMATION_FORMAT": "dwarf-with-dsym"
                 ],
                 configurations: [
                     .debug(name: "Debug", xcconfig: "Config/Debug.xcconfig"),
