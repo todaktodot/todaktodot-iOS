@@ -25,6 +25,7 @@ struct QuestionCard: Codable {
     let userId1: Int?
     let userId2: Int?
     let feedback: CardFeedback?
+    let pocked: Bool?
 
     var isBothAnswered: Bool {
         user1Answered && user2Answered

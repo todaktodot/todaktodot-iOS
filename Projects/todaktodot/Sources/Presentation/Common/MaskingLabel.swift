@@ -137,7 +137,7 @@ final class MaskingLabel: UILabel {
             positions.append(CGPoint(x: glyphRect.midX, y: glyphRect.midY))
         }
         
-        startBubbleGeneration(at: positions)
+        startBubbleGeneration(at: positions, characterCount: positions.count)
     }
     
     @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
@@ -166,12 +166,14 @@ final class MaskingLabel: UILabel {
         bubbleContainer.isHidden = false
     }
     
-    private func startBubbleGeneration(at positions: [CGPoint]) {
-        guard isMasked else { return }
+    private func startBubbleGeneration(at positions: [CGPoint], characterCount: Int) {
+        guard isMasked, characterCount > 0 else { return }
         
         bubbleGenerationWorkItem?.cancel()
         
-        for _ in 0..<tuning.bubblesPerBatch {
+        let bubblesCount = Int(Double(characterCount) * tuning.bubblesPerCharacter)
+        
+        for _ in 0..<bubblesCount {
             let randomPosition = positions.randomElement() ?? .zero
             let offsetX = CGFloat.random(in: -tuning.bubbleStartOffsetXRange...tuning.bubbleStartOffsetXRange)
             let offsetY = CGFloat.random(in: -tuning.bubbleStartOffsetYRange...tuning.bubbleStartOffsetYRange)
@@ -184,7 +186,7 @@ final class MaskingLabel: UILabel {
         }
         
         let workItem = DispatchWorkItem { [weak self] in
-            self?.startBubbleGeneration(at: positions)
+            self?.startBubbleGeneration(at: positions, characterCount: characterCount)
         }
         bubbleGenerationWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + tuning.bubbleBatchInterval, execute: workItem)
@@ -305,7 +307,7 @@ extension MaskingLabel {
 extension MaskingLabel {
     struct TuningSet {
         // Start
-        let bubblesPerBatch: Int = 70 /// 타임(bubbleBatchInterval)당 생성할 버블. 근데 글자 전체에서 80개라서 글자수 당 몇개  생성할지 바꿔야할지도
+        let bubblesPerCharacter: Double = 1.0 /// 글자당 생성할 버블 개수
         let bubbleBatchInterval: TimeInterval = 0.05  /// 버블 생성 간격
         let bubbleStartOffsetXRange: CGFloat = 6 /// 한 글자 중심 랜덤 버블 생성 반경.
         let bubbleStartOffsetYRange: CGFloat = 4

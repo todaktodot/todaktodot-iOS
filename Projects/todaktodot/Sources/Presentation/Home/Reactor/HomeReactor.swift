@@ -26,10 +26,11 @@ final class HomeReactor: Reactor {
     
     enum Action {
         case updateAnswerStatus(AnswerStatus)
-        case tapPokeButton
+        case tapPokeButton(coupleCardId: Int)
         case tapConnectCoupleButton
         case checkFirstLaunch
         case dismissNotificationAlert
+        case dismissPokeError
         case fetchHistoryCards(startDate: String, endDate: String)
         case fetchWeeklyCards(startDate: String, endDate: String)
         case loadTodayCards
@@ -46,6 +47,8 @@ final class HomeReactor: Reactor {
         case setHistoryCardsWithStatus([QuestionCard], AnswerStatus)
         case setTodayCards([QuestionCard])
         case setError(Error)
+        case setShowTooltip(Bool)
+        case setShowPokeError(Bool)
     }
     
     struct State {
@@ -55,6 +58,8 @@ final class HomeReactor: Reactor {
         var isCoupleConnected: Bool = UserdefaultKey.coupleType == .connected
         var historyCards: [QuestionCard] = []
         var todayCards: [QuestionCard] = []
+        var shouldShowTooltip: Bool = false
+        var shouldShowPokeError: Bool = false
     }
     
     let initialState = State()
@@ -79,36 +84,61 @@ final class HomeReactor: Reactor {
             return .bothUnanswered
         }
     }
-    
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .updateAnswerStatus(let status):
             return .just(.setAnswerStatus(status))
-        case .tapPokeButton:
-            return .just(.setPoked(true))
+        case .tapPokeButton(let coupleCardId):
+            return cardUseCase.pokeDailyCard(coupleCardId: coupleCardId)
+                .flatMap { result -> Observable<Mutation> in
+                    switch result {
+                    case .success:
+                        print("✅ 콕찌르기 성공")
+                        return .just(.setPoked(true))
+                    case .failure(let error):
+                        print("⚠️ 콕찌르기 실패: \(error)")
+                        return .just(.setShowPokeError(true))
+                    }
+                }
         case .tapConnectCoupleButton:
             return .just(.setCoupleConnected(UserdefaultKey.coupleType == .connected))
         case .checkFirstLaunch:
             return .just(.setShowNotificationAlert(true))
         case .dismissNotificationAlert:
             return .just(.setShowNotificationAlert(false))
+        case .dismissPokeError:
+            return .just(.setShowPokeError(false))
         case .fetchHistoryCards(let startDate, let endDate):
             return cardUseCase.fetchHistoryCards(startDate: startDate, endDate: endDate)
-                .map { result -> Mutation in
+                .flatMap { result -> Observable<Mutation> in
                     switch result {
                     case .success(let cards):
                         let today = CardService.shared.getCardSystemDate()
                         let calendar = Calendar.current
                         let todayCards = cards.filter { calendar.isDate($0.date, inSameDayAs: today) }
                         let status = todayCards.isEmpty ? .bothUnanswered : self.determineAnswerStatus(from: todayCards)
-                        return .setHistoryCardsWithStatus(cards, status)
+                        
+                        let todayString = today.toYYYYMMDD()
+                        let shouldShow = status == .bothAnswered && UserdefaultKey.lastTooltipShownDate != todayString
+                        
+                        if shouldShow {
+                            UserdefaultKey.lastTooltipShownDate = todayString
+                        }
+                        
+                        let isPoked = todayCards.first?.pocked ?? false
+                        
+                        return .concat([
+                            .just(.setHistoryCardsWithStatus(cards, status)),
+                            .just(.setShowTooltip(shouldShow)),
+                            .just(.setPoked(isPoked))
+                        ])
                     case .failure(let error):
                         let mockCards = MockCardData.historyCards
                         let today = Date()
                         let calendar = Calendar.current
                         let todayCards = mockCards.filter { calendar.isDate($0.date, inSameDayAs: today) }
                         let status = todayCards.isEmpty ? .bothUnanswered : self.determineAnswerStatus(from: todayCards)
-                        return .setHistoryCardsWithStatus(mockCards, status)
+                        return .just(.setHistoryCardsWithStatus(mockCards, status))
                     }
                 }
             
@@ -221,6 +251,10 @@ final class HomeReactor: Reactor {
             newState.todayCards = cards
         case .setError:
             break
+        case .setShowTooltip(let show):
+            newState.shouldShowTooltip = show
+        case .setShowPokeError(let show):
+            newState.shouldShowPokeError = show
         }
         return newState
     }
