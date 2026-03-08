@@ -133,7 +133,7 @@ platform :ios do
         "CODE_SIGN_IDENTITY='Apple Distribution'",
         "PRODUCT_BUNDLE_IDENTIFIER=#{bundle_id}",
         "INFOPLIST_KEY_CFBundleDisplayName='#{display_name}'",
-        "CODE_SIGN_ENTITLEMENTS='todaktodot.entitlements'"
+        "PROVISIONING_PROFILE_SPECIFIER='match AppStore #{bundle_id}'"
       ].join(" "),
       export_options: {
         provisioningProfiles: {
