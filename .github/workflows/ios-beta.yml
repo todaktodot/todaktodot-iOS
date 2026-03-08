@@ -60,15 +60,21 @@ jobs:
       - name: Create xcconfig files
         run: |
           mkdir -p Projects/todaktodot/Config
-
-          printf "" > Projects/todaktodot/Config/Debug.xcconfig
+          
+          printf "KAKAO_APP_KEY = %s\nKAKAO_URL_KEY = %s\nGOOGLE_URL_KEY = %s\nTODAKTODOT_API = %s\nPRODUCT_BUNDLE_IDENTIFIER = %s\n" \
+          "${{ secrets.KAKAO_APP_KEY_DEV }}" \
+          "${{ secrets.KAKAO_URL_KEY_DEV }}" \
+          "${{ secrets.GOOGLE_URL_KEY_DEV }}" \
+          "${{ secrets.TODAKTODOT_API }}" \
+          "info.todaktodot.dev" \
+          > Projects/todaktodot/Config/Debug.xcconfig
 
           printf "KAKAO_APP_KEY = %s\nKAKAO_URL_KEY = %s\nGOOGLE_URL_KEY = %s\nTODAKTODOT_API = %s\nPRODUCT_BUNDLE_IDENTIFIER = %s\n" \
           "${{ secrets.KAKAO_APP_KEY }}" \
           "${{ secrets.KAKAO_URL_KEY }}" \
           "${{ secrets.GOOGLE_URL_KEY }}" \
           "${{ secrets.TODAKTODOT_API }}" \
-          "${{ secrets.PRODUCT_BUNDLE_IDENTIFIER }}" \
+          "info.todaktodot" \
           > Projects/todaktodot/Config/Release.xcconfig
 
       - name: Decode GoogleService-Info.plist
@@ -92,7 +98,7 @@ jobs:
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           
-        run: bundle exec fastlane beta
+        run: bundle exec fastlane deploy_all
 
       - name: Print xcodebuild log
         if: failure()

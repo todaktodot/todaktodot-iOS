@@ -78,7 +78,6 @@ let project = Project(
                             "CFBundleURLSchemes": ["$(GOOGLE_URL_KEY)"]
                         ],
                     ],
-                    "CFBundleDisplayName" : "투닥투닷",
                     "KAKAO_URL_KEY": "$(KAKAO_URL_KEY)",
                     "KAKAO_APP_KEY": "$(KAKAO_APP_KEY)",
                     "TODAKTODOT_API": "$(TODAKTODOT_API)",
@@ -122,7 +121,6 @@ let project = Project(
                     "DEVELOPMENT_TEAM": "5HY2NNF4HY",
                     "CODE_SIGN_STYLE": "Manual",
                     "CODE_SIGN_IDENTITY": "Apple Distribution",
-                    "PROVISIONING_PROFILE_SPECIFIER": "match AppStore info.todaktodot 1772725343",
                     "VERSIONING_SYSTEM": "apple-generic",
                     "CURRENT_PROJECT_VERSION": "1",
                     "MARKETING_VERSION": "1.0.0",
