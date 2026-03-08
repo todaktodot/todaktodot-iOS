@@ -73,7 +73,7 @@ final class MainTabBarController: UIViewController {
         guard let navController = currentViewController as? UINavigationController else {
             return false
         }
-
+        
         return navController.viewControllers.contains { $0.hidesBottomBarWhenPushed }
     }
 }
@@ -131,19 +131,26 @@ extension MainTabBarController: UINavigationControllerDelegate {
         let isPushing = navigationController.viewControllers.count > 1
         let shouldHide = viewController.hidesBottomBarWhenPushed || isPushing
         
-        if let coordinator = viewController.transitionCoordinator {
-            coordinator.animate(alongsideTransition: { [weak self] _ in
-                self?.updateTabBarAppearance(hidden: shouldHide)
-            }, completion: nil)
-        } else {
+        guard let coordinator = viewController.transitionCoordinator else {
             updateTabBarAppearance(hidden: shouldHide)
+            return
+        }
+        
+        coordinator.animate(alongsideTransition: { [weak self] _ in
+            self?.updateTabBarAppearance(hidden: shouldHide)
+        })
+        
+        coordinator.notifyWhenInteractionChanges { [weak self] context in
+            if context.isCancelled {
+                self?.updateTabBarAppearance(hidden: true)
+            }
         }
     }
     
     private func updateTabBarAppearance(hidden: Bool) {
         customTabBar.alpha = hidden ? 0 : 1
         blurEffectView.alpha = hidden ? 0 : 1
-
+        
         if hidden {
             customTabBar.transform = CGAffineTransform(translationX: 0, y: 150)
         } else {

@@ -10,5 +10,6 @@ import RxSwift
 protocol AIReportRepository {
     func fetchLastWeekAIReportCreated() -> Observable<AIReportCreated>
     func fetchAIReportDetail(id: Int) -> Observable<AIReportDetail>
-    func fetchAIReportList() -> Observable<AIReportList>
+    func fetchAIReportList() -> Observable<[AIReportList]>
+    func fetchHistoryCardDetail(coupleCardId: Int) -> Observable<QuestionCard?>
 }

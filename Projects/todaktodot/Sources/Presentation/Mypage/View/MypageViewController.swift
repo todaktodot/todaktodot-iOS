@@ -20,6 +20,9 @@ final class MypageViewController: CustomBackViewController, View {
     private var isCouple = PublishRelay<Bool>()
     
     private let contentView = UIView()
+    private let scrollView = UIScrollView().then {
+        $0.showsVerticalScrollIndicator = false
+    }
     
     private let backgroundView = UIImageView().then {
         $0.image = UIImage(resource: .mypageSubBackground)
@@ -118,28 +121,6 @@ final class MypageViewController: CustomBackViewController, View {
         super.viewDidAppear(animated)
         
         updateNicknameOrCoupleInfo()
-        
-        self.navigationController?.interactivePopGestureRecognizer?.isEnabled = false
-        navigationController?.isNavigationBarHidden = false
-        
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(syncNotificationSwitch),
-            name: UIApplication.willEnterForegroundNotification,
-            object: nil
-        )
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        syncNotificationSwitch()
-    }
-    
-    
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        
-        self.navigationController?.interactivePopGestureRecognizer?.isEnabled = true
     }
     
     override func viewDidLayoutSubviews() {
@@ -149,13 +130,14 @@ final class MypageViewController: CustomBackViewController, View {
     
     private func setupViews() {
         view.addSubview(backgroundView)
-        view.addSubview(contentView)
-        view.addSubview(heartImageView)
+        view.addSubview(scrollView)
         view.addSubview(indicatorView)
+        scrollView.addSubview(heartImageView)
+        scrollView.addSubview(contentView)
     }
     
     private func setupFlexLayout() {
-        let topMargin: CGFloat = 124
+        let topMargin: CGFloat = 28
         contentView.flex.define {
             $0.addItem(profileView)
             $0.addItem(notYetConnectedView)
@@ -229,13 +211,26 @@ final class MypageViewController: CustomBackViewController, View {
         backgroundView.pin
             .all()
         
+        scrollView.pin
+            .top(view.pin.safeArea.top)
+            .horizontally()
+            .bottom()
+        
         contentView.pin
-            .all()
+            .top()
+            .horizontally()
         
         indicatorView.pin
             .all()
         
+        heartImageView.pin
+            .top(52)
+            .hCenter()
+            .height(24)
+            .width(64)
+        
         contentView.flex.layout(mode: .adjustHeight)
+        scrollView.contentSize = contentView.frame.size
     }
     
     func bind(reactor: MyPageReactor) {
@@ -265,8 +260,11 @@ final class MypageViewController: CustomBackViewController, View {
             .subscribe(onNext: { [weak self] info in
                 guard let self = self else { return }
                 
-                self.setMypageInfo(info)
-                self.isCouple.accept(info.isCouple)
+                setMypageInfo(info)
+                isCouple.accept(info.isCouple)
+                settingSectionView.infoNotiSwitch.setSwitch(isOn: info.infoAgree)
+                settingSectionView.advertiesmentNotiSwitch.setSwitch(isOn: info.advertAgree)
+                settingSectionView.marketingNotiSwitch.setSwitch(isOn: info.marketingAgree)
             })
             .disposed(by: disposeBag)
         
@@ -307,21 +305,43 @@ final class MypageViewController: CustomBackViewController, View {
             })
             .disposed(by: disposeBag)
         
+        reactor.state
+            .compactMap { $0.isInfoNotice }
+            .subscribe(onNext: { [weak self] isOn in
+                guard let self = self else { return }
+                settingSectionView.infoNotiSwitch.setSwitch(isOn: isOn)
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .compactMap { $0.isAdvertNoti }
+            .subscribe(onNext: { [weak self] isOn in
+                guard let self = self else { return }
+                showToast(message: "광고성 알림 수신에 \(isOn ? "동의" : "거부")하셨습니다.(\(Date().toDot()))")
+                settingSectionView.advertiesmentNotiSwitch.setSwitch(isOn: isOn)
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .compactMap { $0.isMarketingNoti }
+            .subscribe(onNext: { [weak self] isOn in
+                guard let self = self else { return }
+                showToast(message: "마케팅 알림 수신에 \(isOn ? "동의" : "거부")하셨습니다.(\(Date().toDot()))")
+                settingSectionView.marketingNotiSwitch.setSwitch(isOn: isOn)
+            })
+            .disposed(by: disposeBag)
+        
         isCouple
             .subscribe(onNext: { [weak self] in
                 guard let self = self else { return }
                 
+                if !$0 { heartImageView.removeFromSuperview() }
                 profileView.flex.display($0 ? .flex : .none)
                 notYetConnectedView.flex.display($0 ? .none : .flex)
                 backgroundView.image = UIImage(resource: $0 ? .mypageBackground : .mypageSubBackground)
                 
-                if $0 {
-                    heartImageView.pin
-                        .top(view.pin.safeArea + 52)
-                        .hCenter()
-                        .height(24)
-                        .width(64)
-                }
+                contentView.flex.layout(mode: .adjustHeight)
+                scrollView.contentSize = contentView.frame.size
             })
             .disposed(by: disposeBag)
         
@@ -377,24 +397,45 @@ final class MypageViewController: CustomBackViewController, View {
             })
             .disposed(by: disposeBag)
         
-        settingSectionView.notiSwitch.onTap = { [weak self] isOn in
+        settingSectionView.infoNotiSwitch.onTap = { [weak self] isOn in
             guard let self else { return }
             if isOn {
-                showAlert(icon: UIImage(resource: .warning), title: "푸시 알림을 끄시겠어요?", description: "•  상대방이 답변해도 바로 알 수 없어요\n•  서로의 답변이 공개되도 알 수 없어요\n•  상대방의 쿡 찌르기를 받을 수 없어요", primaryButtonTitle: "알림 유지하기", primaryButtonAction: {}, secondaryButtonTitle: "알림 끄기", secondaryButtonAction: {
-                    self.openSystemNotificationSettings()
-                })
+                showNotiDisabledAlert {
+                    reactor.action.onNext(.tapInfoNoti(false))
+                }
             } else {
-                openSystemNotificationSettings()
+                reactor.action.onNext(.tapInfoNoti(true))
+            }
+        }
+        
+        settingSectionView.advertiesmentNotiSwitch.onTap = { [weak self] isOn in
+            guard let self else { return }
+            if isOn {
+                showNotiDisabledAlert {
+                    reactor.action.onNext(.tapAdvertNoti(false))
+                }
+            } else {
+                reactor.action.onNext(.tapAdvertNoti(true))
+            }
+        }
+        
+        settingSectionView.marketingNotiSwitch.onTap = { [weak self] isOn in
+            guard let self else { return }
+            if isOn {
+                showNotiDisabledAlert {
+                    reactor.action.onNext(.tapMarketingNoti(false))
+                }
+            } else {
+                reactor.action.onNext(.tapMarketingNoti(true))
             }
         }
     }
     
-    func openSystemNotificationSettings() {
-        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
-        UIApplication.shared.open(url)
+    private func showNotiDisabledAlert(action: @escaping (() -> Void)) {
+        showAlert(icon: UIImage(resource: .warning), title: "알림 수신을 중단할까요?", description: "혜택이나 중요한 안내를 놓칠 수 있어요.", primaryButtonTitle: "그대로 둘게요", primaryButtonAction: {}, secondaryButtonTitle: "알림 끄기", secondaryButtonAction: action)
     }
     
-    func setMypageInfo(_ info: MypageInfo) {
+    private func setMypageInfo(_ info: MypageInfo) {
         myNicknameLabel.text = info.myNickname
         partherNinameLabel.text = info.partnerNickname
         ourInfoView.setOurInfo(info: info.coupleInfo)
@@ -405,7 +446,7 @@ final class MypageViewController: CustomBackViewController, View {
         contentView.flex.layout()
     }
     
-    func updateNicknameOrCoupleInfo() {
+    private func updateNicknameOrCoupleInfo() {
         coordinator?.onNicknameUpdated = { [weak self] newNickname in
             self?.myNicknameLabel.text = newNickname
             self?.myNicknameLabel.flex.markDirty()
@@ -415,18 +456,6 @@ final class MypageViewController: CustomBackViewController, View {
         }
         
         contentView.flex.layout()
-    }
-    
-    @objc private func syncNotificationSwitch() {
-        UNUserNotificationCenter.current().getNotificationSettings { settings in
-            DispatchQueue.main.async {
-                let enabled =
-                    settings.authorizationStatus == .authorized ||
-                    settings.authorizationStatus == .provisional
-
-                self.settingSectionView.notiSwitch.setSwitch(isOn: enabled)
-            }
-        }
     }
 }
 

@@ -14,4 +14,5 @@ protocol CardRepository {
     func assignCards(startDate: String, endDate: String) -> Observable<Result<Void, Error>>
     func submitAnswers(coupleCardId: Int, cardId: Int, answers: [Answer]) -> Observable<Result<SubmitAnswerResult, Error>>
     func pokeDailyCard(coupleCardId: Int) -> Observable<Result<Void, Error>>
+    func notiAgree() -> Observable<Bool>
 }

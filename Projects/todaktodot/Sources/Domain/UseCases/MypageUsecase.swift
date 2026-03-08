@@ -30,4 +30,8 @@ final class MypageUsecase {
     func withdrawal() -> Observable<Bool> {
         repository.withdrawal()
     }
+    
+    func updateTerms(infoAgree: Bool? = nil, marketingAgree: Bool? = nil, advertiesmentAgree: Bool? = nil) -> Observable<Bool> {
+        repository.updateTerms(infoAgree: infoAgree, marketingAgree: marketingAgree, advertiesmentAgree: advertiesmentAgree)
+    }
 }

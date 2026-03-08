@@ -42,6 +42,9 @@ enum UserdefaultKey {
     @UserDefault(key: "refreshToken", defaultValue: nil)
     static var refreshToken: String?
     
+    @UserDefault(key: "diviceToken", defaultValue: nil)
+    static var diviceToken: String?
+    
     @UserDefaultCodable(key: "coupleType", defaultValue: .null)
     static var coupleType: CoupleType
     
@@ -65,9 +68,13 @@ enum UserdefaultKey {
     static var lastTooltipShownDate: String?
     
     static func resetUserDefaults() {
+        let preservedDeviceToken = self.diviceToken
+
         let domain = Bundle.main.bundleIdentifier!
         UserDefaults.standard.removePersistentDomain(forName: domain)
         UserDefaults.standard.synchronize()
+
+        self.diviceToken = preservedDeviceToken
     }
     
     static func resetAuthUserDefaults() {

@@ -12,7 +12,7 @@ import Lottie
 
 final class LastWeekAIReportView: UIView {
     private let dateLabel = TDLabel().then {
-        $0.text = "2025년 9월 29일 - 10월 5일"
+        $0.thisWeekRangeString()
         $0.font = .pretenMedium(14)
         $0.textColor = .grayScale600
     }
@@ -79,12 +79,7 @@ final class LastWeekAIReportView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        flex.layout(mode: .adjustHeight)
-    }
-    
-    func setupViews() {
+    private func setupViews() {
         self.flex.alignItems(.center).define {
             $0.addItem(dateLabel)
                 .marginTop(24)

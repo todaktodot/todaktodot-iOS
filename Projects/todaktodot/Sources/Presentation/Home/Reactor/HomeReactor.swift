@@ -35,6 +35,7 @@ final class HomeReactor: Reactor {
         case fetchWeeklyCards(startDate: String, endDate: String)
         case loadTodayCards
         case assignCards
+        case notiAgree
     }
     
     enum Mutation {
@@ -62,7 +63,7 @@ final class HomeReactor: Reactor {
     }
     
     let initialState = State()
-
+    
     func determineAnswerStatus(from cards: [QuestionCard]) -> AnswerStatus {
         let selectedCard = cards.first(where: { $0.isSelected }) ?? cards.first
         
@@ -218,6 +219,14 @@ final class HomeReactor: Reactor {
                         print("⚠️ 카드 할당 실패: \(error)")
                         return .empty()
                     }
+                }
+        case .notiAgree:
+            return cardUseCase.notiAgree()
+                .flatMap { _ -> Observable<Mutation> in
+                    return .empty()
+                }
+                .catch { error in
+                    return .just(.setError(error))
                 }
         }
     }

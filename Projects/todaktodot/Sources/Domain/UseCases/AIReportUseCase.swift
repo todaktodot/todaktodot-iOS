@@ -18,11 +18,14 @@ final class AIReportUseCase {
     }
     
     func fetchAIReportDetail(id: Int) -> Observable<AIReportDetail> {
-//        repository.fetchAIReportDetail(id: id)
-        return .just(AIReportDetail.mock)
+        repository.fetchAIReportDetail(id: id)
     }
     
-    func fetchAIReportList() -> Observable<AIReportList> {
+    func fetchAIReportList() -> Observable<[AIReportList]> {
         repository.fetchAIReportList()
+    }
+    
+    func fetchHistoryCardDetail(coupleCardId: Int) -> Observable<QuestionCard?> {
+        repository.fetchHistoryCardDetail(coupleCardId: coupleCardId)
     }
 }
