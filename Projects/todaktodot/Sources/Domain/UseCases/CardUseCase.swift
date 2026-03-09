@@ -39,4 +39,8 @@ final class CardUseCase {
             answers: answers
         )
     }
+    
+    func pokeDailyCard(coupleCardId: Int) -> Observable<Result<Void, Error>> {
+        repository.pokeDailyCard(coupleCardId: coupleCardId)
+    }
 }

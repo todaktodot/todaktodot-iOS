@@ -31,13 +31,14 @@ struct HistoryCardDTO: Decodable {
     let userId2: Int?
     let questions: [HistoryQuestionDTO]?
     let feedback: FeedbackDTO?
+    let pocked: Bool?
 }
 
 struct HistoryQuestionDTO: Decodable {
     let questionNo: Int?
     let questionType: String?
-    let questionCnts: String?
-    let answerReqYn: String?
+    let questionContent: String?
+    let answerRequired: Bool?
     let options: [HistoryOptionDTO]?
     let user1Answer: String?
     let user2Answer: String?
@@ -45,7 +46,7 @@ struct HistoryQuestionDTO: Decodable {
 
 struct HistoryOptionDTO: Decodable {
     let optionNo: Int?
-    let optionCnts: String?
+    let optionContent: String?
 }
 
 struct FeedbackDTO: Decodable {
@@ -81,11 +82,11 @@ extension CardHistoryResponseDTO {
                 questions: card.questions?.map { q in
                     Question(
                         number: q.questionNo ?? -1,
-                        content: q.questionCnts ?? "",
+                        content: q.questionContent ?? "",
                         type: QuestionType(rawValue: q.questionType ?? "") ?? .subjective ,
-                        isRequired: q.answerReqYn == "Y",
+                        isRequired: q.answerRequired ?? false,
                         options: q.options?.map {
-                            QuestionOption(id: $0.optionNo ?? -1, text: $0.optionCnts ?? "")
+                            QuestionOption(id: $0.optionNo ?? -1, text: $0.optionContent ?? "")
                         } ?? [],
                         user1Answer: shouldSwap ? q.user2Answer : q.user1Answer,
                         user2Answer: shouldSwap ? q.user1Answer : q.user2Answer
@@ -105,7 +106,8 @@ extension CardHistoryResponseDTO {
                         differences: f.differences,
                         tip: f.conversationStarter
                     )
-                }
+                },
+                pocked: card.pocked
             )
         } ?? []
     }

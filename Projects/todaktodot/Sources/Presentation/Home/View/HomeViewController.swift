@@ -225,6 +225,9 @@ final class HomeViewController: BaseViewController, View {
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] isPoked in
                 self?.updatePokeButton(isPoked: isPoked)
+                if isPoked {
+                    self?.showPokeAlert()
+                }
             })
             .disposed(by: disposeBag)
         
@@ -246,14 +249,29 @@ final class HomeViewController: BaseViewController, View {
             .disposed(by: disposeBag)
         
         pokeButton.rx.tap
-            .withLatestFrom(reactor.state.map { ($0.answerStatus, $0.isCoupleConnected) })
-            .subscribe(onNext: { [weak self] status, isCoupleConnected in
+            .withLatestFrom(reactor.state.map { ($0.answerStatus, $0.isCoupleConnected, $0.historyCards) })
+            .subscribe(onNext: { [weak self] status, isCoupleConnected, historyCards in
                 if status == .myAnswered && !isCoupleConnected {
                     self?.coordinator?.tabBarCoordinator?.showCoupleConnect()
                 } else {
-                    self?.showPokeAlert()
-                    reactor.action.onNext(.tapPokeButton)
+                    let cardSystemDate = CardService.shared.getCardSystemDate()
+                    let todayCard = historyCards.first { Calendar.current.isDate($0.date, inSameDayAs: cardSystemDate) }
+                    
+                    if let coupleCardId = todayCard?.coupleCardId {
+                        reactor.action.onNext(.tapPokeButton(coupleCardId: coupleCardId))
+                    }
                 }
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state.map { $0.shouldShowPokeError }
+            .distinctUntilChanged()
+            .filter { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] _ in
+                guard let self = self, let reactor = self.reactor else { return }
+                self.showPokeErrorAlert()
+                reactor.action.onNext(.dismissPokeError)
             })
             .disposed(by: disposeBag)
         
@@ -875,6 +893,16 @@ extension HomeViewController {
         showAlert(
             icon: UIImage(resource: .poke),
             title: "콕! 상대방에게 알림을 보냈어요\n곧 답변할 거예요",
+            description: nil,
+            primaryButtonTitle: "확인",
+            primaryButtonAction: {}
+        )
+    }
+    
+    private func showPokeErrorAlert() {
+        showAlert(
+            icon: UIImage(resource: .unsmile),
+            title: "콕찌르기 실패\n잠시 후 다시 시도해주세요",
             description: nil,
             primaryButtonTitle: "확인",
             primaryButtonAction: {}
