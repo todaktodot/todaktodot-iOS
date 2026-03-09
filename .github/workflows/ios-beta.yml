@@ -12,6 +12,15 @@ concurrency:
 jobs:
   build:
     runs-on: macos-latest
+    
+    env:
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+      MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+      FASTLANE_USER: ${{ secrets.APPLE_ID }}
+      APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
 
     steps:
       # 1️⃣ 코드 체크아웃
@@ -56,18 +65,17 @@ jobs:
 
       - name: Install Tuist Dependencies
         run: mise exec -- tuist install
+        
+      - name: Generate project
+        run: mise exec -- tuist generate
+          
+      - name: Create App Store Connect API Key
+        run: |
+          echo "${{ secrets.APP_STORE_CONNECT_API_KEY }}" | base64 --decode > AuthKey.p8
 
       - name: Create xcconfig files
         run: |
           mkdir -p Projects/todaktodot/Config
-          
-          printf "KAKAO_APP_KEY = %s\nKAKAO_URL_KEY = %s\nGOOGLE_URL_KEY = %s\nTODAKTODOT_API = %s\nPRODUCT_BUNDLE_IDENTIFIER = %s\n" \
-          "${{ secrets.KAKAO_APP_KEY_DEV }}" \
-          "${{ secrets.KAKAO_URL_KEY_DEV }}" \
-          "${{ secrets.GOOGLE_URL_KEY_DEV }}" \
-          "${{ secrets.TODAKTODOT_API }}" \
-          "info.todaktodot.dev" \
-          > Projects/todaktodot/Config/Debug.xcconfig
 
           printf "KAKAO_APP_KEY = %s\nKAKAO_URL_KEY = %s\nGOOGLE_URL_KEY = %s\nTODAKTODOT_API = %s\nPRODUCT_BUNDLE_IDENTIFIER = %s\n" \
           "${{ secrets.KAKAO_APP_KEY }}" \
@@ -77,40 +85,28 @@ jobs:
           "info.todaktodot" \
           > Projects/todaktodot/Config/Release.xcconfig
 
-      - name: Decode GoogleService-Info Debug.plist
-        run: |
-          echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_DEV_BASE64 }}" | base64 --decode > Projects/todaktodot/Resources/GoogleService-Info-Debug.plist
-
       - name: Decode GoogleService-Info Release.plist
         run: |
           echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}" | base64 --decode > Projects/todaktodot/Resources/GoogleService-Info-Release.plist
-        
-      - name: Generate project
-        run: mise exec -- tuist generate
-          
-      - name: Create App Store Connect API Key
-        run: |
-          echo "${{ secrets.APP_STORE_CONNECT_API_KEY }}" | base64 --decode > AuthKey.p8
 
       - name: Run Fastlane Beta
-        env:
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
-          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
-          FASTLANE_USER: ${{ secrets.APPLE_ID }}
-          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
-          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          
-        run: bundle exec fastlane deploy_all
+        run: bundle exec fastlane beta
 
-      - name: Print xcodebuild log
-        if: failure()
+      - name: Update xcconfig files
         run: |
-          ls -R /Users/runner/Library/Logs || true
-          
-      - name: Print gym log
-        if: failure()
+          printf "KAKAO_APP_KEY = %s\nKAKAO_URL_KEY = %s\nGOOGLE_URL_KEY = %s\nTODAKTODOT_API = %s\nPRODUCT_BUNDLE_IDENTIFIER = %s\n" \
+          "${{ secrets.KAKAO_APP_KEY_DEV }}" \
+          "${{ secrets.KAKAO_URL_KEY_DEV }}" \
+          "${{ secrets.GOOGLE_URL_KEY_DEV }}" \
+          "${{ secrets.TODAKTODOT_API }}" \
+          "info.todaktodot.dev" \
+          > Projects/todaktodot/Config/Release.xcconfig
+
+      - name: Update GoogleService-Info Debug.plist
         run: |
-          find /Users/runner -name "*.log" | grep gym || true
+          rm -f Projects/todaktodot/Resources/GoogleService-Info-Release.plist
+          echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_DEV_BASE64 }}" | base64 --decode > Projects/todaktodot/Resources/GoogleService-Info-Release.plist
+
+      - name: Run Fastlane Beta Dev
+        run: bundle exec fastlane beta_dev
           
