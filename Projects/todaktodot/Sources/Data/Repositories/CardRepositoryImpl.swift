@@ -118,6 +118,7 @@ final class CardRepositoryImpl: CardRepository {
         return networkManager.requestOptional(with: endpoint)
             .map { _ in Result<Void, Error>.success(()) }
             .catch { error in .just(.failure(error)) }
+    }
 
     func notiAgree() -> Observable<Bool> {
         var parameters: [String: String] = [ "infoAlarmYN" : "Y" ]
