@@ -131,7 +131,7 @@ platform :ios do
         method: "app-store",
         signingStyle: "manual",
         provisioningProfiles: {
-          "info.todaktodot" => "match AppStore info.todaktodot",
+          bundle_id => profile_name
         }
       }
     )
