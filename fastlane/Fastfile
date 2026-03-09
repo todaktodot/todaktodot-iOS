@@ -76,18 +76,19 @@ platform :ios do
   
   desc "모든 환경 배포 (Release & Dev)"
   lane :deploy_all do
-    # 1. Dev 배포
-    beta(
-      scheme: "todaktodot",
-      bundle_id: "info.todaktodot.dev",
-      display_name: "투닥투닷 dev"
-    )
     
-    # 2. Release 배포
+    # 1. Release 배포
     beta(
       scheme: "todaktodot",
       bundle_id: "info.todaktodot",
       display_name: "투닥투닷"
+    )
+    
+    # 2. Dev 배포
+    beta(
+      scheme: "todaktodot",
+      bundle_id: "info.todaktodot.dev",
+      display_name: "투닥투닷 dev"
     )
   end
   
