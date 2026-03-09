@@ -74,14 +74,21 @@ platform :ios do
     )
   end
   
-  desc "모든 환경 배포 (Release & Dev)"
-  lane :deploy_all do
-    
-    # 1. Release 배포
+  desc "Release 배포"
+  lane :beta do
     beta(
       scheme: "todaktodot",
       bundle_id: "info.todaktodot",
       display_name: "투닥투닷"
+    )
+  end
+  
+  desc "Dev 배포"
+  lane :beta_dev do
+    beta(
+      scheme: "todaktodot",
+      bundle_id: "info.todaktodot.dev",
+      display_name: "투닥투닷 dev"
     )
   end
   
@@ -120,7 +127,7 @@ platform :ios do
 
     build_app(
       workspace: "todaktodotWorkspace.xcworkspace",
-      scheme: "todaktodot",
+      scheme: scheme,
       export_method: "app-store",
       xcargs: [
         "CODE_SIGN_STYLE=Manual",
