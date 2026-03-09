@@ -18,7 +18,7 @@ default_platform(:ios)
 platform :ios do
 
   # --- 알림 전송 공통 함수 ---
-  def send_discord_message(status: nil, exception: nil)
+  def send_discord_message(status: nil, exception: nil, lane: nil)
     webhook_url = ENV["DISCORD_WEBHOOK_URL"]
     return unless webhook_url # URL이 없으면 스킵
 
@@ -28,12 +28,22 @@ platform :ios do
     build = get_build_number(xcodeproj: proj_path)
     branch = ENV["GITHUB_REF_NAME"] || "unknown"
 
+   env_name =
+     case lane
+     when :beta
+       "투닥투닷"
+     when :beta_dev
+       "투닥투닷 Dev"
+     else
+       "CI"
+     end
+     
     if status == "success"
-      title = "✅ iOS 베타 배포 성공"
+      title = "✅ iOS #{env_name} 배포 성공"
       color = 306699 # 파란색
       description = "새로운 버전이 TestFlight에 업로드되었습니다."
     else
-      title = "❌ iOS 베타 배포 실패"
+      title = "❌ iOS #{env_name} 배포 실패"
       color = 15158332 # 빨간색
       description = "빌드 중 에러가 발생했습니다: #{exception}"
     end
@@ -57,12 +67,12 @@ platform :ios do
 
   # 모든 작업 성공 후 실행
   after_all do |lane|
-    send_discord_message(status: "success")
+    send_discord_message(status: "success", lane: lane)
   end
 
   # 에러 발생 시 실행
   error do |lane, exception|
-    send_discord_message(status: "failure", exception: exception)
+    send_discord_message(status: "failure", exception: exception, lane: lane)
   end
 
   desc "PR 빌드용"
@@ -128,6 +138,10 @@ platform :ios do
     build_app(
       workspace: "todaktodotWorkspace.xcworkspace",
       scheme: scheme,
+      clean: false,
+      skip_package_dependencies_resolution: true,
+      include_symbols: false,
+      include_bitcode: false,
       export_method: "app-store",
       xcargs: [
         "CODE_SIGN_STYLE=Manual",
