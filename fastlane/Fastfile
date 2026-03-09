@@ -18,7 +18,7 @@ default_platform(:ios)
 platform :ios do
 
   # --- 알림 전송 공통 함수 ---
-  def send_discord_message(status: nil, exception: nil, lane: nil)
+  def send_discord_message(status: nil, exception: nil, bundle_id: nil)
     webhook_url = ENV["DISCORD_WEBHOOK_URL"]
     return unless webhook_url # URL이 없으면 스킵
 
@@ -28,14 +28,11 @@ platform :ios do
     build = get_build_number(xcodeproj: proj_path)
     branch = ENV["GITHUB_REF_NAME"] || "unknown"
 
-   env_name =
-     case lane
-     when :beta
-       "투닥투닷"
-     when :beta_dev
+    env_name =
+     if bundle_id&.include?(".dev")
        "투닥투닷 Dev"
      else
-       "CI"
+       "투닥투닷"
      end
      
     if status == "success"
@@ -67,12 +64,19 @@ platform :ios do
 
   # 모든 작업 성공 후 실행
   after_all do |lane|
-    send_discord_message(status: "success", lane: lane)
+    send_discord_message(
+      status: "success",
+      bundle_id: Actions.lane_context[:BUNDLE_ID]
+    )
   end
 
   # 에러 발생 시 실행
   error do |lane, exception|
-    send_discord_message(status: "failure", exception: exception, lane: lane)
+    send_discord_message(
+      status: "failure",
+      exception: exception,
+      bundle_id: Actions.lane_context[:BUNDLE_ID]
+    )
   end
 
   desc "PR 빌드용"
@@ -107,6 +111,7 @@ platform :ios do
     bundle_id = options[:bundle_id] || "info.todaktodot"
     display_name = options[:display_name] || "투닥투닷"
     scheme = options[:scheme] || "todaktodot"
+    Actions.lane_context[:BUNDLE_ID] = bundle_id
     
     setup_ci if is_ci
     
