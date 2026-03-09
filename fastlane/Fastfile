@@ -76,7 +76,7 @@ platform :ios do
   
   desc "Release 배포"
   lane :beta do
-    beta(
+    deploy(
       scheme: "todaktodot",
       bundle_id: "info.todaktodot",
       display_name: "투닥투닷"
@@ -85,7 +85,7 @@ platform :ios do
   
   desc "Dev 배포"
   lane :beta_dev do
-    beta(
+    deploy(
       scheme: "todaktodot",
       bundle_id: "info.todaktodot.dev",
       display_name: "투닥투닷 dev"
@@ -93,7 +93,7 @@ platform :ios do
   end
   
   desc "TestFlight 배포"
-  lane :beta do |options|
+  lane :deploy do |options|
     bundle_id = options[:bundle_id] || "info.todaktodot"
     display_name = options[:display_name] || "투닥투닷"
     scheme = options[:scheme] || "todaktodot"
