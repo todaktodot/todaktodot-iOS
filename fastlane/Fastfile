@@ -83,13 +83,6 @@ platform :ios do
       bundle_id: "info.todaktodot",
       display_name: "투닥투닷"
     )
-    
-    # 2. Dev 배포
-    beta(
-      scheme: "todaktodot",
-      bundle_id: "info.todaktodot.dev",
-      display_name: "투닥투닷 dev"
-    )
   end
   
   desc "TestFlight 배포"
