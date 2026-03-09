@@ -65,9 +65,6 @@ jobs:
 
       - name: Install Tuist Dependencies
         run: mise exec -- tuist install
-        
-      - name: Generate project
-        run: mise exec -- tuist generate
           
       - name: Create App Store Connect API Key
         run: |
@@ -76,7 +73,9 @@ jobs:
       - name: Create xcconfig files
         run: |
           mkdir -p Projects/todaktodot/Config
-
+          
+          printf "" > Projects/todaktodot/Config/Debug.xcconfig
+          
           printf "KAKAO_APP_KEY = %s\nKAKAO_URL_KEY = %s\nGOOGLE_URL_KEY = %s\nTODAKTODOT_API = %s\nPRODUCT_BUNDLE_IDENTIFIER = %s\n" \
           "${{ secrets.KAKAO_APP_KEY }}" \
           "${{ secrets.KAKAO_URL_KEY }}" \
@@ -88,6 +87,9 @@ jobs:
       - name: Decode GoogleService-Info Release.plist
         run: |
           echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}" | base64 --decode > Projects/todaktodot/Resources/GoogleService-Info-Release.plist
+        
+      - name: Generate project
+        run: mise exec -- tuist generate
 
       - name: Run Fastlane Beta
         run: bundle exec fastlane beta
