@@ -28,14 +28,27 @@ struct DailyCardDTO: Decodable {
 struct QuestionDTO: Decodable {
     let questionNo: Int
     let questionType: QuestionType
-    let questionCnts: String
-    let answerReqYn: String? //Y|N
+    let questionContent: String
+    let answerRequired: Bool
     let options: [OptionDTO]?
+    
+    enum CodingKeys: String, CodingKey {
+        case questionNo
+        case questionType
+        case questionContent
+        case answerRequired
+        case options
+    }
 }
 
 struct OptionDTO: Decodable {
     let optionNo: Int
-    let optionCnts: String
+    let optionContent: String
+    
+    enum CodingKeys: String, CodingKey {
+        case optionNo
+        case optionContent
+    }
 }
 
 extension DailyCardResponseDTO {
@@ -58,11 +71,11 @@ extension DailyCardResponseDTO {
                 questions: card.questions.map { q in
                     Question(
                         number: q.questionNo,
-                        content: q.questionCnts,
+                        content: q.questionContent,
                         type: q.questionType,
-                        isRequired: q.answerReqYn == "Y",
+                        isRequired: q.answerRequired,
                         options: q.options?.map {
-                            QuestionOption(id: $0.optionNo, text: $0.optionCnts)
+                            QuestionOption(id: $0.optionNo, text: $0.optionContent)
                         } ?? [],
                         user1Answer: nil,
                         user2Answer: nil
@@ -74,7 +87,8 @@ extension DailyCardResponseDTO {
                 user2Answered: false,
                 userId1: nil,
                 userId2: nil,
-                feedback: nil
+                feedback: nil,
+                pocked: nil
             )
         }
     }

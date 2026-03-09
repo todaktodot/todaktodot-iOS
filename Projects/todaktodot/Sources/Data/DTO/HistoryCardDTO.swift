@@ -31,13 +31,14 @@ struct HistoryCardDTO: Decodable {
     let userId2: Int?
     let questions: [HistoryQuestionDTO]?
     let feedback: FeedbackDTO?
+    let pocked: Bool?
 }
 
 struct HistoryQuestionDTO: Decodable {
     let questionNo: Int?
     let questionType: String?
-    let questionCnts: String?
-    let answerReqYn: String?
+    let questionContent: String?
+    let answerRequired: Bool?
     let options: [HistoryOptionDTO]?
     let user1Answer: String?
     let user2Answer: String?
@@ -45,7 +46,7 @@ struct HistoryQuestionDTO: Decodable {
 
 struct HistoryOptionDTO: Decodable {
     let optionNo: Int?
-    let optionCnts: String?
+    let optionContent: String?
 }
 
 struct FeedbackDTO: Decodable {
@@ -65,8 +66,12 @@ extension CardHistoryResponseDTO {
     }()
     
     func toEntity() -> [QuestionCard] {
+        let currentUserId = UserdefaultKey.userId
+        
         return historyCards?.map { card in
-            QuestionCard(
+            let shouldSwap = currentUserId != card.userId1
+            
+            return QuestionCard(
                 id: card.cardId ?? 0,
                 coupleCardId: card.coupleCardId ?? 0,
                 title: card.cardTitle ?? "미발행 카드",
@@ -77,22 +82,22 @@ extension CardHistoryResponseDTO {
                 questions: card.questions?.map { q in
                     Question(
                         number: q.questionNo ?? -1,
-                        content: q.questionCnts ?? "",
+                        content: q.questionContent ?? "",
                         type: QuestionType(rawValue: q.questionType ?? "") ?? .subjective ,
-                        isRequired: q.answerReqYn == "Y",
+                        isRequired: q.answerRequired ?? false,
                         options: q.options?.map {
-                            QuestionOption(id: $0.optionNo ?? -1, text: $0.optionCnts ?? "") // 수정됨
+                            QuestionOption(id: $0.optionNo ?? -1, text: $0.optionContent ?? "")
                         } ?? [],
-                        user1Answer: q.user1Answer,
-                        user2Answer: q.user2Answer
+                        user1Answer: shouldSwap ? q.user2Answer : q.user1Answer,
+                        user2Answer: shouldSwap ? q.user1Answer : q.user2Answer
                     )
                 } ?? [],
                 situation: card.situation ?? "",
                 isSelected: card.selected ?? false,
-                user1Answered: card.user1Answered ?? false,
-                user2Answered: card.user2Answered ?? false,
-                userId1: card.userId1,
-                userId2: card.userId2,
+                user1Answered: shouldSwap ? (card.user2Answered ?? false) : (card.user1Answered ?? false),
+                user2Answered: shouldSwap ? (card.user1Answered ?? false) : (card.user2Answered ?? false),
+                userId1: shouldSwap ? card.userId2 : card.userId1,
+                userId2: shouldSwap ? card.userId1 : card.userId2,
                 feedback: card.feedback.map { f in
                     CardFeedback(
                         id: f.feedbackId,
@@ -101,7 +106,8 @@ extension CardHistoryResponseDTO {
                         differences: f.differences,
                         tip: f.conversationStarter
                     )
-                }
+                },
+                pocked: card.pocked
             )
         } ?? []
     }

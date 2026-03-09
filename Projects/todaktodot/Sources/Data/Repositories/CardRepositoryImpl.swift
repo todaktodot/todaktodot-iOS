@@ -106,6 +106,19 @@ final class CardRepositoryImpl: CardRepository {
             .catch { error in .just(.failure(error)) }
     }
     
+    func pokeDailyCard(coupleCardId: Int) -> Observable<Result<Void, Error>> {
+        let endpoint = Endpoint<Empty>(
+            baseURL: .todaktodotAPI,
+            path: "/api/daily-card/poke",
+            method: .post,
+            encodingType: .query,
+            parameters: ["coupleCardId": coupleCardId]
+        )
+        
+        return networkManager.requestOptional(with: endpoint)
+            .map { _ in Result<Void, Error>.success(()) }
+            .catch { error in .just(.failure(error)) }
+
     func notiAgree() -> Observable<Bool> {
         var parameters: [String: String] = [ "infoAlarmYN" : "Y" ]
         
@@ -120,6 +133,7 @@ final class CardRepositoryImpl: CardRepository {
             .map { _ in
                 return true
             }
+
     }
 }
 

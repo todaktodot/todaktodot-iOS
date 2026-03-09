@@ -109,8 +109,27 @@ final class HomeViewController: BaseViewController, View {
         $0.numberOfLines = 0
     }
     
+    private let tooltipContainer = UIView().then {
+        $0.isHidden = true
+        $0.clipsToBounds = false
+    }
+
+    private let tooltipImageView = UIImageView().then {
+        $0.image = UIImage(named: "tooltip")
+        $0.contentMode = .scaleToFill
+    }
+
+    private let tooltipLabel = TDLabel().then {
+        $0.text = "방금 완성된 오늘의 대화예요!\n눌러서 확인해보세요 🙂"
+        $0.font = .pretenMedium(14)
+        $0.textColor = .grayScale800
+        $0.textAlignment = .left
+        $0.numberOfLines = 0
+        $0.lineBreakMode = .byWordWrapping
+    }
+    
     private let weekCardsContainer = UIView()
-    var HistoryCards: [QuestionCard] = []
+    var historyCards: [QuestionCard] = []
     private var isLoadingHistoryCards = true
     private let shimmerLayer = CAGradientLayer()
     
@@ -164,7 +183,7 @@ final class HomeViewController: BaseViewController, View {
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] historyCards in
                 guard let self = self else { return }
-                self.HistoryCards = historyCards
+                self.historyCards = historyCards
                 self.isLoadingHistoryCards = false
                 self.updateWeekCards()
                 self.updateMainCardFromHistory(historyCards)
@@ -172,6 +191,14 @@ final class HomeViewController: BaseViewController, View {
                     cardAmimation()
                     firstAnimation = false
                 }
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state.map { $0.shouldShowTooltip }
+            .distinctUntilChanged()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] shouldShow in
+                self?.tooltipContainer.isHidden = !shouldShow
             })
             .disposed(by: disposeBag)
         
@@ -198,6 +225,9 @@ final class HomeViewController: BaseViewController, View {
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] isPoked in
                 self?.updatePokeButton(isPoked: isPoked)
+                if isPoked {
+                    self?.showPokeAlert()
+                }
             })
             .disposed(by: disposeBag)
         
@@ -219,14 +249,29 @@ final class HomeViewController: BaseViewController, View {
             .disposed(by: disposeBag)
         
         pokeButton.rx.tap
-            .withLatestFrom(reactor.state.map { ($0.answerStatus, $0.isCoupleConnected) })
-            .subscribe(onNext: { [weak self] status, isCoupleConnected in
+            .withLatestFrom(reactor.state.map { ($0.answerStatus, $0.isCoupleConnected, $0.historyCards) })
+            .subscribe(onNext: { [weak self] status, isCoupleConnected, historyCards in
                 if status == .myAnswered && !isCoupleConnected {
                     self?.coordinator?.tabBarCoordinator?.showCoupleConnect()
                 } else {
-                    self?.showPokeAlert()
-                    reactor.action.onNext(.tapPokeButton)
+                    let cardSystemDate = CardService.shared.getCardSystemDate()
+                    let todayCard = historyCards.first { Calendar.current.isDate($0.date, inSameDayAs: cardSystemDate) }
+                    
+                    if let coupleCardId = todayCard?.coupleCardId {
+                        reactor.action.onNext(.tapPokeButton(coupleCardId: coupleCardId))
+                    }
                 }
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state.map { $0.shouldShowPokeError }
+            .distinctUntilChanged()
+            .filter { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] _ in
+                guard let self = self, let reactor = self.reactor else { return }
+                self.showPokeErrorAlert()
+                reactor.action.onNext(.dismissPokeError)
             })
             .disposed(by: disposeBag)
         
@@ -236,7 +281,7 @@ final class HomeViewController: BaseViewController, View {
                 guard let self = self else { return }
                 // 히스토리에서 오늘 카드 찾기 (8시 기준)
                 let cardSystemDate = CardService.shared.getCardSystemDate()
-                let todayCard = self.HistoryCards.first { Calendar.current.isDate($0.date, inSameDayAs: cardSystemDate) }
+                let todayCard = self.historyCards.first { Calendar.current.isDate($0.date, inSameDayAs: cardSystemDate) }
                 let selectedType = todayCard?.type ?? .none
                 
                 // 로컬에 저장된 오늘 카드 로드
@@ -264,13 +309,30 @@ final class HomeViewController: BaseViewController, View {
         
         setupMainCard()
         
+        tooltipContainer.addSubview(tooltipImageView)
+        tooltipContainer.flex.define { flex in
+            flex.addItem(tooltipLabel)
+        }
+        
         contentContainer.flex
             .paddingHorizontal(20)
             .paddingBottom(150)
             .define { flex in
                 flex.addItem(mainCard).marginVertical(20)
                 flex.addItem(mainCardSkeleton).marginVertical(20).position(.absolute).top(0).left(20).right(20)
-                flex.addItem(weekCardsContainer).marginTop(36)
+                flex.addItem().marginTop(36).width(100%).define { wrapperFlex in
+                    wrapperFlex.view?.clipsToBounds = false
+                    wrapperFlex.addItem(weekCardsContainer)
+                    
+                    wrapperFlex.addItem(tooltipContainer)
+                        .paddingLeft(40)
+                        .paddingRight(50)
+                        .paddingTop(30)
+                        .paddingBottom(45)
+                        .top(-35)
+                        .right(-20)
+                        .position(.absolute)
+                }
             }
     }
     
@@ -317,9 +379,11 @@ final class HomeViewController: BaseViewController, View {
     
     private func updatePokeButton(isPoked: Bool) {
         if isPoked {
+            pokeButton.setTitle("찌르기 완료", for: .normal)
             pokeButton.backgroundColor = .grayScale300
             pokeButton.isEnabled = false
         } else {
+            pokeButton.setTitle("콕 찌르기", for: .normal)
             pokeButton.backgroundColor = TodotColors.Button.purpleButton1
             pokeButton.isEnabled = true
         }
@@ -335,6 +399,9 @@ final class HomeViewController: BaseViewController, View {
         
         let previousHeight = contentContainer.frame.height
         contentContainer.flex.layout(mode: .adjustHeight)
+        
+        tooltipContainer.flex.layout(mode: .adjustHeight)
+        tooltipImageView.frame = tooltipContainer.bounds
         
         if previousHeight != contentContainer.frame.height {
             scrollView.contentSize = contentContainer.frame.size
@@ -623,7 +690,7 @@ extension HomeViewController {
     
     @objc private func weekCardTapped(_ sender: UITapGestureRecognizer) {
         guard let tappedView = sender.view,
-              let card = HistoryCards.first(where: { $0.id == tappedView.tag }) else {
+              let card = historyCards.first(where: { $0.id == tappedView.tag }) else {
             return
         }
         if !card.user1Answered && !card.user2Answered {
@@ -644,11 +711,11 @@ extension HomeViewController {
         }
         
         weekCardsContainer.flex.define { flex in
-            if UserdefaultKey.coupleType == .solo || HistoryCards.isEmpty {
+            if UserdefaultKey.coupleType == .solo || historyCards.isEmpty {
                 let emptyView = createEmptyWeekView()
                 flex.addItem(emptyView)
             } else {
-                let sortedCards = HistoryCards.sorted { $0.date > $1.date }
+                let sortedCards = historyCards.sorted { $0.date > $1.date }
                 sortedCards.enumerated().forEach { index, card in
                     let cardView = createWeekCard(card: card, index: index)
                     let isLast = index == sortedCards.count - 1
@@ -820,6 +887,16 @@ extension HomeViewController {
         showAlert(
             icon: UIImage(resource: .poke),
             title: "콕! 상대방에게 알림을 보냈어요\n곧 답변할 거예요",
+            description: nil,
+            primaryButtonTitle: "확인",
+            primaryButtonAction: {}
+        )
+    }
+    
+    private func showPokeErrorAlert() {
+        showAlert(
+            icon: UIImage(resource: .unsmile),
+            title: "콕찌르기 실패\n잠시 후 다시 시도해주세요",
             description: nil,
             primaryButtonTitle: "확인",
             primaryButtonAction: {}
