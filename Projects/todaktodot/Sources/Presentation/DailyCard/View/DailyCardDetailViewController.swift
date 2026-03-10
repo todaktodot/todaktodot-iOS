@@ -141,7 +141,7 @@ final class DailyCardDetailViewController: UIViewController, View {
                 let reasonText = owner.reasonTextView.textColor == .grayScale900 ? owner.reasonTextView.text : ""
                 
                 var answers: [Answer] = [
-                    Answer(questionNo: mainQuestion.number, content: mainQuestion.options[selectedIndex].text)
+                    Answer(questionNo: mainQuestion.number, content: "\(mainQuestion.options[selectedIndex].id)")
                 ]
                 
                 if let reasonText = reasonText, !reasonText.isEmpty,
