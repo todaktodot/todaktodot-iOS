@@ -112,6 +112,7 @@ platform :ios do
     display_name = options[:display_name] || "투닥투닷"
     scheme = options[:scheme] || "todaktodot"
     Actions.lane_context[:BUNDLE_ID] = bundle_id
+    version = ENV["VERSION"]
     
     setup_ci if is_ci
     
@@ -126,6 +127,11 @@ platform :ios do
       app_identifier: bundle_id,
       readonly: true,
       git_url: "https://github.com/todaktodot/fastlane-match-iOS.git"
+    )
+
+    increment_version_number(
+      version_number: version,
+      xcodeproj: "Projects/todaktodot/todaktodot.xcodeproj"
     )
 
     latest_build = latest_testflight_build_number(

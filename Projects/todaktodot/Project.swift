@@ -46,8 +46,8 @@ let project = Project(
             deploymentTargets: .iOS("15.0"),
             infoPlist: .extendingDefault(
                 with: [
-                    "CFBundleShortVersionString": "1.0.0",
-                    "CFBundleVersion": "1",
+                    "CFBundleShortVersionString": "$(MARKETING_VERSION)",
+                    "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
                     "UIUserInterfaceStyle": "Light",
                     "UILaunchStoryboardName": "LaunchScreen.storyboard",
                     "UIApplicationSceneManifest": [
@@ -78,7 +78,7 @@ let project = Project(
                             "CFBundleURLSchemes": ["$(GOOGLE_URL_KEY)"]
                         ],
                     ],
-                    "CFBundleDisplayName" : "투닥투닷",
+                    "CFBundleDisplayName" : "$(APP_DISPLAY_NAME)",
                     "KAKAO_URL_KEY": "$(KAKAO_URL_KEY)",
                     "KAKAO_APP_KEY": "$(KAKAO_APP_KEY)",
                     "TODAKTODOT_API": "$(TODAKTODOT_API)",

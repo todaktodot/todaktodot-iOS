@@ -2,7 +2,8 @@ name: iOS Beta Deploy
 
 on:
   push:
-    branches: [ "CI/CD" ]
+    tags:
+      - "v*"
   workflow_dispatch:
 
 concurrency:
@@ -65,7 +66,10 @@ jobs:
 
       - name: Install Tuist Dependencies
         run: mise exec -- tuist install
-          
+        
+      - name: Extract version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+        
       - name: Create App Store Connect API Key
         run: |
           echo "${{ secrets.APP_STORE_CONNECT_API_KEY }}" | base64 --decode > AuthKey.p8
@@ -76,12 +80,13 @@ jobs:
           
           printf "" > Projects/todaktodot/Config/Debug.xcconfig
           
-          printf "KAKAO_APP_KEY = %s\nKAKAO_URL_KEY = %s\nGOOGLE_URL_KEY = %s\nTODAKTODOT_API = %s\nPRODUCT_BUNDLE_IDENTIFIER = %s\n" \
+          printf "KAKAO_APP_KEY = %s\nKAKAO_URL_KEY = %s\nGOOGLE_URL_KEY = %s\nTODAKTODOT_API = %s\nPRODUCT_BUNDLE_IDENTIFIER = %s\nAPP_DISPLAY_NAME = %s\n" \
           "${{ secrets.KAKAO_APP_KEY }}" \
           "${{ secrets.KAKAO_URL_KEY }}" \
           "${{ secrets.GOOGLE_URL_KEY }}" \
           "${{ secrets.TODAKTODOT_API }}" \
           "info.todaktodot" \
+          "투닥투닷" \
           > Projects/todaktodot/Config/Release.xcconfig
 
       - name: Decode GoogleService-Info Release.plist
@@ -96,12 +101,13 @@ jobs:
 
       - name: Update xcconfig files
         run: |
-          printf "KAKAO_APP_KEY = %s\nKAKAO_URL_KEY = %s\nGOOGLE_URL_KEY = %s\nTODAKTODOT_API = %s\nPRODUCT_BUNDLE_IDENTIFIER = %s\n" \
+          printf "KAKAO_APP_KEY = %s\nKAKAO_URL_KEY = %s\nGOOGLE_URL_KEY = %s\nTODAKTODOT_API = %s\nPRODUCT_BUNDLE_IDENTIFIER = %s\nAPP_DISPLAY_NAME = %s\n" \
           "${{ secrets.KAKAO_APP_KEY_DEV }}" \
           "${{ secrets.KAKAO_URL_KEY_DEV }}" \
           "${{ secrets.GOOGLE_URL_KEY_DEV }}" \
           "${{ secrets.TODAKTODOT_API }}" \
           "info.todaktodot.dev" \
+          "투닥투닷 dev" \
           > Projects/todaktodot/Config/Release.xcconfig
 
       - name: Update GoogleService-Info Debug.plist
