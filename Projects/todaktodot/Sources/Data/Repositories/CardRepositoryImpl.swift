@@ -119,9 +119,9 @@ final class CardRepositoryImpl: CardRepository {
             .map { _ in Result<Void, Error>.success(()) }
             .catch { error in .just(.failure(error)) }
     }
-
+    
     func notiAgree() -> Observable<Bool> {
-        var parameters: [String: String] = [ "infoAlarmYN" : "Y" ]
+        let parameters: [String: String] = [ "infoAlarmYN" : "Y" ]
         
         let endpoint = Endpoint<Empty>(
             baseURL: .todaktodotAPI,

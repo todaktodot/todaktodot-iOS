@@ -258,6 +258,7 @@ final class MypageViewController: CustomBackViewController, View {
         
         reactor.state
             .compactMap { $0.info }
+            .take(1)
             .subscribe(onNext: { [weak self] info in
                 guard let self = self else { return }
                 
@@ -307,7 +308,9 @@ final class MypageViewController: CustomBackViewController, View {
             .disposed(by: disposeBag)
         
         reactor.state
-            .compactMap { $0.isInfoNotice }
+            .map { $0.isInfoNotice }
+            .distinctUntilChanged()
+            .compactMap { $0 }
             .subscribe(onNext: { [weak self] isOn in
                 guard let self = self else { return }
                 settingSectionView.infoNotiSwitch.setSwitch(isOn: isOn)
@@ -315,7 +318,9 @@ final class MypageViewController: CustomBackViewController, View {
             .disposed(by: disposeBag)
         
         reactor.state
-            .compactMap { $0.isAdvertNoti }
+            .map { $0.isAdvertNoti }
+            .distinctUntilChanged()
+            .compactMap { $0 }
             .subscribe(onNext: { [weak self] isOn in
                 guard let self = self else { return }
                 showToast(message: "광고성 알림 수신에 \(isOn ? "동의" : "거부")하셨습니다.(\(Date().toDot()))")
@@ -324,7 +329,9 @@ final class MypageViewController: CustomBackViewController, View {
             .disposed(by: disposeBag)
         
         reactor.state
-            .compactMap { $0.isMarketingNoti }
+            .map { $0.isMarketingNoti }
+            .distinctUntilChanged()
+            .compactMap { $0 }
             .subscribe(onNext: { [weak self] isOn in
                 guard let self = self else { return }
                 showToast(message: "마케팅 알림 수신에 \(isOn ? "동의" : "거부")하셨습니다.(\(Date().toDot()))")
@@ -401,9 +408,9 @@ final class MypageViewController: CustomBackViewController, View {
         settingSectionView.infoNotiSwitch.onTap = { [weak self] isOn in
             guard let self else { return }
             if isOn {
-                showNotiDisabledAlert {
+                showAlert(icon: UIImage(resource: .warning), title: "푸시 알림을 끄시겠어요?", description: "•  상대방이 답변해도 바로 알 수 없어요\n•  서로의 답변이 공개되도 알 수 없어요\n•  상대방의 쿡 찌르기를 받을 수 없어요", primaryButtonTitle: "알림 유지하기", primaryButtonAction: {}, secondaryButtonTitle: "알림 끄기", secondaryButtonAction: {
                     reactor.action.onNext(.tapInfoNoti(false))
-                }
+                })
             } else {
                 reactor.action.onNext(.tapInfoNoti(true))
             }

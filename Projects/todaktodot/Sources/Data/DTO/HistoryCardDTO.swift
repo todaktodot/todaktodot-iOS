@@ -12,6 +12,8 @@ import Foundation
 struct CardHistoryResponseDTO: Decodable {
     let startDate: String?
     let endDate: String?
+    let user1Id: Int?
+    let user2Id: Int?
     let historyCards: [HistoryCardDTO]?
 }
 
@@ -27,8 +29,6 @@ struct HistoryCardDTO: Decodable {
     let type: CardType?
     let user1Answered: Bool?
     let user2Answered: Bool?
-    let userId1: Int?
-    let userId2: Int?
     let questions: [HistoryQuestionDTO]?
     let feedback: FeedbackDTO?
     let pocked: Bool?
@@ -69,7 +69,7 @@ extension CardHistoryResponseDTO {
         let currentUserId = UserdefaultKey.userId
         
         return historyCards?.map { card in
-            let shouldSwap = currentUserId != card.userId1
+            let shouldSwap = currentUserId != self.user1Id
             
             return QuestionCard(
                 id: card.cardId ?? 0,
@@ -96,8 +96,8 @@ extension CardHistoryResponseDTO {
                 isSelected: card.selected ?? false,
                 user1Answered: shouldSwap ? (card.user2Answered ?? false) : (card.user1Answered ?? false),
                 user2Answered: shouldSwap ? (card.user1Answered ?? false) : (card.user2Answered ?? false),
-                userId1: shouldSwap ? card.userId2 : card.userId1,
-                userId2: shouldSwap ? card.userId1 : card.userId2,
+                userId1: shouldSwap ? self.user2Id : self.user1Id,
+                userId2: shouldSwap ? self.user1Id : self.user2Id,
                 feedback: card.feedback.map { f in
                     CardFeedback(
                         id: f.feedbackId,

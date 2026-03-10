@@ -21,7 +21,7 @@ final class SettingSectionView: UIView {
     }
 
     private let versionValueLabel = TDLabel().then {
-        $0.text = "v \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0")"
+        $0.text = "v \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")"
         $0.font = .pretenRegular(16)
         $0.textColor = .grayScale400
     }
