@@ -31,8 +31,12 @@ final class TermsViewController: CustomBackViewController {
         $0.setTitle(title: "이용 약관")
     }
     
-    private let divider = UIView().then {
-        $0.backgroundColor = UIColor.grayScale200
+    private let marketingButton = ModalButton().then {
+        $0.setTitle(title: "마케팅 수신 정책")
+    }
+    
+    private let advertiesmentButton = ModalButton().then {
+        $0.setTitle(title: "광고성 알림 수신 정책")
     }
     
     override func viewDidLoad() {
@@ -55,6 +59,12 @@ final class TermsViewController: CustomBackViewController {
         view.addSubview(contentView)
     }
     
+    private func divider() -> UIView {
+        UIView().then {
+            $0.backgroundColor = UIColor.grayScale200
+        }
+    }
+    
     private func setupFlexLayout() {
         contentView.flex
             .marginTop(28)
@@ -65,11 +75,23 @@ final class TermsViewController: CustomBackViewController {
             .define {
                 $0.addItem(personalTermButton)
                 
-                $0.addItem(divider)
+                $0.addItem(divider())
                     .height(1)
                     .marginHorizontal(-20)
                 
                 $0.addItem(usedTermButton)
+                
+                $0.addItem(divider())
+                    .height(1)
+                    .marginHorizontal(-20)
+                
+                $0.addItem(marketingButton)
+                
+                $0.addItem(divider())
+                    .height(1)
+                    .marginHorizontal(-20)
+                
+                $0.addItem(advertiesmentButton)
             }
     }
     
@@ -94,6 +116,18 @@ final class TermsViewController: CustomBackViewController {
         usedTermButton.rx.tap
             .subscribe(onNext: { [weak self] in
                 self?.coordinator?.showDetailTerms()
+            })
+            .disposed(by: disposeBag)
+        
+        marketingButton.rx.tap
+            .subscribe(onNext: { [weak self] in
+                self?.coordinator?.showDetailMarketing()
+            })
+            .disposed(by: disposeBag)
+        
+        advertiesmentButton.rx.tap
+            .subscribe(onNext: { [weak self] in
+                self?.coordinator?.showDetailAdvertiesment()
             })
             .disposed(by: disposeBag)
     }

@@ -102,7 +102,10 @@ let project = Project(
             settings: .settings(
                 base: [
                     "OTHER_LDFLAGS":["-all_load -Objc"],
-                    "DEVELOPMENT_TEAM": "5HY2NNF4HY"
+                    "DEVELOPMENT_TEAM": "5HY2NNF4HY",
+                    "VERSIONING_SYSTEM": "apple-generic",
+                    "CURRENT_PROJECT_VERSION": "1",
+                    "MARKETING_VERSION": "1.0.0",
                 ],
                 configurations: [
                     .debug(name: "Debug", xcconfig: "Config/Debug.xcconfig"),
