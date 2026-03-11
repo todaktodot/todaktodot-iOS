@@ -244,14 +244,21 @@ final class HomeViewController: BaseViewController, View {
             })
             .disposed(by: disposeBag)
         
-        reactor.state.map { $0.isPoked }
-            .distinctUntilChanged()
+        let isPokedStream = reactor.state.map { $0.isPoked }.distinctUntilChanged().share(replay: 1)
+
+        isPokedStream
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] isPoked in
                 self?.updatePokeButton(isPoked: isPoked)
-                if isPoked {
-                    self?.showPokeAlert()
-                }
+            })
+            .disposed(by: disposeBag)
+
+        pokeButton.rx.tap
+            .withLatestFrom(isPokedStream)
+            .filter { !$0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] _ in
+                self?.showPokeAlert()
             })
             .disposed(by: disposeBag)
         
@@ -959,6 +966,3 @@ extension HomeViewController: BaseViewControllerDelegate {
         coordinator?.navigateToMyPage(self.navigationController, tabBarCoordinator: coordinator?.tabBarCoordinator)
     }
 }
-
-
-
