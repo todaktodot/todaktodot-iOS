@@ -54,6 +54,18 @@ final class MypageCoordinator: Coordinator {
         navigationController.present(webVC, animated: true, completion: nil)
     }
     
+    func showDetailMarketing() {
+        let webVC = WebViewController(url: "https://silver-curve-9aa.notion.site/297562bcddbd80f0ba3ef3fde36fd816?pvs=74")
+        webVC.modalPresentationStyle = .formSheet
+        navigationController.present(webVC, animated: true, completion: nil)
+    }
+    
+    func showDetailAdvertiesment() {
+        let webVC = WebViewController(url: "https://silver-curve-9aa.notion.site/304562bcddbd8059b8f7ee323b944f4f?pvs=74")
+        webVC.modalPresentationStyle = .formSheet
+        navigationController.present(webVC, animated: true, completion: nil)
+    }
+    
     func showNickname() {
         let signinCoordinator = SigninCoordinator(navigationController: navigationController)
         signinCoordinator.parentCoordinator = tabBarCoordinator
