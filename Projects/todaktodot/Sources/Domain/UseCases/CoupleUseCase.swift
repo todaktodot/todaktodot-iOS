@@ -39,7 +39,7 @@ final class CoupleUseCase {
         repository.soloStart()
     }
     
-    func assignCards(endDate: String) -> Observable<Bool> {
-        repository.assignCards(endDate: endDate)
+    func assignCards(startDate: String, endDate: String) -> Observable<Bool> {
+        repository.assignCards(startDate: startDate, endDate: endDate)
     }
 }
