@@ -80,6 +80,10 @@ enum UserdefaultKey {
     static func resetAuthUserDefaults() {
         self.accessToken = nil
         self.refreshToken = nil
+        
+        self.weeklyCards = []
+        self.lastWeeklyCardDate = nil
+        
         UserDefaults.standard.synchronize()
     }
 }
