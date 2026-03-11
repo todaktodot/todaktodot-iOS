@@ -51,8 +51,7 @@ platform :ios do
         description: description,
         color: color,
         fields: [
-          { name: "Version", value: "#{version} (#{build})", inline: true },
-          { name: "Branch", value: branch, inline: true }
+          { name: "Version", value: "#{version} (#{build})", inline: true }
         ],
         footer: { text: "todaktodot-iOS" },
         timestamp: Time.now.utc.iso8601
