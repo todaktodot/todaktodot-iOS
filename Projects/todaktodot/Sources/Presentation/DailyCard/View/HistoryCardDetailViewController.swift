@@ -221,7 +221,10 @@ final class HistoryCardDetailViewController: UIViewController {
         }
         
         let answerText = TDLabel().then {
-            $0.text = multipleChoice?.user1Answer
+            // user1Answer는 옵션 번호 (예: "1")
+            let optionNo = Int(multipleChoice?.user1Answer ?? "0") ?? 0
+            let optionContent = multipleChoice?.options.first(where: { $0.id == optionNo })?.text ?? "답변 없음"
+            $0.text = optionContent
             $0.font = .pretenRegular(16)
             $0.textColor = .grayScale800
             $0.numberOfLines = 0
@@ -300,7 +303,10 @@ final class HistoryCardDetailViewController: UIViewController {
         }
         
         let answerText = TDLabel().then {
-            $0.text = multipleChoice?.user2Answer
+            // user2Answer는 옵션 번호 (예: "2")
+            let optionNo = Int(multipleChoice?.user2Answer ?? "0") ?? 0
+            let optionContent = multipleChoice?.options.first(where: { $0.id == optionNo })?.text ?? "답변 없음"
+            $0.text = optionContent
             $0.font = .pretenRegular(16)
             $0.textColor = .grayScale800
             $0.numberOfLines = 0
