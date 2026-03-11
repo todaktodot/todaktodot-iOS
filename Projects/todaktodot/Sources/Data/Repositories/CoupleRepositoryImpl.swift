@@ -105,14 +105,14 @@ final class CoupleRepositoryImpl: CoupleRepository {
             }
     }
     
-    func assignCards(endDate: String) -> Observable<Bool> {
+    func assignCards(startDate: String, endDate: String) -> Observable<Bool> {
         let endpoint = Endpoint<AssignCardDTO>(
             baseURL: .todaktodotAPI,
             path: "/api/daily-card/assign/me",
             method: .post,
             encodingType: .query,
             parameters: [
-                "startDate": Date().toYYYYMMDD(),
+                "startDate": startDate,
                 "endDate": endDate
             ]
         )
