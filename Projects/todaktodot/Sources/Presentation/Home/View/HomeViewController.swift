@@ -255,7 +255,7 @@ final class HomeViewController: BaseViewController, View {
 
         pokeButton.rx.tap
             .withLatestFrom(isPokedStream)
-            .filter { $0 }
+            .filter { !$0 }
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] _ in
                 self?.showPokeAlert()
