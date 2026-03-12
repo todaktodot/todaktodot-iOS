@@ -168,6 +168,11 @@ final class HomeViewController: BaseViewController, View {
         fetchHistoryCards()
     }
     
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        tooltipContainer.isHidden = true
+    }
+    
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
@@ -198,7 +203,26 @@ final class HomeViewController: BaseViewController, View {
             .distinctUntilChanged()
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] shouldShow in
-                self?.tooltipContainer.isHidden = !shouldShow
+                guard let self = self else { return }
+                
+                if shouldShow {
+                    self.tooltipContainer.alpha = 0
+                    self.tooltipContainer.isHidden = false
+                    self.tooltipContainer.transform = CGAffineTransform(translationX: 0, y: -10)
+                    
+                    UIView.animate(
+                        withDuration: 0.5,
+                        delay: 0.3,
+                        usingSpringWithDamping: 0.7,
+                        initialSpringVelocity: 0.5,
+                        options: .curveEaseOut
+                    ) {
+                        self.tooltipContainer.alpha = 1
+                        self.tooltipContainer.transform = .identity
+                    }
+                } else {
+                    self.tooltipContainer.isHidden = true
+                }
             })
             .disposed(by: disposeBag)
         
