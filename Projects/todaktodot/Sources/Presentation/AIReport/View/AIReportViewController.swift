@@ -12,12 +12,16 @@ import RxSwift
 import RxCocoa
 import Then
 import ReactorKit
+import RxRelay
 
-final class AIReportViewController: BaseViewController {
+final class AIReportViewController: BaseViewController, View {
     
     var disposeBag = DisposeBag()
     weak var coordinator: AIReportCoordinator?
-    private var dataEmpty = false
+    private var creatable = false
+    private var isInitial = false
+    private var reportId: Int?
+    private var currentSegment = BehaviorRelay<SeletedSegment>(value: .lastWeek)
     
     private let scrollView = UIScrollView().then {
         $0.showsVerticalScrollIndicator = false
@@ -62,18 +66,101 @@ final class AIReportViewController: BaseViewController {
         $0.titleLabel?.font = UIFont.pretenSemiBold(16)
     }
     
+    enum SeletedSegment {
+        case lastWeek, storage
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         self.delegate = self
         setupViews()
         setupFlexLayout()
-        bindActions()
-        showLastWeek()
+        
+        reactor?.action.onNext(.fetchReportIsCreated)
+        reactor?.action.onNext(.fetchStorageListData)
     }
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         layoutViews()
+    }
+    
+    func bind(reactor: AIReportReactor) {
+        
+        reactor.state
+            .compactMap { $0.reportCreated }
+            .distinctUntilChanged { $0.reportId == $1.reportId }
+            .subscribe { [weak self] created in
+                guard let self else { return }
+                creatable = created.creatable
+                isInitial = created.initialize
+                reportId = created.reportId
+                switchSegment(segment: .lastWeek)
+            }
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .compactMap { $0.reportData }
+            .subscribe(onNext: { [weak self] detail, step in
+                guard let self = self, let detail, let step else { return }
+                switch step {
+                case .first:
+                    coordinator?.showDetail(step: isInitial ? .first : .full, detail: detail)
+                    isInitial = false
+                case .history:
+                    coordinator?.showDetail(step: .history, detail: detail)
+                default:
+                    break
+                }
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .compactMap { $0.storageData }
+            .subscribe { [weak self] list in
+                guard let self else { return }
+                storageAIReportView.configure(listData: list)
+            }
+            .disposed(by: disposeBag)
+        
+        currentSegment
+            .subscribe { [weak self] segment in
+                guard let self else { return }
+                switch segment {
+                case .lastWeek:
+                    switchSegment(segment: .lastWeek)
+                case .storage:
+                    switchSegment(segment: .storage)
+                }
+            }
+            .disposed(by: disposeBag)
+        
+        lastWeekButton.rx.tap
+            .subscribe { [weak self] _ in
+                guard let self else { return }
+                currentSegment.accept(.lastWeek)
+            }
+            .disposed(by: disposeBag)
+
+        storageButton.rx.tap
+            .subscribe { [weak self] _ in
+                guard let self else { return }
+                currentSegment.accept(.storage)
+            }
+            .disposed(by: disposeBag)
+        
+        lastWeekAIReportView.reportDetailButton.rx.tap
+            .compactMap { [weak self] _ in
+                guard let self = self,
+                      let reportId = self.reportId else { return nil }
+                return .tapReportDetailButton(reportId)
+            }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        storageAIReportView.onCardTap = { id in
+            reactor.action.onNext(.tapStorageReport(id))
+        }
     }
     
     private func setupViews() {
@@ -114,6 +201,12 @@ final class AIReportViewController: BaseViewController {
                 .height(2)
                 .width(50%)
         }
+        
+        contentView.flex.define { flex in
+            flex.addItem(emptyReportView).display(.none)
+            flex.addItem(lastWeekAIReportView).display(.none)
+            flex.addItem(storageAIReportView).display(.none)
+        }
     }
     
     private func layoutViews() {
@@ -151,35 +244,6 @@ final class AIReportViewController: BaseViewController {
         scrollView.contentSize = CGSize(width: contentView.frame.width, height: contentView.frame.height + 100)
     }
     
-    private func bindActions() {
-        lastWeekButton.rx.tap
-            .subscribe(onNext: { [weak self] in
-                guard let self else { return }
-                
-                showLastWeek()
-            })
-            .disposed(by: disposeBag)
-
-        storageButton.rx.tap
-            .subscribe(onNext: { [weak self] in
-                guard let self else { return }
-                
-                showStorage()
-            })
-            .disposed(by: disposeBag)
-        
-        lastWeekAIReportView.reportDetailButton.rx.tap
-            .subscribe(onNext: { [weak self] in
-                guard let self else { return }
-                coordinator?.showLoading()
-            })
-            .disposed(by: disposeBag)
-        
-        storageAIReportView.onCardTap = { [weak self] _ in
-            self?.coordinator?.showDetail()
-        }
-    }
-    
     private func layoutSelectedLine(index: Int) {
         let half = lineContainer.bounds.width / 2
         let x = index == 0 ? 0 : half
@@ -190,28 +254,16 @@ final class AIReportViewController: BaseViewController {
         UIView.animate(withDuration: 0.2, animations: apply)
     }
     
-    private func showLastWeek() {
-        lastWeekButton.isEnabled = false
-        storageButton.isEnabled = true
+    private func switchSegment(segment: SeletedSegment) {
+        lastWeekButton.isEnabled = segment == .storage
+        storageButton.isEnabled = segment == .lastWeek
         
-        contentView.subviews.forEach { $0.removeFromSuperview() }
-
-        contentView.addSubview(dataEmpty ? emptyReportView : lastWeekAIReportView)
-        (dataEmpty ? emptyReportView : lastWeekAIReportView).pin.all()
+        emptyReportView.flex.display(segment == .storage ? .none : creatable ? .none : .flex)
+        lastWeekAIReportView.flex.display(segment == .storage ? .none : creatable ? .flex : .none)
+        storageAIReportView.flex.display(segment == .storage ? .flex : .none)
+        contentView.flex.layout(mode: .adjustHeight)
         
-        layoutSelectedLine(index: 0)
-    }
-    
-    private func showStorage() {
-        lastWeekButton.isEnabled = true
-        storageButton.isEnabled = false
-        
-        contentView.subviews.forEach { $0.removeFromSuperview() }
-
-        contentView.addSubview(storageAIReportView)
-        storageAIReportView.pin.all()
-        
-        layoutSelectedLine(index: 1)
+        layoutSelectedLine(index: segment == .lastWeek ? 0 : 1)
     }
 }
 

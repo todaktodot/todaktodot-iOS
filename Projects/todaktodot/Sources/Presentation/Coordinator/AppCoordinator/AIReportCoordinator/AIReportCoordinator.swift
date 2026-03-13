@@ -6,12 +6,14 @@
 //
 
 import UIKit
+import NetworkKit
 
 final class AIReportCoordinator: Coordinator {
     
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
     weak var tabBarCoordinator: TabBarCoordinator?
+    private let reactor = AIReportReactor(useCase: AIReportUseCase(repository: AIReportRepositoryImpl(networkManager: NetworkManager.shared)))
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
@@ -20,41 +22,32 @@ final class AIReportCoordinator: Coordinator {
     func start() {
         let vc = AIReportViewController()
         vc.coordinator = self
+        vc.reactor = reactor
         navigationController.pushViewController(vc, animated: true)
     }
     
-    func showLoading() {
-        let vc = AIReportLoadingViewController()
-        vc.hidesBottomBarWhenPushed = true
+    func showDetail(step: AIReportViewStep, detail: AIReportDetail) {
+        let vc = AIReportDetailViewController(step: step, detail: detail)
         vc.coordinator = self
-        navigationController.pushViewController(vc, animated: true)
-    }
-    
-    func showNext(step: AIReportViewStep, animated: Bool = true) {
-        let vc = AIReportDetailViewController(step: step)
-        vc.hidesBottomBarWhenPushed = true
-        vc.coordinator = self
-
-        var vcs = self.navigationController.viewControllers
-        vcs.removeAll { $0 is AIReportLoadingViewController }
-        vcs.append(vc)
-
-        self.navigationController.setViewControllers(vcs, animated: animated)
-    }
-    
-    func showDetail() {
-        let vc = AIReportDetailViewController(step: .full)
-        vc.hidesBottomBarWhenPushed = true
-        vc.coordinator = self
+        vc.reactor = reactor
         
-        navigationController.pushViewController(vc, animated: true)
+        if step == .full {
+            var vcs = navigationController.viewControllers
+            vcs.removeAll(where: { $0 is AIReportDetailViewController })
+            vcs.append(vc)
+            navigationController.setViewControllers(vcs, animated: true)
+        } else {
+            navigationController.pushViewController(vc, animated: true)
+        }
+    }
+    
+    func showHistoryCard(card: QuestionCard) {
+        let coordinator = HomeCoordinator(navigationController: navigationController)
+        addChild(coordinator)
+        coordinator.showHistoryCardDetail(card: card)
     }
     
     func navigateBack() {
         navigationController.popViewController(animated: true)
-    }
-    
-    func navigateRoot() {
-        navigationController.popToRootViewController(animated: true)
     }
 }

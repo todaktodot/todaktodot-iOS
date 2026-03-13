@@ -12,8 +12,9 @@ import Then
 import Lottie
 
 final class AIReportFirstView: UIView {
+    private var detail: AIReportDetail? = nil
+    private var isInteration: Bool = true
     private let syncBoxBackground = UIImageView().then {
-        $0.image = UIImage(resource: .purpleBoxHigh)
         $0.contentMode = .scaleAspectFit
     }
     
@@ -36,16 +37,17 @@ final class AIReportFirstView: UIView {
     }
     
     private let talkCountLabel = TDLabel().then {
-        $0.text = "127개"
+        $0.text = "000개"
         $0.font = .pretenSemiBold(28)
         $0.textColor = .grayScale800
+        $0.textAlignment = .right
     }
     
-    // 폰트 크기때문에 UILabel 유지
-    private let syncPercentLabel = UILabel().then {
-        $0.text = "78%"
+    private let syncPercentLabel = TDLabel().then {
+        $0.text = "000%"
         $0.font = .pretenMedium(68)
         $0.textColor = .white
+        $0.textAlignment = .right
     }
     
     private let progressBackground = UIView().then {
@@ -58,6 +60,8 @@ final class AIReportFirstView: UIView {
         $0.layer.cornerRadius = 16
     }
     
+    private let syncCountAnimator = CountUpAnimator()
+    private let talkCountAnimator = CountUpAnimator()
     private let circleProgress = CircleProgressView()
     private let progressView1 = CustomProgressBar(type: .economy)
     private let progressView2 = CustomProgressBar(type: .life)
@@ -66,18 +70,48 @@ final class AIReportFirstView: UIView {
     override init(frame: CGRect = .zero) {
         super.init(frame: frame)
         setupViews()
-        
-        progressView1.setProgress(0.7, animated: true)
-        progressView2.setProgress(0.55, animated: true)
-        progressView3.setProgress(0.8, animated: true)
-        circleProgress.setProgress(0.78, animated: true)
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        setupData(isInteration: isInteration)
     }
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
-    func setupViews() {
+    func configure(detail: AIReportDetail, isInteration: Bool) {
+        self.detail = detail
+        self.isInteration = isInteration
+    }
+    
+    private func setupData(isInteration: Bool) {
+        guard let detail else { return }
+        if isInteration {
+            syncCountAnimator.start(to: Double(detail.totalSyncRate)) { [weak self] value in
+                self?.syncPercentLabel.text = "\(value)%"
+            }
+            talkCountAnimator.start(to: Double(detail.totalDailycardAnswerCnt)) { [weak self] value in
+                self?.talkCountLabel.text = "\(value)개"
+            }
+        } else {
+            syncPercentLabel.text = "\(detail.totalSyncRate)%"
+            talkCountLabel.text = "\(detail.totalDailycardAnswerCnt)개"
+        }
+        
+        syncBoxBackground.image =
+        detail.totalSyncRate > 67 ? UIImage(resource: .purpleBoxHigh) :
+        detail.totalSyncRate > 33 ? UIImage(resource: .purpleBoxMedium) : UIImage(resource: .purpleBoxLow)
+        
+        dateLabel.text = "\(detail.startDt) ~ \(detail.endDt)"
+        progressView1.setProgress(detail.economySyncRate, animated: isInteration)
+        progressView2.setProgress(detail.lifeSyncRate, animated: isInteration)
+        progressView3.setProgress(detail.loveSyncRate, animated: isInteration)
+        circleProgress.setProgress(detail.dailycardAnswerRate, animated: isInteration)
+    }
+    
+    private func setupViews() {
         
         self.flex.define {
             $0.addItem(syncBoxBackground)

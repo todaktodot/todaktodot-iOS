@@ -7,6 +7,7 @@
 
 import RxSwift
 import ReactorKit
+import Foundation
 
 final class CoupleReactor: Reactor {
     let disposeBag = DisposeBag()
@@ -16,34 +17,40 @@ final class CoupleReactor: Reactor {
         var isLoading: Bool = false
         var isJoined: Bool?
         
-        var isTermsAgreeSuccess: Bool = false
-        var isCoupleConnectSuccess: Bool = false
-        var isNicknameSetSuccess: Bool = false
-        var isJoinSuccess: Bool = false
+        var isAlreadyCouple: Bool?
+        var isTermsAgreeSuccess: Bool?
+        var isCoupleConnectSuccess: Bool?
+        var isSoloStartSuccess: Bool?
         
-        var isMyCodeIssueFailed: Bool = false
+        var updateNickname: String?
+        var updateCoupleInfo: CoupleInfo?
+        var error: Error?
     }
     
     enum Action {
         case issueCoupleCode
         case checkIsJoined
-        case tapTemrsAgreeButtonWithMarketingAgree(Bool)
+        case tapTemrsAgreeButton(Bool, Bool)
         case tapConnectButton(String)
         case tapNicknameButton(String)
-        case tapJoinButton(String, String)
+        case tapStartButton(String, String)
+        case tapSoloStartButton
     }
     
     enum Mutation {
+        case setSoloStart(Bool)
         case setLoading(Bool)
-        
-        case setMyCode(String)
         case setIsJoined(Bool)
+        
         case setTermsAgreeSuccess(Bool)
         case setCoupleConnectSuccess(Bool)
-        case setNicknameSuccess(Bool)
-        case setJoinSuccess(Bool)
         
-        case setMyCodeIssueFailed
+        case setMyCode(String)
+        case setNickname(String)
+        case setCoupleInfo(CoupleInfo)
+        
+        case setAlreadyCouple
+        case setError(Error?)
     }
     
     let initialState = State()
@@ -59,27 +66,50 @@ final class CoupleReactor: Reactor {
         case .issueCoupleCode:
             return coupleUseCase.issueCode()
                 .map { Mutation.setMyCode($0.linkCode) }
-                .catchAndReturn(Mutation.setMyCodeIssueFailed)
-            
+                .catch {
+                    if let afError = $0.asCustomAFError, afError.isAlreadyCouple {
+                        return .just(.setAlreadyCouple)
+                    }
+                    return .just(.setError($0))
+                }
         case .tapConnectButton(let code):
             return coupleUseCase.connectCouple(code: code)
-                .map { Mutation.setCoupleConnectSuccess($0) }
-                .catchAndReturn(Mutation.setCoupleConnectSuccess(false))
+                .flatMap { _ -> Observable<Mutation> in
+                    return self.coupleUseCase.assignCards(endDate: self.calNextSunday())
+                        .map { .setCoupleConnectSuccess($0) }
+                        .catch { .just(.setError($0)) }
+                }
+                .catchAndReturn(.setCoupleConnectSuccess(false))
             
         case .tapNicknameButton(let nickname):
-            return coupleUseCase.setNickname(nickname: nickname)
-                .map { Mutation.setNicknameSuccess($0) }
-                .catchAndReturn(Mutation.setNicknameSuccess(false))
-        case .tapJoinButton(let date, let stage):
-            return coupleUseCase.setCoupleInfo(date: date, stage: stage)
-                .map { Mutation.setJoinSuccess($0) }
-                .catchAndReturn(Mutation.setJoinSuccess(false))
-        case .tapTemrsAgreeButtonWithMarketingAgree(let isMarketing):
-            return coupleUseCase.setTerms(marketingAgree: isMarketing)
+            return coupleUseCase.updateNickname(nickname: nickname)
+                .map { Mutation.setNickname($0) }
+            
+        case .tapStartButton(let date, let stage):
+            return coupleUseCase.updateCoupleInfo(date: date, stage: stage)
+                .map { Mutation.setCoupleInfo($0) }
+            
+        case .tapTemrsAgreeButton(let isMarketing, let isAdvertiesment):
+            return coupleUseCase.setTerms(marketingAgree: isMarketing, advertiesmentAgree: isAdvertiesment)
                 .map { Mutation.setTermsAgreeSuccess($0) }
                 .catchAndReturn(Mutation.setTermsAgreeSuccess(false))
+            
         case .checkIsJoined:
             return .just(.setIsJoined(UserdefaultKey.joined))
+            
+        case .tapSoloStartButton:
+            return coupleUseCase.soloStart()
+                .flatMap { _ -> Observable<Mutation> in
+                    return self.coupleUseCase.assignCards(endDate: self.calNextSunday())
+                        .map { .setSoloStart($0) }
+                        .catch { .just(.setError($0)) }
+                }
+                .catch {
+                    if let afError = $0.asCustomAFError, afError.isAleardySolo {
+                        return .just(.setSoloStart(true))
+                    }
+                    return .just(.setError($0))
+                }
         }
     }
     
@@ -96,22 +126,40 @@ final class CoupleReactor: Reactor {
         case .setTermsAgreeSuccess(let isSuccess):
             newState.isTermsAgreeSuccess = isSuccess
             
-        case .setMyCodeIssueFailed:
-            newState.isMyCodeIssueFailed = true
-            
         case .setCoupleConnectSuccess(let isSuccess):
             newState.isCoupleConnectSuccess = isSuccess
             
-        case .setNicknameSuccess(let isSuccess):
-            newState.isNicknameSetSuccess = isSuccess
+        case .setNickname(let nickname):
+            newState.updateNickname = nickname
             
-        case .setJoinSuccess(let isSuccess):
-            newState.isJoinSuccess = isSuccess
+        case .setCoupleInfo(let info):
+            newState.updateCoupleInfo = info
             
         case .setIsJoined(let isJoined):
             newState.isJoined = isJoined
+            
+        case .setAlreadyCouple:
+            newState.isAlreadyCouple = true
+            
+        case .setSoloStart(let isSuccess):
+            newState.isSoloStartSuccess = isSuccess
+            
+        case .setError(let error):
+            newState.error = error
         }
         
         return newState
+    }
+    
+    func calNextSunday() -> String {
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: Date())
+        let targetSunday = calendar.nextDate(
+            after: startOfToday.addingTimeInterval(-1),
+            matching: DateComponents(weekday: 1),
+            matchingPolicy: .nextTime
+        )
+        let endDate = targetSunday ?? Date()
+        return endDate.toYYYYMMDD()
     }
 }

@@ -43,15 +43,31 @@ final class DailyCardViewController: UIViewController, View {
         setupUI()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+    }
+    
     func bind(reactor: DailyCardReactor) {
         situationButton.rx.tap
-            .map { Reactor.Action.tapSituationButton }
-            .bind(to: reactor.action)
+            .do(onNext: { [weak self] in
+                self?.animateButtonTap(self?.situationButton)
+            })
+            .map { CardType.roleplay }
+            .withLatestFrom(reactor.state.map { $0.historySelectedType }) { ($0, $1) }
+            .subscribe(onNext: { [weak self] selectedType, historyType in
+                self?.handleCardSelection(selectedType: selectedType, historyType: historyType, reactor: reactor)
+            })
             .disposed(by: disposeBag)
         
         balanceButton.rx.tap
-            .map { Reactor.Action.tapBalanceButton }
-            .bind(to: reactor.action)
+            .do(onNext: { [weak self] in
+                self?.animateButtonTap(self?.balanceButton)
+            })
+            .map { CardType.balance }
+            .withLatestFrom(reactor.state.map { $0.historySelectedType }) { ($0, $1) }
+            .subscribe(onNext: { [weak self] selectedType, historyType in
+                self?.handleCardSelection(selectedType: selectedType, historyType: historyType, reactor: reactor)
+            })
             .disposed(by: disposeBag)
         
         reactor.state.map { $0.shouldDismiss }
@@ -63,19 +79,34 @@ final class DailyCardViewController: UIViewController, View {
             })
             .disposed(by: disposeBag)
         
-        reactor.state.map { $0.selectedCardType }
+        reactor.state.map { $0.selectedCard }
             .compactMap { $0 }
+            .distinctUntilChanged { $0.id == $1.id }
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] cardType in
-                switch cardType {
-                case .roleplay :
-                    self?.coordinator?.showDailyCardDetail()
+            .subscribe(onNext: { [weak self] card in
+                guard let self = self else { return }
+                
+                switch card.type {
+                case .roleplay:
+                    self.coordinator?.showDailyCardDetail(card: card)
                 case .balance:
-                    self?.coordinator?.showBalanceCardDetail()
+                    self.coordinator?.showBalanceCardDetail(card: card)
+                case .none:
+                    break
                 }
             })
             .disposed(by: disposeBag)
+        
+        // UI 업데이트 없을때 상대방이 모드 선택할 시
+        reactor.state.map { $0.shouldShowAlreadySelectedAlert }
+            .filter { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] _ in
+                self?.showNotificationAlert()
+            })
+            .disposed(by: disposeBag)
     }
+    
     
     private func setupUI() {
         view.backgroundColor = .lightPurple
@@ -114,12 +145,117 @@ final class DailyCardViewController: UIViewController, View {
         rootFlexContainer.pin.all(view.pin.safeArea)
         rootFlexContainer.flex.layout()
     }
+    
+    private func showNotificationAlert() {
+        guard let reactor = reactor,
+              let card = getCard(for: reactor.currentState.historySelectedType) else {
+            return
+        }
+        
+        showAlert(
+            icon: UIImage(resource: .warning),
+            title: "연인이 이미 유형을 선택했어요!",
+            description: "다음에는 먼저 질문에 답변하여\n 유형을 선정해보세요.",
+            primaryButtonTitle: "카드 작성하러 가기",
+            primaryButtonAction: { [weak self] in
+                self?.navigateToCardDetail(card: card)
+            }
+        )
+    }
+    
+    private func showConfirmationAlert(for cardType: CardType) {
+        guard let reactor = reactor,
+              let card = getCard(for: cardType) else {
+            return
+        }
+        
+        showAlert(
+            icon: UIImage(resource: .warning),
+            title: "유형 선택 후에는 변경할 수 없어요!",
+            description: "신중히 선택해주세요.",
+            primaryButtonTitle: "이걸로 할게요",
+            primaryButtonAction: {
+                reactor.action.onNext(.selectCardType(coupleCardId: card.coupleCardId, cardType: cardType))
+                let action: DailyCardReactor.Action = cardType == .roleplay ? .tapSituationButton : .tapBalanceButton
+                reactor.action.onNext(action)
+            },
+            secondaryButtonTitle: "취소",
+            secondaryButtonAction: {}
+        )
+    }
+    
+    private func getCard(for cardType: CardType) -> QuestionCard? {
+        reactor?.currentState.selectedCard ?? CardService.shared.getTodayCards().first(where: { $0.type == cardType })
+    }
+    
+    private func navigateToCardDetail(card: QuestionCard) {
+        switch card.type {
+        case .roleplay:
+            coordinator?.showDailyCardDetail(card: card)
+        case .balance:
+            coordinator?.showBalanceCardDetail(card: card)
+        case .none:
+            break
+        }
+    }
 }
 
 // MARK: - FUNC
 extension DailyCardViewController {
     @objc private func backButtonTapped() {
         coordinator?.navigateBack()
+    }
+    
+    private func handleCardSelection(selectedType: CardType, historyType: CardType, reactor: DailyCardReactor) {
+        if historyType != .none && historyType != selectedType {
+            showNotificationAlert()
+        } else if historyType == .none {
+            showConfirmationAlert(for: selectedType)
+        } else {
+            let action: DailyCardReactor.Action = selectedType == .roleplay ? .tapSituationButton : .tapBalanceButton
+            reactor.action.onNext(action)
+        }
+    }
+    
+    
+    private func animateButtonTap(_ button: UIButton?) {
+        guard let button = button else { return }
+        
+        UIView.animate(withDuration: 0.15, animations: {
+            button.layer.borderWidth = 1
+            button.layer.borderColor = UIColor.mainPurple.cgColor
+            button.layer.shadowColor = UIColor.mainPurple.withAlphaComponent(0.2).cgColor
+            button.layer.shadowOpacity = 1
+            button.layer.shadowOffset = CGSize(width: 0, height: 2)
+            button.layer.shadowRadius = 8
+        }) { _ in
+            UIView.animate(withDuration: 0.15) {
+                button.layer.borderWidth = 0
+                button.layer.shadowColor = UIColor.black.cgColor
+                button.layer.shadowOpacity = 0.05
+                button.layer.shadowOffset = CGSize(width: 0, height: 2)
+                button.layer.shadowRadius = 8
+            }
+        }
+    }
+    
+    private func updateButtonStyle(_ button: UIButton, isSelected: Bool) {
+        UIView.animate(withDuration: 0.3) {
+            if isSelected {
+                button.layer.borderWidth = 1
+                button.layer.borderColor = UIColor.mainPurple.cgColor
+                button.layer.shadowColor = UIColor.mainPurple.withAlphaComponent(0.2).cgColor
+                button.layer.shadowOpacity = 1
+                button.layer.shadowOffset = CGSize(width: 0, height: 2)
+                button.layer.shadowRadius = 8
+            } else {
+                button.layer.borderWidth = 0
+                button.layer.shadowColor = UIColor.black.cgColor
+                button.layer.shadowOpacity = 0.05
+                button.layer.shadowOffset = CGSize(width: 0, height: 2)
+                button.layer.shadowRadius = 8
+            }
+        }
     }
 }
 

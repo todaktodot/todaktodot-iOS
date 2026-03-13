@@ -7,6 +7,7 @@
 
 import RxSwift
 import NetworkKit
+import Alamofire
 
 final class AuthRepositoryImpl: AuthRepository {
     
@@ -14,6 +15,10 @@ final class AuthRepositoryImpl: AuthRepository {
     private let kakaoAuthProvider: KakaoAuthProvider
     private let googleAuthProvider: GoogleAuthProvider
     private let appleAuthProvider: AppleAuthProvider
+    
+    enum AuthError: Error {
+        case deviceTokenIsNil
+    }
     
     init(
         kakaoAuthProvider: KakaoAuthProvider,
@@ -58,27 +63,62 @@ final class AuthRepositoryImpl: AuthRepository {
                 }
         }
     }
-
+    
     private func requestLogin(accessToken: String, loginType: LoginType) -> Observable<Bool> {
         let parameters: [String: Any] = [
             "provider": loginType.rawValue.uppercased(),
             "token": accessToken
         ]
-
+        
         let endpoint = Endpoint<LoginInfo>(
             baseURL: .todaktodotAPI,
-            path: "/login",
+            path: "/api/login",
             method: .post,
             parameters: parameters
         )
-
+        
         return networkManager.request(with: endpoint)
-            .do(onNext: { result in
-                UserdefaultKey.accessToken = result.accessToken
-                UserdefaultKey.couple = result.couple
-                UserdefaultKey.joined = result.joined
-            })
+            .map {
+                UserdefaultKey.accessToken = $0.accessToken
+                UserdefaultKey.refreshToken = $0.refreshToken
+                UserdefaultKey.loginProvider = loginType.rawValue.uppercased()
+                return true
+            }
+    }
+    
+    func fetchUserInfo() -> Observable<UserInfo> {
+        let endpoint = Endpoint<UserDTO>(
+            baseURL: .todaktodotAPI,
+            path: "/api/profile/detail",
+            method: .get
+        )
+        
+        return networkManager.request(with: endpoint)
+            .map {
+                $0.setUserDefaultUserInfo()
+                return $0.toUserInfo()
+            }
+    }
+    
+    func updateDeviceToken(token: String?) -> Observable<Bool> {
+        guard let token else {
+            print("FCM 토큰 없음")
+            return Observable.error(AuthError.deviceTokenIsNil)
+        }
+        
+        let parameters: [String: Any] = [
+            "fcmToken": token,
+            "deviceType" : "IOS"
+        ]
+        
+        let endpoint = Endpoint<Empty>(
+            baseURL: .todaktodotAPI,
+            path: "/api/device-token",
+            method: .post,
+            parameters: parameters
+        )
+        
+        return networkManager.requestOptional(with: endpoint)
             .map { _ in true }
-            .catchAndReturn(false)
     }
 }

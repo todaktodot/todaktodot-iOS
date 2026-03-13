@@ -14,12 +14,21 @@ final class CircleProgressView: UIView {
     private let trackLayer = CAShapeLayer()
     private let progressLayer = CAShapeLayer()
     
-    private let percentLabel = UILabel().then {
+    private let titleLabel = TDLabel().then {
+        $0.text = "대화 참여율"
+        $0.font = .pretenMedium(14)
         $0.textAlignment = .center
-        $0.numberOfLines = 2
         $0.textColor = .white
     }
     
+    private let percentLabel = UILabel().then { // 높이 100% 이라 일반 라벨 적용
+        $0.text = "000%"
+        $0.font = .pretenSemiBold(28)
+        $0.textAlignment = .center
+        $0.textColor = .white
+    }
+    private let countAnimator = CountUpAnimator()
+
     private var radius: CGFloat {
         return min(bounds.width, bounds.height) / 2
     }
@@ -49,11 +58,12 @@ final class CircleProgressView: UIView {
 
         layer.addSublayer(trackLayer)
         layer.addSublayer(progressLayer)
-        addSubview(percentLabel)
         
         flex.alignItems(.center).define {
             $0.addItem().grow(1)
+            $0.addItem(titleLabel)
             $0.addItem(percentLabel)
+                .marginTop(5)
             $0.addItem().grow(1)
         }
     }
@@ -81,26 +91,26 @@ final class CircleProgressView: UIView {
 
     func setProgress(_ value: CGFloat, animated: Bool) {
         let clamped = max(0, min(value, 1))
-
+        
         if animated {
             let animation = CABasicAnimation(keyPath: "strokeEnd")
             animation.fromValue = progressLayer.presentation()?.strokeEnd ?? 0
             animation.toValue = clamped
-            animation.duration = 0.6
-            animation.timingFunction = CAMediaTimingFunction(name: .easeOut)
-
+            animation.duration = 1
+            animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            
             progressLayer.strokeEnd = clamped
             progressLayer.add(animation, forKey: "progress")
+            countAnimator.start(
+                to: Double(clamped * 100),
+                duration: 1,
+                easing: .easeInOut
+            ) { [weak self] value in
+                self?.percentLabel.text = "\(value)%"
+            }
         } else {
             progressLayer.strokeEnd = clamped
+            percentLabel.text = "\(Int(value * 100))%"
         }
-        
-        let numCount = String(Int(value * 100)).count
-        let text = "대화 참여율\n\(Int(value * 100))%"
-        let attributed = NSMutableAttributedString(string: text)
-        attributed.addAttribute(.font, value: UIFont.pretenMedium(14), range: NSRange(location: 0, length: text.count - 3))
-        attributed.addAttribute(.font, value: UIFont.pretenSemiBold(28), range: NSRange(location: text.count - (numCount + 1), length: numCount + 1))
-
-        percentLabel.attributedText = attributed
     }
 }

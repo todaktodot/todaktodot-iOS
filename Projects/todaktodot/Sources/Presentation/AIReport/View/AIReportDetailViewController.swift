@@ -18,13 +18,15 @@ enum AIReportViewStep {
     case second
     case third
     case full
-    case detail
+    case history // TODO: 히스토리카드로 이동
 }
 
-final class AIReportDetailViewController: CustomBackViewController {
+final class AIReportDetailViewController: CustomBackViewController, View {
     var disposeBag = DisposeBag()
     weak var coordinator: AIReportCoordinator?
     private var dataEmpty = false
+    private let aireportDetail: AIReportDetail
+    private let aiReportLoadingView = AIReportLoadingView()
     private let firstDetailView = AIReportFirstView()
     private let secondDetailView = AIReportSecondView()
     private let thirdDetailView = AIReportThirdView()
@@ -49,13 +51,11 @@ final class AIReportDetailViewController: CustomBackViewController {
         $0.layer.borderColor = UIColor.mainPurple.cgColor
     }
     
-    init(step: AIReportViewStep) {
+    init(step: AIReportViewStep, detail: AIReportDetail) {
         self.step = step
+        self.aireportDetail = detail
         super.init(nibName: nil, bundle: nil)
-        if step == .third {
-            nextButton.setTitle("한 눈에 보기", for: .normal)
-        } else {
-            nextButton.setTitle("다음", for: .normal)        }
+        nextButton.setTitle(step == .third ? "한 눈에 보기" : "다음", for: .normal)
     }
     
     required init?(coder: NSCoder) {
@@ -66,12 +66,17 @@ final class AIReportDetailViewController: CustomBackViewController {
         super.viewDidLoad()
         self.delegate = self
         title = "주간 AI 리포트"
-        setupViews()
-        setupFlexLayout()
-        bindActions()
         
-        if step == .full || step == .detail {
-            hiddenSubviesTitle()
+        if step == .first {
+            showLoading()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                self.aiReportLoadingView.isHidden = true
+                self.setupViews()
+                self.setupFlexLayout()
+            }
+        } else {
+            setupViews()
+            setupFlexLayout()
         }
     }
     
@@ -80,10 +85,45 @@ final class AIReportDetailViewController: CustomBackViewController {
         layoutViews()
     }
     
+    func bind(reactor: AIReportReactor) {
+        if step == .third || step == .full {
+            reactor.state
+                .compactMap { $0.historyData }
+                .subscribe { [weak self] data in
+                    self?.coordinator?.showHistoryCard(card: data)
+                }
+                .disposed(by: disposeBag)
+        }
+        
+        nextButton.rx.tap
+            .subscribe(onNext: { [weak self] in
+                guard let self else { return }
+                switch step {
+                case .first:
+                    coordinator?.showDetail(step: .second, detail: aireportDetail)
+                case .second:
+                    coordinator?.showDetail(step: .third, detail: aireportDetail)
+                case .third:
+                    coordinator?.showDetail(step: .full, detail: aireportDetail)
+                default:
+                    break
+                }
+            })
+            .disposed(by: disposeBag)
+        
+        thirdDetailView.onTapTopic = { id in
+            reactor.action.onNext(.tapTopicCard(id))
+        }
+    }
+    
     private func setupViews() {
         view.addSubview(backgroundView)
         view.addSubview(scrollView)
         scrollView.addSubview(contentContainer)
+        
+        firstDetailView.configure(detail: aireportDetail, isInteration: step != .full && step != .history)
+        secondDetailView.configure(detail: aireportDetail, hiddenTitle: step == .full || step == .history)
+        thirdDetailView.configure(detail: aireportDetail, hiddenTitle: step == .full || step == .history)
     }
     
     private func setupFlexLayout() {
@@ -95,7 +135,7 @@ final class AIReportDetailViewController: CustomBackViewController {
                 $0.addItem(secondDetailView)
             case .third:
                 $0.addItem(thirdDetailView)
-            case .full, .detail:
+            case .full, .history:
                 $0.addItem(firstDetailView)
                 $0.addItem(secondDetailView)
                 $0.addItem(thirdDetailView)
@@ -103,7 +143,7 @@ final class AIReportDetailViewController: CustomBackViewController {
             
             $0.addItem().grow(1)
             
-            if step != .full && step != .detail {
+            if step != .full && step != .history {
                 $0.addItem(nextButton)
                     .height(52)
                     .marginTop(40)
@@ -139,39 +179,16 @@ final class AIReportDetailViewController: CustomBackViewController {
         scrollView.contentSize = contentContainer.frame.size
     }
     
-    private func bindActions() {
-        nextButton.rx.tap
-            .subscribe(onNext: { [weak self] in
-                switch self?.step {
-                case .first:
-                    self?.coordinator?.showNext(step: .second)
-                case .second:
-                    self?.coordinator?.showNext(step: .third)
-                case .third:
-                    self?.coordinator?.showNext(step: .full)
-                default:
-                    break
-                }
-            })
-            .disposed(by: disposeBag)
+    private func showLoading() {
+        view.addSubview(aiReportLoadingView)
         
-        thirdDetailView.onTapTopic = {
-            self.coordinator?.showNext(step: .detail)
-        }
-    }
-    
-    private func hiddenSubviesTitle() {
-        secondDetailView.hiddenTitleLabel()
-        thirdDetailView.hiddenTitleLabel()
+        aiReportLoadingView.pin
+            .all()
     }
 }
 
 extension AIReportDetailViewController: CustomBackViewControllerDelegate {
     func navigateBack() {
-        if step == .full {
-            coordinator?.navigateRoot()
-        } else {
-            coordinator?.navigateBack()
-        }
+        coordinator?.navigateBack()
     }
 }

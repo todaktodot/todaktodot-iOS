@@ -33,7 +33,7 @@ final class TabBarCoordinator: Coordinator {
         let signinCoordinator = SigninCoordinator(navigationController: navigationController)
         signinCoordinator.parentCoordinator = self
         addChild(signinCoordinator)
-        signinCoordinator.showCoupleConnectOnly()
+        signinCoordinator.showCoupleConnect()
     }
     
     func showSignin() {
@@ -65,7 +65,8 @@ final class TabBarCoordinator: Coordinator {
 }
 
 final class HomeCoordinator: Coordinator {
-    let networkManager = NetworkManager()
+    let networkManager = NetworkManager.shared
+    private let cardUseCase: CardUseCase
     
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
@@ -73,12 +74,12 @@ final class HomeCoordinator: Coordinator {
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
+        
+        let cardRepository = CardRepositoryImpl(networkManager: networkManager)
+        self.cardUseCase = CardUseCase(repository: cardRepository)
     }
     
     func start() {
-        let cardRepository = CardRepositoryImpl(networkManager: networkManager)
-        let cardUseCase = CardUseCase(repository: cardRepository)
-        
         let reactor = HomeReactor(cardUseCase: cardUseCase)
         let homeViewController = HomeViewController(reactor: reactor)
         homeViewController.coordinator = self
@@ -87,23 +88,25 @@ final class HomeCoordinator: Coordinator {
         navigationController.setViewControllers([homeViewController], animated: false)
     }
     
-    func showDailyCard() {
-        let reactor = DailyCardReactor()
+    func showDailyCard(todayCards: [QuestionCard], selectedType: CardType) {
+        let reactor = DailyCardReactor(cardUseCase: cardUseCase, dailyCards: todayCards, selectedType: selectedType)
         let dailyCardViewController = DailyCardViewController(reactor: reactor)
         dailyCardViewController.coordinator = self
         dailyCardViewController.hidesBottomBarWhenPushed = true
         navigationController.pushViewController(dailyCardViewController, animated: true)
     }
     
-    func showDailyCardDetail() {
-        let dailyCardDetailViewController = DailyCardDetailViewController(cardType: .roleplay)
+    func showDailyCardDetail(card: QuestionCard) {
+        let reactor = DailyCardReactor(cardUseCase: cardUseCase, dailyCards: [card], selectedType: .none)
+        let dailyCardDetailViewController = DailyCardDetailViewController(card: card, reactor: reactor)
         dailyCardDetailViewController.coordinator = self
         dailyCardDetailViewController.hidesBottomBarWhenPushed = true
         navigationController.pushViewController(dailyCardDetailViewController, animated: true)
     }
     
-    func showBalanceCardDetail() {
-        let dailyCardDetailViewController = DailyCardDetailViewController(cardType: .balance)
+    func showBalanceCardDetail(card: QuestionCard) {
+        let reactor = DailyCardReactor(cardUseCase: cardUseCase, dailyCards: [card], selectedType: .none)
+        let dailyCardDetailViewController = DailyCardDetailViewController(card: card, reactor: reactor)
         dailyCardDetailViewController.coordinator = self
         dailyCardDetailViewController.hidesBottomBarWhenPushed = true
         navigationController.pushViewController(dailyCardDetailViewController, animated: true)

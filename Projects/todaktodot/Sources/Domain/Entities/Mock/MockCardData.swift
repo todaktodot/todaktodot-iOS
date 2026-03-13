@@ -57,7 +57,8 @@ struct MockCardData {
             user2Answered: false,
             userId1: nil,
             userId2: nil,
-            feedback: nil
+            feedback: nil,
+            pocked: nil
         ),
 
         QuestionCard(
@@ -97,7 +98,8 @@ struct MockCardData {
             user2Answered: false,
             userId1: nil,
             userId2: nil,
-            feedback: nil
+            feedback: nil,
+            pocked: nil
         ),
         // 오늘 - 밸런스게임
         QuestionCard(
@@ -137,7 +139,8 @@ struct MockCardData {
             user2Answered: false,
             userId1: nil,
             userId2: nil,
-            feedback: nil
+            feedback: nil,
+            pocked: nil
         )
     ]
 
@@ -186,7 +189,8 @@ struct MockCardData {
                 score: 85,
                 differences: "데이트 스타일은 비슷하지만, 활동성에서 약간의 차이가 있어요.",
                 tip: "서로의 페이스를 존중하며 다양한 데이트를 시도해보세요."
-            )
+            ),
+            pocked: false
         ),
         QuestionCard(
             id: 13,
@@ -231,7 +235,8 @@ struct MockCardData {
                 score: 68,
                 differences: "한 분은 저축을, 한 분은 경험을 중시하시네요.",
                 tip: "서로의 가치관을 이해하고 균형점을 찾아보세요."
-            )
+            ),
+            pocked: false
         ),
         QuestionCard(
             id: 14,
@@ -276,7 +281,8 @@ struct MockCardData {
                 score: 72,
                 differences: "한 분은 즉각적인 해결을, 한 분은 신중한 접근을 선호하시네요.",
                 tip: "서로의 방식을 존중하며 중간 지점을 찾아보세요."
-            )
+            ),
+            pocked: false
         ),
         QuestionCard(
             id: 15,
@@ -321,7 +327,8 @@ struct MockCardData {
                 score: 65,
                 differences: "한 분은 자주 연락하고 싶어하고, 한 분은 적당한 거리를 선호해요.",
                 tip: "서로의 스타일을 이해하고 편안한 빈도를 찾아보세요."
-            )
+            ),
+            pocked: false
         ),
         QuestionCard(
             id: 16,
@@ -360,7 +367,8 @@ struct MockCardData {
             user2Answered: false,
             userId1: 1001,
             userId2: 1002,
-            feedback: nil
+            feedback: nil,
+            pocked: false
         ),
         QuestionCard(
             id: 17,
@@ -399,7 +407,8 @@ struct MockCardData {
             user2Answered: false,
             userId1: 1001,
             userId2: 1002,
-            feedback: nil
+            feedback: nil,
+            pocked: nil
         )
     ]
 }

@@ -14,33 +14,25 @@ final class SigninReactor: Reactor {
     
     struct State {
         var isLoading: Bool = false
-        var signinEvent: SigninEvent? = nil
-    }
-
-    enum SigninEvent {
-        case kakaoSuccess
-        case googleSuccess
-        case appleSuccess
-        case kakaoFail
-        case googleFail
-        case appleFail
+        var isSigninFail: Bool?
+        @Pulse var signinInfo: UserInfo?
     }
     
     enum Action {
         case tapKakaoButton
         case tapGoogleButton
         case tapAppleButton
-        case clearEvent
+        case stopLoading
+        case fetchUserInfo
     }
 
     enum Mutation {
         case setLoading(Bool)
-        case setSigninEvent(SigninEvent?)
+        case setUserInfo(UserInfo)
+        case setSigninFail(Bool)
     }
     
     let initialState = State()
-    
-    
     
     private let loginUseCase: LoginUseCase
 
@@ -51,31 +43,20 @@ final class SigninReactor: Reactor {
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .tapKakaoButton:
-            return Observable.concat([
-                .just(.setLoading(true)),
-                loginUseCase.execute(type: .kakao)
-                    .map { Mutation.setSigninEvent($0 ? .kakaoSuccess : .kakaoFail) }
-                    .catch { _ in .just(.setSigninEvent(.kakaoFail)) },
-                .just(.setLoading(false))
-            ])
+            return socialLogin(type: .kakao)
+            
         case .tapGoogleButton:
-            return Observable.concat([
-                .just(.setLoading(true)),
-                loginUseCase.execute(type: .google)
-                    .map { Mutation.setSigninEvent($0 ? .googleSuccess : .googleFail) }
-                    .catch { _ in .just(.setSigninEvent(.googleFail)) },
-                .just(.setLoading(false))
-            ])
+            return socialLogin(type: .google)
+            
         case .tapAppleButton:
-            return Observable.concat([
-                .just(.setLoading(true)),
-                loginUseCase.execute(type: .apple)
-                    .map { Mutation.setSigninEvent($0 ? .appleSuccess : .appleFail) }
-                    .catch { _ in .just(.setSigninEvent(.appleFail)) },
-                .just(.setLoading(false))
-            ])
-        case .clearEvent:
-            return .just(.setSigninEvent(nil))
+            return socialLogin(type: .apple)
+            
+        case .stopLoading:
+            return .just(.setLoading(false))
+            
+        case .fetchUserInfo:
+            return loginUseCase.fetchUserInfo()
+                .map { Mutation.setUserInfo($0) }
         }
     }
     
@@ -84,9 +65,31 @@ final class SigninReactor: Reactor {
         switch mutation {
         case .setLoading(let isLoading):
             newState.isLoading = isLoading
-        case .setSigninEvent(let event):
-            newState.signinEvent = event
+        case .setUserInfo(let info):
+            newState.signinInfo = info
+        case .setSigninFail(let isFail):
+            newState.isSigninFail = isFail
         }
         return newState
+    }
+    
+    private func socialLogin(type: LoginType) -> Observable<Mutation> {
+        return Observable.concat([
+            .just(.setLoading(true)),
+            loginUseCase.execute(type: type)
+                .flatMap { _ in
+                    self.loginUseCase.updateDeviceToken(token: UserdefaultKey.diviceToken)
+                        .catch { error in
+                            print("FCM token update failed \(error.localizedDescription)")
+                            return .just(false)
+                        }
+                }
+                .flatMap { _ in
+                    self.loginUseCase.fetchUserInfo()
+                        .map { Mutation.setUserInfo($0) }
+                }
+                .catchAndReturn(.setSigninFail(true)),
+            .just(.setLoading(false))
+        ])
     }
 }

@@ -137,13 +137,13 @@ final class MaskingLabel: UILabel {
             positions.append(CGPoint(x: glyphRect.midX, y: glyphRect.midY))
         }
         
-        startBubbleGeneration(at: positions)
+        startBubbleGeneration(at: positions, characterCount: positions.count)
     }
     
     @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
         guard isMasked else { return }
         
-        let haptic = UIImpactFeedbackGenerator(style: .soft)
+        let haptic = UIImpactFeedbackGenerator(style: .medium)
         haptic.impactOccurred()
         
         lastTouchPoint = gesture.location(in: self)
@@ -166,12 +166,14 @@ final class MaskingLabel: UILabel {
         bubbleContainer.isHidden = false
     }
     
-    private func startBubbleGeneration(at positions: [CGPoint]) {
-        guard isMasked else { return }
+    private func startBubbleGeneration(at positions: [CGPoint], characterCount: Int) {
+        guard isMasked, characterCount > 0 else { return }
         
         bubbleGenerationWorkItem?.cancel()
         
-        for _ in 0..<tuning.bubblesPerBatch {
+        let bubblesCount = Int(Double(characterCount) * tuning.bubblesPerCharacter)
+        
+        for _ in 0..<bubblesCount {
             let randomPosition = positions.randomElement() ?? .zero
             let offsetX = CGFloat.random(in: -tuning.bubbleStartOffsetXRange...tuning.bubbleStartOffsetXRange)
             let offsetY = CGFloat.random(in: -tuning.bubbleStartOffsetYRange...tuning.bubbleStartOffsetYRange)
@@ -184,7 +186,7 @@ final class MaskingLabel: UILabel {
         }
         
         let workItem = DispatchWorkItem { [weak self] in
-            self?.startBubbleGeneration(at: positions)
+            self?.startBubbleGeneration(at: positions, characterCount: characterCount)
         }
         bubbleGenerationWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + tuning.bubbleBatchInterval, execute: workItem)
@@ -224,23 +226,16 @@ extension MaskingLabel {
         let moveAnimation = CABasicAnimation(keyPath: "position")
         moveAnimation.toValue = CGPoint(x: newX, y: newY)
         moveAnimation.duration = duration
-        moveAnimation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        moveAnimation.timingFunction = CAMediaTimingFunction(name: .easeIn)
         
-        let fadeAnimation = CABasicAnimation(keyPath: "opacity")
-        fadeAnimation.fromValue = tuning.bubbleStartOpacity
-        fadeAnimation.toValue = tuning.bubbleEndOpacity
-        fadeAnimation.duration = duration
-        fadeAnimation.timingFunction = CAMediaTimingFunction(name: .easeOut)
+        let scaleAnimation = CABasicAnimation(keyPath: "transform.scale")
+        scaleAnimation.fromValue = tuning.bubbleStartSize
+        scaleAnimation.toValue = tuning.bubbleEndSize
+        scaleAnimation.duration = duration
+        scaleAnimation.timingFunction = CAMediaTimingFunction(name: .easeIn)
         
-//        let scaleAnimation = CABasicAnimation(keyPath: "transform.scale")
-//        scaleAnimation.fromValue = 1.2
-//        scaleAnimation.toValue = 0.0
-//        scaleAnimation.duration = duration
-//        scaleAnimation.timingFunction = CAMediaTimingFunction(name: .easeOut)
-//        
         let group = CAAnimationGroup()
-//        group.animations = [moveAnimation, fadeAnimation, scaleAnimation]
-        group.animations = [moveAnimation, fadeAnimation]
+        group.animations = [moveAnimation, scaleAnimation]
         group.duration = duration
         group.fillMode = .forwards
         group.isRemovedOnCompletion = false
@@ -312,21 +307,23 @@ extension MaskingLabel {
 extension MaskingLabel {
     struct TuningSet {
         // Start
-        let bubblesPerBatch: Int = 80 /// 타임(bubbleBatchInterval)당 생성할 버블. 근데 글자 전체에서 80개라서 글자수 당 몇개  생성할지 바꿔야할지도
+        let bubblesPerCharacter: Double = 1.0 /// 글자당 생성할 버블 개수
         let bubbleBatchInterval: TimeInterval = 0.05  /// 버블 생성 간격
-        let bubbleStartOffsetXRange: CGFloat = 5 /// 한 글자 중심 랜덤 버블 생성 반경.
+        let bubbleStartOffsetXRange: CGFloat = 6 /// 한 글자 중심 랜덤 버블 생성 반경.
         let bubbleStartOffsetYRange: CGFloat = 4
         
         // During
-        let bubbleAnimateMinDuration: Double = 1.2 /// 버블 직선 운동 최소 지속시간
-        let bubbleAnimateMaxDuration: Double = 1.5 /// 버블 직선 운동 최대 지속시간
+        let bubbleAnimateMinDuration: Double = 1.0 /// 버블 직선 운동 최소 지속시간
+        let bubbleAnimateMaxDuration: Double = 1.0 /// 버블 직선 운동 최대 지속시간
         let minBubbleDistance: CGFloat = 7 /// 버블 직선 운동 최소 거리
-        let maxBubbleDistance: CGFloat = 10/// 버블 직선 운동 최대 거리
+        let maxBubbleDistance: CGFloat = 12/// 버블 직선 운동 최대 거리
         let bubbleStartOpacity: Double = 1.0/// 버블 시작 투명도
         let bubbleEndOpacity: Double = 0.4 /// 버블 마지막 투명도
+        let bubbleStartSize: Double = 1.3/// 버블 시작 크기
+        let bubbleEndSize: Double = 0.3 /// 버블 마지막 크기
         
         // End
-        let bubbleExplosionDistance: CGFloat = 15  /// 터치부근 버블 파동반경
-        let bubbleExplosionDuration: Double = 1.0 /// 터치시 버블 파동 애니메이션 지속시간
+        let bubbleExplosionDistance: CGFloat = 20  /// 터치부근 버블 파동반경
+        let bubbleExplosionDuration: Double = 0.8 /// 터치시 버블 파동 애니메이션 지속시간
     }
 }

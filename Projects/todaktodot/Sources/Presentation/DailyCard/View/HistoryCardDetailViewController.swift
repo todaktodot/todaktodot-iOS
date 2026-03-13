@@ -50,7 +50,13 @@ final class HistoryCardDetailViewController: UIViewController {
         $0.layer.cornerRadius = 12
     }
     
-    private let aiFeedbackContainer = UIView()
+    private let aiFeedbackContainer = UIView().then {
+        $0.layer.shadowColor = UIColor.mainPurple.cgColor
+        $0.layer.shadowOffset = CGSize(width: 5, height: 5)
+        $0.layer.shadowRadius = 20
+        $0.layer.shadowOpacity = 0.2
+        $0.layer.masksToBounds = false
+    }
     
     private let statusContainer = UIView()
     
@@ -102,7 +108,7 @@ final class HistoryCardDetailViewController: UIViewController {
                 flex.addItem(myAnswerContainer).marginTop(28)
                 flex.addItem(partnerAnswerContainer).marginTop(12)
                 flex.addItem(aiFeedbackContainer).marginTop(28)
-                flex.addItem(statusContainer).marginTop(12)
+                flex.addItem(statusContainer).marginTop(4)
             }
         
         mainCardContainer.flex
@@ -215,7 +221,10 @@ final class HistoryCardDetailViewController: UIViewController {
         }
         
         let answerText = TDLabel().then {
-            $0.text = multipleChoice?.user1Answer
+            // user1Answer는 옵션 번호 (예: "1")
+            let optionNo = Int(multipleChoice?.user1Answer ?? "0") ?? 0
+            let optionContent = multipleChoice?.options.first(where: { $0.id == optionNo })?.text ?? "답변 없음"
+            $0.text = optionContent
             $0.font = .pretenRegular(16)
             $0.textColor = .grayScale800
             $0.numberOfLines = 0
@@ -294,7 +303,10 @@ final class HistoryCardDetailViewController: UIViewController {
         }
         
         let answerText = TDLabel().then {
-            $0.text = multipleChoice?.user2Answer
+            // user2Answer는 옵션 번호 (예: "2")
+            let optionNo = Int(multipleChoice?.user2Answer ?? "0") ?? 0
+            let optionContent = multipleChoice?.options.first(where: { $0.id == optionNo })?.text ?? "답변 없음"
+            $0.text = optionContent
             $0.font = .pretenRegular(16)
             $0.textColor = .grayScale800
             $0.numberOfLines = 0
@@ -339,16 +351,22 @@ final class HistoryCardDetailViewController: UIViewController {
     }
 
     private func setupAIFeedback() {
-        let bubbleImageView = UIImageView().then {
-            $0.image = UIImage(named: "Union")
-            $0.contentMode = .scaleToFill
-//            $0.backgroundColor = .lightPurple
-            $0.layer.shadowColor = UIColor.mainPurple.cgColor
-            $0.layer.shadowOffset = CGSize(width: 5, height: 5)
-            $0.layer.shadowRadius = 20
-            $0.layer.shadowOpacity = 0.2
+        let bubbleContainer = UIView().then {
+            $0.backgroundColor = .white
+            $0.layer.cornerRadius = 16
+            $0.layer.borderWidth = 1
+            $0.layer.borderColor = UIColor.mainPurple.cgColor
             $0.layer.masksToBounds = false
+            $0.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
         }
+        
+        let tailImageView = UIImageView().then {
+            $0.image = UIImage(named: "BoxTail")
+            $0.contentMode = .scaleAspectFit
+            $0.accessibilityIdentifier = "tailImageView"
+        }
+        
+        let contentContainer = UIView()
         
         let iconImageView = UIImageView().then {
             $0.image = UIImage(named: "book_fill")
@@ -361,24 +379,32 @@ final class HistoryCardDetailViewController: UIViewController {
             $0.textColor = .mainPurple
         }
         
-        let feedbackText =  MaskingLabel(textColor: .grayScale900).then {
+        let feedbackText = MaskingLabel(textColor: .grayScale900).then {
             $0.text = (card.feedback?.summary ?? "") + " " + (card.feedback?.differences ?? "") + " " +  (card.feedback?.tip ?? "")
             $0.font = .pretenRegular(16)
             $0.numberOfLines = 0
         }
         
-        aiFeedbackContainer.addSubview(bubbleImageView)
-        aiFeedbackContainer.addSubview(iconImageView)
-        aiFeedbackContainer.addSubview(titleLabel)
-        aiFeedbackContainer.addSubview(feedbackText)
-        bubbleImageView.pin.all()
-        aiFeedbackContainer.flex.define { flex in
-            flex.addItem().paddingHorizontal(20).paddingVertical(21).paddingBottom(40).define { contentFlex in
-                contentFlex.addItem().direction(.row).alignItems(.center).define { titleFlex in
-                    titleFlex.addItem(iconImageView).size(28)
-                    titleFlex.addItem(titleLabel).marginLeft(4)
-                }
-                contentFlex.addItem(feedbackText).marginTop(8).marginBottom(10)
+        aiFeedbackContainer.addSubview(bubbleContainer)
+        bubbleContainer.addSubview(contentContainer)
+        contentContainer.addSubview(iconImageView)
+        contentContainer.addSubview(titleLabel)
+        contentContainer.addSubview(feedbackText)
+        
+        // tail을 마지막에 추가해서 z-index 최상위로
+        aiFeedbackContainer.addSubview(tailImageView)
+        
+        contentContainer.flex.paddingHorizontal(20).paddingVertical(21).define { contentFlex in
+            contentFlex.addItem().direction(.row).alignItems(.center).define { titleFlex in
+                titleFlex.addItem(iconImageView).size(28)
+                titleFlex.addItem(titleLabel).marginLeft(4)
+            }
+            contentFlex.addItem(feedbackText).marginTop(8)
+        }
+        
+        aiFeedbackContainer.flex.paddingBottom(21).define { flex in
+            flex.addItem(bubbleContainer).define { bubbleFlex in
+                bubbleFlex.addItem(contentContainer)
             }
         }
         
@@ -395,7 +421,7 @@ final class HistoryCardDetailViewController: UIViewController {
             $0.numberOfLines = 0
         }
         
-        statusContainer.flex.define { flex in
+        statusContainer.flex.paddingTop(12).define { flex in
             flex.addItem(statusLabel)
             flex.addItem(subtitleLabel).marginTop(4)
         }
@@ -408,8 +434,10 @@ final class HistoryCardDetailViewController: UIViewController {
         rootFlexContainer.flex.layout(mode: .adjustHeight)
         scrollView.contentSize = rootFlexContainer.frame.size
         
-        if let bubbleImageView = aiFeedbackContainer.subviews.first(where: { $0 is UIImageView }) as? UIImageView {
-            bubbleImageView.pin.all()
+        // tail 위치 설정
+        if let tailImageView = aiFeedbackContainer.subviews.first(where: { $0.accessibilityIdentifier == "tailImageView" }) {
+            tailImageView.pin.bottom(0).right(0).width(40).height(22)
+            aiFeedbackContainer.bringSubviewToFront(tailImageView)
         }
     }
     
