@@ -102,7 +102,7 @@ final class HistoryCardDetailViewController: UIViewController {
         rootFlexContainer.flex
             .paddingHorizontal(20)
             .paddingTop(10)
-            .paddingBottom(120)
+            .paddingBottom(70)
             .define { flex in
                 flex.addItem(mainCardContainer)
                 flex.addItem(myAnswerContainer).marginTop(28)
@@ -378,10 +378,20 @@ final class HistoryCardDetailViewController: UIViewController {
             $0.font = .pretenSemiBold(16)
             $0.textColor = .mainPurple
         }
-        
+
         let feedbackText = MaskingLabel(textColor: .grayScale900).then {
-            $0.text = (card.feedback?.summary ?? "") + " " + (card.feedback?.matchPoints ?? "") + " " + (card.feedback?.differences ?? "") + " " +  (card.feedback?.tip ?? "")
-            $0.font = .pretenRegular(16)
+            let bold = UIFont.pretenBold(16)
+            let regular = UIFont.pretenRegular(16)
+            let attr = NSMutableAttributedString(string: "\n")
+            let titles = ["요약", "공통점", "차이점", "조언"]
+            let bodies = [card.feedback?.summary, card.feedback?.matchPoints, card.feedback?.differences, card.feedback?.tip]
+            for (i, title) in titles.enumerated() {
+                if i > 0 { attr.append(NSAttributedString(string: "\n\n")) }
+                attr.append(NSAttributedString(string: title, attributes: [.font: bold]))
+                attr.append(NSAttributedString(string: "\n" + (bodies[i] ?? ""), attributes: [.font: regular]))
+            }
+            attr.append(NSAttributedString(string: "\n"))
+            $0.attributedText = attr
             $0.numberOfLines = 0
         }
         
