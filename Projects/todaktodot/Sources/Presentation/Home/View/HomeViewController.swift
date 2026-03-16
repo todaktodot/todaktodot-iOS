@@ -724,10 +724,19 @@ extension HomeViewController {
               let card = historyCards.first(where: { $0.id == tappedView.tag }) else {
             return
         }
-        if !card.user1Answered && !card.user2Answered {
-            showNonAnsweredAlert()
+        let isToday = Calendar.current.isDate(card.date, inSameDayAs: CardService.shared.getCardSystemDate())
+        if isToday {
+            if card.user1Answered && card.user2Answered {
+                coordinator?.showHistoryCardDetail(card: card)
+            } else {
+                showNonAnsweredAlert()
+            }
         } else {
-            coordinator?.showHistoryCardDetail(card: card)
+            if !card.user1Answered && !card.user2Answered {
+                showNonAnsweredAlert()
+            } else {
+                coordinator?.showHistoryCardDetail(card: card)
+            }
         }
     }
     
@@ -742,11 +751,21 @@ extension HomeViewController {
         }
         
         weekCardsContainer.flex.define { flex in
-            if UserdefaultKey.coupleType == .solo || historyCards.isEmpty {
+            let cardSystemDate = CardService.shared.getCardSystemDate()
+            let calendar = Calendar.current
+            let filteredCards = historyCards.filter { card in
+                let isToday = calendar.isDate(card.date, inSameDayAs: cardSystemDate)
+                if isToday {
+                    return card.user1Answered && card.user2Answered
+                }
+                return true
+            }
+            
+            if UserdefaultKey.coupleType == .solo || filteredCards.isEmpty {
                 let emptyView = createEmptyWeekView()
                 flex.addItem(emptyView)
             } else {
-                let sortedCards = historyCards.sorted { $0.date > $1.date }
+                let sortedCards = filteredCards.sorted { $0.date > $1.date }
                 sortedCards.enumerated().forEach { index, card in
                     let cardView = createWeekCard(card: card, index: index)
                     let isLast = index == sortedCards.count - 1
