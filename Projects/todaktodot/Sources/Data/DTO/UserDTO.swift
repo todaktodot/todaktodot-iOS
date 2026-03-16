@@ -43,7 +43,13 @@ extension UserDTO {
             isCouple: isCouple == "Y",
             coupleType: CoupleType(rawValue: coupleType?.uppercased() ?? "") ?? .null,
             createdMyNickname: nickname != nil,
-            createdCoupleInfo: coupleDetailInfo?.relationshipStage != nil
+            createdCoupleInfo: coupleDetailInfo?.relationshipStage != nil,
+            nicknameInfo: coupleDetailInfo.map {
+                NicknameInfo(
+                    userNickname: nickname ?? "",
+                    anotherUserNickname: $0.anotherNickname ?? ""
+                )
+            }
         )
     }
     
@@ -71,6 +77,12 @@ extension UserDTO {
         UserdefaultKey.coupleType = CoupleType(rawValue: coupleType?.uppercased() ?? "") ?? .null
         UserdefaultKey.createdMyNickname = nickname != nil
         UserdefaultKey.createdCoupleInfo = coupleDetailInfo?.relationshipStage != nil
+        UserdefaultKey.nicknameInfo = coupleDetailInfo.map {
+            NicknameInfo(
+                userNickname: nickname ?? "",
+                anotherUserNickname: $0.anotherNickname ?? ""
+            )
+        }
     }
     
     func dateToKR(_ dateString: String?) -> String? {

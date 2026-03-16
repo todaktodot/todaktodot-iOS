@@ -380,7 +380,7 @@ final class HistoryCardDetailViewController: UIViewController {
         }
         
         let feedbackText = MaskingLabel(textColor: .grayScale900).then {
-            $0.text = (card.feedback?.summary ?? "") + " " + (card.feedback?.differences ?? "") + " " +  (card.feedback?.tip ?? "")
+            $0.text = (card.feedback?.summary ?? "") + " " + (card.feedback?.matchPoints ?? "") + " " + (card.feedback?.differences ?? "") + " " +  (card.feedback?.tip ?? "")
             $0.font = .pretenRegular(16)
             $0.numberOfLines = 0
         }
