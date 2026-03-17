@@ -382,15 +382,23 @@ final class HistoryCardDetailViewController: UIViewController {
         let feedbackText = MaskingLabel(textColor: .grayScale900).then {
             let bold = UIFont.pretenBold(16)
             let regular = UIFont.pretenRegular(16)
-            let attr = NSMutableAttributedString(string: "\n")
+            let kern: CGFloat = 1.26
+            let paraStyle = NSMutableParagraphStyle()
+            paraStyle.lineSpacing = 3.0
+            paraStyle.lineBreakMode = .byCharWrapping
+            let baseAttrs: [NSAttributedString.Key: Any] = [.kern: kern, .paragraphStyle: paraStyle]
+            
+            let attr = NSMutableAttributedString(string: "\n", attributes: baseAttrs)
             let titles = ["요약", "공통점", "차이점", "조언"]
             let bodies = [card.feedback?.summary, card.feedback?.matchPoints, card.feedback?.differences, card.feedback?.tip]
             for (i, title) in titles.enumerated() {
-                if i > 0 { attr.append(NSAttributedString(string: "\n\n")) }
-                attr.append(NSAttributedString(string: title, attributes: [.font: bold]))
-                attr.append(NSAttributedString(string: "\n" + (bodies[i] ?? ""), attributes: [.font: regular]))
+                if i > 0 { attr.append(NSAttributedString(string: "\n\n", attributes: baseAttrs)) }
+                var boldAttrs = baseAttrs; boldAttrs[.font] = bold
+                var regularAttrs = baseAttrs; regularAttrs[.font] = regular
+                attr.append(NSAttributedString(string: title, attributes: boldAttrs))
+                attr.append(NSAttributedString(string: "\n" + (bodies[i] ?? ""), attributes: regularAttrs))
             }
-            attr.append(NSAttributedString(string: "\n"))
+            attr.append(NSAttributedString(string: "\n", attributes: baseAttrs))
             $0.attributedText = attr
             $0.numberOfLines = 0
         }

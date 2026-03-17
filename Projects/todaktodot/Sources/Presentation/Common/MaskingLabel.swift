@@ -8,8 +8,6 @@
 import Foundation
 import UIKit
 
-// TODO: 라인 간격 적용 안되는것같음. 카드 API 연결 후 최적화 + UI 수정 예정, 투명도 대신 크기 줄어들게하기 고민
-
 /// 사용방법
 /// let maskingText =  MaskingLabel(textColor: .grayScale900)
 /// *주의 - 텍스트 컬러는 따로 정의하면 안되고 꼭 인자로 넘겨줘야함.. 방법이 있을것같은데 현재 귀찮
@@ -25,7 +23,11 @@ final class MaskingLabel: UILabel {
     private let touchLayer = UIView()
     private var bubbles: [CAShapeLayer] = []
     private var lastTouchPoint: CGPoint?
-    private var bubbleGenerationWorkItem: DispatchWorkItem?
+    private var bubbleTimer: Timer?
+    private var cachedPositions: [CGPoint] = []
+    private var lastLayoutSize: CGSize = .zero
+    
+    private let letterSpacing: CGFloat = 1.26
     
     override var text: String? {
         didSet {
@@ -33,7 +35,7 @@ final class MaskingLabel: UILabel {
 
             if let text = text {
                 let paragraphStyle = NSMutableParagraphStyle()
-                paragraphStyle.lineSpacing = 3.0
+                paragraphStyle.lineSpacing =  1.26
                 paragraphStyle.lineBreakMode = .byCharWrapping
                 
                 let color = isMasked ? UIColor.clear : originalTextColor
@@ -42,7 +44,8 @@ final class MaskingLabel: UILabel {
                     attributes: [
                         .font: font ?? UIFont.systemFont(ofSize: 17),
                         .paragraphStyle: paragraphStyle,
-                        .foregroundColor: color
+                        .foregroundColor: color,
+                        .kern: letterSpacing
                     ]
                 )
                 super.attributedText = attributedText
@@ -59,6 +62,7 @@ final class MaskingLabel: UILabel {
     override var attributedText: NSAttributedString? {
         didSet {
             originalText = attributedText?.string
+            lineBreakMode = .byCharWrapping
         }
     }
     
@@ -96,7 +100,8 @@ final class MaskingLabel: UILabel {
         bubbleContainer.frame = bounds
         touchLayer.frame = bounds
         
-        if isMasked && originalText != nil {
+        if isMasked && originalText != nil && bounds.size != lastLayoutSize {
+            lastLayoutSize = bounds.size
             bubbles.forEach { $0.removeFromSuperlayer() }
             bubbles.removeAll()
             
@@ -107,8 +112,20 @@ final class MaskingLabel: UILabel {
     private func recalculateBubblePositions() {
         guard let originalText = originalText else { return }
         
-        let attributedText = NSAttributedString(string: originalText, attributes: [.font: font ?? UIFont.systemFont(ofSize: 17)])
-        let textStorage = NSTextStorage(attributedString: attributedText)
+        let attrString: NSMutableAttributedString
+        if let existing = self.attributedText, existing.length > 0 {
+            attrString = NSMutableAttributedString(attributedString: existing)
+        } else {
+            attrString = NSMutableAttributedString(string: originalText, attributes: [.font: font ?? UIFont.systemFont(ofSize: 17), .kern: letterSpacing])
+        }
+      
+        let fullRange = NSRange(location: 0, length: attrString.length)
+        let para = NSMutableParagraphStyle()
+        para.lineBreakMode = .byCharWrapping
+        para.lineSpacing = 4.0 // 버블 스페이싱 조절. 텍스트랑 다르고 눈대중이라 테스트 더 해봐야함
+        attrString.addAttribute(.paragraphStyle, value: para, range: fullRange)
+        
+        let textStorage = NSTextStorage(attributedString: attrString)
         let layoutManager = NSLayoutManager()
         let textContainer = NSTextContainer(size: CGSize(width: bounds.width, height: .greatestFiniteMagnitude))
         textContainer.lineFragmentPadding = 0
@@ -144,20 +161,27 @@ final class MaskingLabel: UILabel {
         guard isMasked else { return }
         
         let haptic = UIImpactFeedbackGenerator(style: .medium)
+        haptic.prepare()
         haptic.impactOccurred()
         
         lastTouchPoint = gesture.location(in: self)
         isMasked = false
-        bubbleGenerationWorkItem?.cancel()
-        bubbleGenerationWorkItem = nil
-        explodeBubbles()
+        bubbleTimer?.invalidate()
+        bubbleTimer = nil
         
-        if let currentText = attributedText {
-            let mutableAttr = NSMutableAttributedString(attributedString: currentText)
-            mutableAttr.addAttribute(.foregroundColor, value: originalTextColor, range: NSRange(location: 0, length: mutableAttr.length))
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.explodeBubbles()
             
-            UIView.transition(with: self, duration: 1.0, options: .transitionCrossDissolve) {
-                self.attributedText = mutableAttr
+            if let currentText = self.attributedText {
+                let mutableAttr = NSMutableAttributedString(attributedString: currentText)
+                mutableAttr.addAttribute(.foregroundColor, value: self.originalTextColor, range: NSRange(location: 0, length: mutableAttr.length))
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + self.tuning.bubbleExplosionDuration * 0.3) {
+                    UIView.transition(with: self, duration: 0.5, options: .transitionCrossDissolve) {
+                        self.attributedText = mutableAttr
+                    }
+                }
             }
         }
     }
@@ -169,12 +193,29 @@ final class MaskingLabel: UILabel {
     private func startBubbleGeneration(at positions: [CGPoint], characterCount: Int) {
         guard isMasked, characterCount > 0 else { return }
         
-        bubbleGenerationWorkItem?.cancel()
+        bubbleTimer?.invalidate()
+        cachedPositions = positions
         
-        let bubblesCount = Int(Double(characterCount) * tuning.bubblesPerCharacter)
+        let interval = tuning.bubbleBatchInterval
+        let timer = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
+            self?.generateBubbleBatch()
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        bubbleTimer = timer
+        
+        generateBubbleBatch()
+    }
+    
+    private func generateBubbleBatch() {
+        guard isMasked, !cachedPositions.isEmpty else {
+            bubbleTimer?.invalidate()
+            return
+        }
+        
+        let bubblesCount = Int(Double(cachedPositions.count) * tuning.bubblesPerCharacter)
         
         for _ in 0..<bubblesCount {
-            let randomPosition = positions.randomElement() ?? .zero
+            let randomPosition = cachedPositions.randomElement() ?? .zero
             let offsetX = CGFloat.random(in: -tuning.bubbleStartOffsetXRange...tuning.bubbleStartOffsetXRange)
             let offsetY = CGFloat.random(in: -tuning.bubbleStartOffsetYRange...tuning.bubbleStartOffsetYRange)
             let position = CGPoint(x: randomPosition.x + offsetX, y: randomPosition.y + offsetY)
@@ -184,12 +225,6 @@ final class MaskingLabel: UILabel {
             bubbles.append(bubble)
             animateBubble(bubble)
         }
-        
-        let workItem = DispatchWorkItem { [weak self] in
-            self?.startBubbleGeneration(at: positions, characterCount: characterCount)
-        }
-        bubbleGenerationWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + tuning.bubbleBatchInterval, execute: workItem)
     }
     
 
@@ -241,10 +276,8 @@ extension MaskingLabel {
         group.isRemovedOnCompletion = false
         
         CATransaction.begin()
-        CATransaction.setCompletionBlock { [weak self, weak bubble] in
-            guard let bubble = bubble else { return }
-            bubble.removeFromSuperlayer()
-            self?.bubbles.removeAll { $0 === bubble }
+        CATransaction.setCompletionBlock { [weak bubble] in
+            bubble?.removeFromSuperlayer()
         }
         bubble.add(group, forKey: "bubbleAnimation")
         CATransaction.commit()
@@ -308,7 +341,7 @@ extension MaskingLabel {
     struct TuningSet {
         // Start
         let bubblesPerCharacter: Double = 1.0 /// 글자당 생성할 버블 개수
-        let bubbleBatchInterval: TimeInterval = 0.05  /// 버블 생성 간격
+        let bubbleBatchInterval: TimeInterval = 0.08  /// 버블 생성 간격
         let bubbleStartOffsetXRange: CGFloat = 6 /// 한 글자 중심 랜덤 버블 생성 반경.
         let bubbleStartOffsetYRange: CGFloat = 4
         
