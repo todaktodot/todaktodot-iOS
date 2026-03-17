@@ -349,7 +349,7 @@ final class HomeViewController: BaseViewController, View {
             .paddingHorizontal(20)
             .paddingBottom(150)
             .define { flex in
-                flex.addItem(mainCard).marginVertical(20)
+                flex.addItem(mainCard).marginTop(20)
                 flex.addItem(mainCardSkeleton).marginVertical(20).position(.absolute).top(0).left(20).right(20)
                 flex.addItem().marginTop(36).width(100%).define { wrapperFlex in
                     wrapperFlex.view?.clipsToBounds = false
