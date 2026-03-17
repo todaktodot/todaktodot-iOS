@@ -310,17 +310,16 @@ final class HomeViewController: BaseViewController, View {
             .do(onNext: { print("🔘 Arrow button tap detected!") })
             .subscribe(onNext: { [weak self] in
                 guard let self = self else { return }
-                // 히스토리에서 오늘 카드 찾기 (8시 기준)
                 let cardSystemDate = CardService.shared.getCardSystemDate()
                 let todayCard = self.historyCards.first { Calendar.current.isDate($0.date, inSameDayAs: cardSystemDate) }
-                let selectedType = todayCard?.type ?? .none
                 
-                // 로컬에 저장된 오늘 카드 로드
-                let todayCards = CardService.shared.getTodayCards()
-                if todayCards.isEmpty {
-                    print("⚠️ todayCards is empty!")
+                if let todayCard = todayCard, todayCard.selectedByUserId != nil {
+                    self.coordinator?.showDailyCardDetail(card: todayCard)
+                } else {
+                    let selectedType = todayCard?.type ?? .none
+                    let todayCards = CardService.shared.getTodayCards()
+                    self.coordinator?.showDailyCard(todayCards: todayCards, selectedType: selectedType)
                 }
-                self.coordinator?.showDailyCard(todayCards: todayCards, selectedType: selectedType)
             })
             .disposed(by: disposeBag)
     }
@@ -631,6 +630,14 @@ extension HomeViewController {
         
         chip1.updateTitle("\(card.mode.emoji) \(card.mode.displayName)")
         chip2.updateTitle("\(card.subject.emoji) \(card.subject.displayName)")
+        
+        // 상대방이 선택한 카드면 타입 칩 테두리를 보라색으로
+        let isSelectedByPartner: Bool = {
+            guard let selectedBy = card.selectedByUserId,
+                  let myId = UserdefaultKey.userId else { return false }
+            return selectedBy != myId
+        }()
+        chip3.setHighlighted(isSelectedByPartner)
         
         // chip3는 type이 .none이 아닐 때만 표시
         if card.type != .none {

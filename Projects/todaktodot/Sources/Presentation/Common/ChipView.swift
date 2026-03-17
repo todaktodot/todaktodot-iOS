@@ -42,6 +42,10 @@ final class ChipView: UIView {
         setNeedsLayout()
     }
     
+    func setHighlighted(_ highlighted: Bool) {
+        layer.borderColor = highlighted ? UIColor.mainPurple.cgColor : UIColor.grayScale200.cgColor
+    }
+    
     override func layoutSubviews() {
         super.layoutSubviews()
         label.pin.center()
