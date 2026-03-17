@@ -117,6 +117,7 @@ final class CoupleConnectViewController: UIViewController, View {
         setupFlexLayout()
         hideKeyboardwhenTappedAround()
         registerKeyboardNotification()
+        AnalyticsService.log(.coupleConnectBegin)
     }
     
     override func viewDidLayoutSubviews() {
@@ -262,6 +263,7 @@ final class CoupleConnectViewController: UIViewController, View {
             .subscribe(onNext: { [weak self] _ in
                 guard let self = self else { return }
                 self.coordinator?.navigateToMain()
+                AnalyticsService.log(.soloStartSelect)
             })
             .disposed(by: disposeBag)
         
@@ -304,7 +306,10 @@ final class CoupleConnectViewController: UIViewController, View {
     
     func showConnectAlert() {
         UserdefaultKey.couple = true
-        
+        AnalyticsService.log(.coupleConnect(
+            method: partnerCodeTextField.isPaste.value ? .copy : .keyboard
+        ))
+        AnalyticsService.log(.coupleConnectCompleted)
         showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
             self.coordinator?.showNickname()
         })

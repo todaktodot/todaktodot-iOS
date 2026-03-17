@@ -406,6 +406,7 @@ final class HomeViewController: BaseViewController, View {
     @objc private func showInfoPopup() {
         let popupView = InfoPopupView()
         popupView.show(in: view, alignedWith: mainCard)
+        AnalyticsService.log(.guideClick)
     }
     
     private func updatePokeButton(isPoked: Bool) {

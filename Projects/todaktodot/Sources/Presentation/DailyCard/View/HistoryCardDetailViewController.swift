@@ -75,6 +75,8 @@ final class HistoryCardDetailViewController: UIViewController {
         super.viewDidLoad()
         hidesBottomBarWhenPushed = true
         setupUI()
+        AnalyticsService.log(.historyCardDetailBegin(cardId: card.coupleCardId))
+        AnalyticsService.log(.historyCardType(status: card.isBothAnswered ? .both : card.user1Answered ? .mineOnly : .partnerOnly))
     }
 
     private func setupUI() {

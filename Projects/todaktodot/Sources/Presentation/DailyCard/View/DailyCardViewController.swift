@@ -86,6 +86,12 @@ final class DailyCardViewController: UIViewController, View {
             .subscribe(onNext: { [weak self] card in
                 guard let self = self else { return }
                 
+                AnalyticsService.log(
+                    .selectDailyCardType(
+                        cardId: card.coupleCardId,
+                        cardType: card.type == .balance ? .balance : .situation
+                    ))
+                
                 switch card.type {
                 case .roleplay:
                     self.coordinator?.showDailyCardDetail(card: card)

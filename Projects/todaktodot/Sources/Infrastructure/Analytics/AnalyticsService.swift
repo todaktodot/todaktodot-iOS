@@ -8,7 +8,7 @@
 import Foundation
 import FirebaseAnalytics
 
-final class AnalyticsService {
+enum AnalyticsService {
     /// 권장 이벤트 표시 P 로 표기
     enum Event {
         // MARK: - 온보딩
@@ -38,7 +38,7 @@ final class AnalyticsService {
         
         // MARK: - 데일리 카드
         /// P 데일리 카드 작성 진입
-        case dailyCardWriteBegin(cardId: Int)
+        case dailyCardWriteBegin(cardId: Int) // TODO: 아이디 이슈로 나중에 지우거나 적용
         
         /// P 데일리 카드 유형 선택 클릭
         case selectDailyCardType(cardId: Int, cardType: CardType)
@@ -77,7 +77,7 @@ final class AnalyticsService {
     
     enum CodeInputType: String {
         case copy
-        case keyborad = "code"
+        case keyboard = "code"
     }
     
     enum CardType: String {
@@ -103,7 +103,7 @@ final class AnalyticsService {
         case bothCompleted = "both_answered"
     }
     
-    func log(_ event: Event) {
+    static func log(_ event: Event) {
         Analytics.logEvent(event.name, parameters: event.parameters)
     }
 }
@@ -152,28 +152,28 @@ extension AnalyticsService.Event {
         }
     }
 
-    var parameters: [String: Any]? {
+    var parameters: [String: Any] {
         switch self {
         case .coupleConnectBegin:
             return [
                 "step": "couple_connect_entry",
-                "screen_name": "couple_connect"
+                AnalyticsParameterScreenName: "couple_connect"
             ]
 
         case .coupleConnect(let method):
             return [
-                "method": method.rawValue,
-                "screen_name": "couple_connect"
+                AnalyticsParameterMethod: method.rawValue,
+                AnalyticsParameterScreenName: "couple_connect"
             ]
 
         case .coupleConnectCompleted:
             return [
-                "screen_name": "couple_connect_completer_popup"
+                AnalyticsParameterScreenName: "couple_connect_completer_popup"
             ]
 
         case .nicknameSetBegin:
             return [
-                "screen_name": "nickname_set"
+                AnalyticsParameterScreenName: "nickname_set"
             ]
 
         case .nicknameSetCompleted:
@@ -183,13 +183,13 @@ extension AnalyticsService.Event {
 
         case .coupleInfoSetBegin:
             return [
-                "screen_name": "couple_info_set"
+                AnalyticsParameterScreenName: "couple_info_set"
             ]
 
         case .coupleInfoSetCompleted:
             return [
                 "step": "start_button_clicked",
-                "screen_name": "couple_info_set_view"
+                AnalyticsParameterScreenName: "couple_info_set_view"
             ]
 
         case .soloStartSelect:
@@ -199,36 +199,36 @@ extension AnalyticsService.Event {
 
         case .dailyCardWriteBegin(let cardId):
             return [
-                "item_category": "daily_card",
-                "item_id": cardId
+                AnalyticsParameterItemCategory: "daily_card",
+                AnalyticsParameterItemID: cardId
             ]
 
         case .selectDailyCardType(let cardId, let cardType):
             return [
-                "content_type": cardType.rawValue,
-                "item_id": cardId,
-                "screen_name": "dailycard_type_select"
+                AnalyticsParameterContentType: cardType.rawValue,
+                AnalyticsParameterItemID: cardId,
+                AnalyticsParameterScreenName: "dailycard_type_select"
             ]
 
         case .dailyCardDetailBegin(let cardId):
             return [
-                "item_category": "daily_card",
-                "item_id": cardId,
-                "screen_name": "dailycard_detail"
+                AnalyticsParameterItemCategory: "daily_card",
+                AnalyticsParameterItemID: cardId,
+                AnalyticsParameterScreenName: "dailycard_detail"
             ]
 
         case .dailyCardAnswerCompleted(let cardId):
             return [
-                "item_id": cardId,
+                AnalyticsParameterItemID: cardId,
                 "answer_status": "both",
-                "screen_name": "answer_completed_popup"
+                AnalyticsParameterScreenName: "answer_completed_popup"
             ]
 
         case .historyCardDetailBegin(let cardId):
             return [
-                "item_category": "history_card",
-                "item_id": cardId,
-                "screen_name": "historycard_detail"
+                AnalyticsParameterItemCategory: "history_card",
+                AnalyticsParameterItemID: cardId,
+                AnalyticsParameterScreenName: "historycard_detail"
             ]
 
         case .historyCardType(let status):
@@ -248,15 +248,15 @@ extension AnalyticsService.Event {
 
         case .reportDetailBegin(let reportId):
             return [
-                "item_category": "ai_report",
-                "item_id": reportId,
-                "screen_name": "report_detail"
+                AnalyticsParameterItemCategory: "ai_report",
+                AnalyticsParameterItemID: reportId,
+                AnalyticsParameterScreenName: "report_detail"
             ]
 
         case .guideClick:
             return [
-                "content_type": "tooltip",
-                "item_id": "가이드 툴팁"
+                AnalyticsParameterContentType: "tooltip",
+                AnalyticsParameterItemID: "가이드 툴팁"
             ]
 
         case .pushOpen(let type):

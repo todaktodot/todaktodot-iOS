@@ -80,6 +80,10 @@ final class CoupleInfoViewController: UIViewController, View {
         hideKeyboardwhenTappedAround()
         setupViews()
         setupFlexLayout()
+        
+        if flowType == .newUser {
+            AnalyticsService.log(.coupleInfoSetBegin)
+        }
     }
     
     override func viewDidLayoutSubviews() {
@@ -141,6 +145,7 @@ final class CoupleInfoViewController: UIViewController, View {
                 switch self.flowType {
                 case .newUser:
                     self.coordinator?.navigateToMain()
+                    AnalyticsService.log(.coupleInfoSetCompleted)
                 case .editUser:
                     self.coordinator?.navigateBack()
                 }

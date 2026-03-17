@@ -139,6 +139,7 @@ final class AIReportViewController: BaseViewController, View {
             .subscribe { [weak self] _ in
                 guard let self else { return }
                 currentSegment.accept(.lastWeek)
+                AnalyticsService.log(.reportSegmentTap(type: .lastWeek))
             }
             .disposed(by: disposeBag)
 
@@ -146,6 +147,7 @@ final class AIReportViewController: BaseViewController, View {
             .subscribe { [weak self] _ in
                 guard let self else { return }
                 currentSegment.accept(.storage)
+                AnalyticsService.log(.reportSegmentTap(type: .storage))
             }
             .disposed(by: disposeBag)
         
@@ -153,12 +155,14 @@ final class AIReportViewController: BaseViewController, View {
             .compactMap { [weak self] _ in
                 guard let self = self,
                       let reportId = self.reportId else { return nil }
+                AnalyticsService.log(.lastWeekReportClick)
                 return .tapReportDetailButton(reportId)
             }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
         storageAIReportView.onCardTap = { id in
+            AnalyticsService.log(.reportDetailBegin(reportId: id))
             reactor.action.onNext(.tapStorageReport(id))
         }
     }
