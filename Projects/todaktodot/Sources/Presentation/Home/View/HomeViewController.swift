@@ -24,6 +24,7 @@ final class HomeViewController: BaseViewController, View {
     private let scrollView = UIScrollView()
     private let contentContainer = UIView()
     private var firstAnimation = true
+    private var hasShownCardTypeTooltip = false
     private let mainCard = UIView().then {
         $0.backgroundColor = .white
         $0.layer.cornerRadius = 20
@@ -74,6 +75,21 @@ final class HomeViewController: BaseViewController, View {
         $0.isHidden = true
     }
     
+    private let cardTypeTooltipContainer = UIView().then {
+        $0.isHidden = true
+        $0.layer.zPosition = 100
+    }
+    private let cardTypeTooltipImageView = UIImageView().then {
+        $0.image = UIImage(named: "cardtypeTooltip")
+        $0.contentMode = .scaleToFill
+    }
+    private let cardTypeTooltipLabel = TDLabel().then {
+        $0.text = "연인이 먼저 선택한 유형이에요"
+        $0.font = .pretenMedium(12)
+        $0.textColor = .white
+        $0.textAlignment = .center
+    }
+
     private let arrowButton = UIButton().then {
         $0.backgroundColor = TodotColors.Button.purpleButton1
         $0.layer.cornerRadius = 24
@@ -457,6 +473,9 @@ extension HomeViewController {
             .forEach {mainCard.addSubview($0)}
         [descriptionTitle, descriptionLabel].forEach {descriptionCard.addSubview($0)}
         
+        cardTypeTooltipContainer.addSubview(cardTypeTooltipImageView)
+        cardTypeTooltipContainer.addSubview(cardTypeTooltipLabel)
+        
         mainCard.flex
             .padding(24)
             .define { flex in
@@ -481,6 +500,8 @@ extension HomeViewController {
             }
         
         setupMainCardSkeleton()
+        mainCard.addSubview(cardTypeTooltipContainer)
+        cardTypeTooltipContainer.flex.isIncludedInLayout(false)
     }
     
     private func setupMainCardSkeleton() {
@@ -529,6 +550,51 @@ extension HomeViewController {
         mainCard.alpha = 0
         mainCard.isHidden = true
         mainCardSkeleton.isHidden = false
+    }
+    
+    private func showCardTypeTooltip(_ show: Bool) {
+        guard show else {
+            cardTypeTooltipContainer.isHidden = true
+            return
+        }
+        
+        cardTypeTooltipLabel.sizeToFit()
+        let tooltipSize = CGSize(
+            width: cardTypeTooltipLabel.frame.width + 16,
+            height: cardTypeTooltipLabel.frame.height + 16
+        )
+        
+        let chip3Frame = chip3.convert(chip3.bounds, to: mainCard)
+        cardTypeTooltipContainer.frame = CGRect(
+            x: chip3Frame.minX + 11,
+            y: chip3Frame.maxY - 7,
+            width: tooltipSize.width,
+            height: tooltipSize.height
+        )
+        cardTypeTooltipImageView.frame = cardTypeTooltipContainer.bounds
+        cardTypeTooltipLabel.center = CGPoint(x: tooltipSize.width / 2, y: tooltipSize.height / 2 + 2)
+        
+        if hasShownCardTypeTooltip {
+            cardTypeTooltipContainer.alpha = 1
+            cardTypeTooltipContainer.isHidden = false
+            return
+        }
+        hasShownCardTypeTooltip = true
+        
+        cardTypeTooltipContainer.alpha = 0
+        cardTypeTooltipContainer.isHidden = false
+        cardTypeTooltipContainer.transform = CGAffineTransform(translationX: 0, y: -8)
+        
+        UIView.animate(
+            withDuration: 0.3,
+            delay: 0,
+            usingSpringWithDamping: 0.7,
+            initialSpringVelocity: 0.5,
+            options: .curveEaseOut
+        ) {
+            self.cardTypeTooltipContainer.alpha = 1
+            self.cardTypeTooltipContainer.transform = .identity
+        }
     }
     
     private func hideMainCardSkeleton() {
@@ -638,6 +704,7 @@ extension HomeViewController {
             return selectedBy != myId
         }()
         chip3.setHighlighted(isSelectedByPartner)
+        showCardTypeTooltip(isSelectedByPartner)
         
         // chip3는 type이 .none이 아닐 때만 표시
         if card.type != .none {
