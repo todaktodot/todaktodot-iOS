@@ -102,7 +102,7 @@ final class HistoryCardDetailViewController: UIViewController {
         rootFlexContainer.flex
             .paddingHorizontal(20)
             .paddingTop(10)
-            .paddingBottom(120)
+            .paddingBottom(70)
             .define { flex in
                 flex.addItem(mainCardContainer)
                 flex.addItem(myAnswerContainer).marginTop(28)
@@ -188,7 +188,7 @@ final class HistoryCardDetailViewController: UIViewController {
     
     private func setupMyAnswer() {
         let nicknameLabel = TDLabel().then {
-            $0.text = "내 닉네임"
+            $0.text = UserdefaultKey.nicknameInfo?.userNickname
             $0.font = .pretenSemiBold(16)
             $0.textColor = .mainPurple
         }
@@ -270,7 +270,7 @@ final class HistoryCardDetailViewController: UIViewController {
     
     private func setupPartnerAnswer() {
         let nicknameLabel = TDLabel().then {
-            $0.text = "연인 닉네임"
+            $0.text = UserdefaultKey.nicknameInfo?.anotherUserNickname
             $0.font = .pretenSemiBold(16)
             $0.textColor = .mainPurple
         }
@@ -378,10 +378,28 @@ final class HistoryCardDetailViewController: UIViewController {
             $0.font = .pretenSemiBold(16)
             $0.textColor = .mainPurple
         }
-        
+
         let feedbackText = MaskingLabel(textColor: .grayScale900).then {
-            $0.text = (card.feedback?.summary ?? "") + " " + (card.feedback?.differences ?? "") + " " +  (card.feedback?.tip ?? "")
-            $0.font = .pretenRegular(16)
+            let bold = UIFont.pretenBold(16)
+            let regular = UIFont.pretenRegular(16)
+            let kern: CGFloat = 1.26
+            let paraStyle = NSMutableParagraphStyle()
+            paraStyle.lineSpacing = 3.0
+            paraStyle.lineBreakMode = .byCharWrapping
+            let baseAttrs: [NSAttributedString.Key: Any] = [.kern: kern, .paragraphStyle: paraStyle]
+            
+            let attr = NSMutableAttributedString(string: "\n", attributes: baseAttrs)
+            let titles = ["요약", "공통점", "차이점", "조언"]
+            let bodies = [card.feedback?.summary, card.feedback?.matchPoints, card.feedback?.differences, card.feedback?.tip]
+            for (i, title) in titles.enumerated() {
+                if i > 0 { attr.append(NSAttributedString(string: "\n\n", attributes: baseAttrs)) }
+                var boldAttrs = baseAttrs; boldAttrs[.font] = bold
+                var regularAttrs = baseAttrs; regularAttrs[.font] = regular
+                attr.append(NSAttributedString(string: title, attributes: boldAttrs))
+                attr.append(NSAttributedString(string: "\n" + (bodies[i] ?? ""), attributes: regularAttrs))
+            }
+            attr.append(NSAttributedString(string: "\n", attributes: baseAttrs))
+            $0.attributedText = attr
             $0.numberOfLines = 0
         }
         

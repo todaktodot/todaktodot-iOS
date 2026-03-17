@@ -24,6 +24,7 @@ final class HomeViewController: BaseViewController, View {
     private let scrollView = UIScrollView()
     private let contentContainer = UIView()
     private var firstAnimation = true
+    private var hasShownCardTypeTooltip = false
     private let mainCard = UIView().then {
         $0.backgroundColor = .white
         $0.layer.cornerRadius = 20
@@ -74,6 +75,21 @@ final class HomeViewController: BaseViewController, View {
         $0.isHidden = true
     }
     
+    private let cardTypeTooltipContainer = UIView().then {
+        $0.isHidden = true
+        $0.layer.zPosition = 100
+    }
+    private let cardTypeTooltipImageView = UIImageView().then {
+        $0.image = UIImage(named: "cardtypeTooltip")
+        $0.contentMode = .scaleToFill
+    }
+    private let cardTypeTooltipLabel = TDLabel().then {
+        $0.text = "연인이 먼저 선택한 유형이에요"
+        $0.font = .pretenMedium(12)
+        $0.textColor = .white
+        $0.textAlignment = .center
+    }
+
     private let arrowButton = UIButton().then {
         $0.backgroundColor = TodotColors.Button.purpleButton1
         $0.layer.cornerRadius = 24
@@ -310,17 +326,16 @@ final class HomeViewController: BaseViewController, View {
             .do(onNext: { print("🔘 Arrow button tap detected!") })
             .subscribe(onNext: { [weak self] in
                 guard let self = self else { return }
-                // 히스토리에서 오늘 카드 찾기 (8시 기준)
                 let cardSystemDate = CardService.shared.getCardSystemDate()
                 let todayCard = self.historyCards.first { Calendar.current.isDate($0.date, inSameDayAs: cardSystemDate) }
-                let selectedType = todayCard?.type ?? .none
                 
-                // 로컬에 저장된 오늘 카드 로드
-                let todayCards = CardService.shared.getTodayCards()
-                if todayCards.isEmpty {
-                    print("⚠️ todayCards is empty!")
+                if let todayCard = todayCard, todayCard.selectedByUserId != nil {
+                    self.coordinator?.showDailyCardDetail(card: todayCard)
+                } else {
+                    let selectedType = todayCard?.type ?? .none
+                    let todayCards = CardService.shared.getTodayCards()
+                    self.coordinator?.showDailyCard(todayCards: todayCards, selectedType: selectedType)
                 }
-                self.coordinator?.showDailyCard(todayCards: todayCards, selectedType: selectedType)
             })
             .disposed(by: disposeBag)
     }
@@ -349,7 +364,7 @@ final class HomeViewController: BaseViewController, View {
             .paddingHorizontal(20)
             .paddingBottom(150)
             .define { flex in
-                flex.addItem(mainCard).marginVertical(20)
+                flex.addItem(mainCard).marginTop(20)
                 flex.addItem(mainCardSkeleton).marginVertical(20).position(.absolute).top(0).left(20).right(20)
                 flex.addItem().marginTop(36).width(100%).define { wrapperFlex in
                     wrapperFlex.view?.clipsToBounds = false
@@ -458,6 +473,9 @@ extension HomeViewController {
             .forEach {mainCard.addSubview($0)}
         [descriptionTitle, descriptionLabel].forEach {descriptionCard.addSubview($0)}
         
+        cardTypeTooltipContainer.addSubview(cardTypeTooltipImageView)
+        cardTypeTooltipContainer.addSubview(cardTypeTooltipLabel)
+        
         mainCard.flex
             .padding(24)
             .define { flex in
@@ -482,6 +500,8 @@ extension HomeViewController {
             }
         
         setupMainCardSkeleton()
+        mainCard.addSubview(cardTypeTooltipContainer)
+        cardTypeTooltipContainer.flex.isIncludedInLayout(false)
     }
     
     private func setupMainCardSkeleton() {
@@ -530,6 +550,51 @@ extension HomeViewController {
         mainCard.alpha = 0
         mainCard.isHidden = true
         mainCardSkeleton.isHidden = false
+    }
+    
+    private func showCardTypeTooltip(_ show: Bool) {
+        guard show else {
+            cardTypeTooltipContainer.isHidden = true
+            return
+        }
+        
+        cardTypeTooltipLabel.sizeToFit()
+        let tooltipSize = CGSize(
+            width: cardTypeTooltipLabel.frame.width + 16,
+            height: cardTypeTooltipLabel.frame.height + 16
+        )
+        
+        let chip3Frame = chip3.convert(chip3.bounds, to: mainCard)
+        cardTypeTooltipContainer.frame = CGRect(
+            x: chip3Frame.minX + 11,
+            y: chip3Frame.maxY - 7,
+            width: tooltipSize.width,
+            height: tooltipSize.height
+        )
+        cardTypeTooltipImageView.frame = cardTypeTooltipContainer.bounds
+        cardTypeTooltipLabel.center = CGPoint(x: tooltipSize.width / 2, y: tooltipSize.height / 2 + 2)
+        
+        if hasShownCardTypeTooltip {
+            cardTypeTooltipContainer.alpha = 1
+            cardTypeTooltipContainer.isHidden = false
+            return
+        }
+        hasShownCardTypeTooltip = true
+        
+        cardTypeTooltipContainer.alpha = 0
+        cardTypeTooltipContainer.isHidden = false
+        cardTypeTooltipContainer.transform = CGAffineTransform(translationX: 0, y: -8)
+        
+        UIView.animate(
+            withDuration: 0.3,
+            delay: 0,
+            usingSpringWithDamping: 0.7,
+            initialSpringVelocity: 0.5,
+            options: .curveEaseOut
+        ) {
+            self.cardTypeTooltipContainer.alpha = 1
+            self.cardTypeTooltipContainer.transform = .identity
+        }
     }
     
     private func hideMainCardSkeleton() {
@@ -632,6 +697,15 @@ extension HomeViewController {
         chip1.updateTitle("\(card.mode.emoji) \(card.mode.displayName)")
         chip2.updateTitle("\(card.subject.emoji) \(card.subject.displayName)")
         
+        // 상대방이 선택한 카드면 타입 칩 테두리를 보라색으로
+        let isSelectedByPartner: Bool = {
+            guard let selectedBy = card.selectedByUserId,
+                  let myId = UserdefaultKey.userId else { return false }
+            return selectedBy != myId
+        }()
+        chip3.setHighlighted(isSelectedByPartner)
+        showCardTypeTooltip(isSelectedByPartner)
+        
         // chip3는 type이 .none이 아닐 때만 표시
         if card.type != .none {
             chip3.updateTitle("\(card.type.emoji) \(card.type.displayName)")
@@ -724,10 +798,19 @@ extension HomeViewController {
               let card = historyCards.first(where: { $0.id == tappedView.tag }) else {
             return
         }
-        if !card.user1Answered && !card.user2Answered {
-            showNonAnsweredAlert()
+        let isToday = Calendar.current.isDate(card.date, inSameDayAs: CardService.shared.getCardSystemDate())
+        if isToday {
+            if card.user1Answered && card.user2Answered {
+                coordinator?.showHistoryCardDetail(card: card)
+            } else {
+                showNonAnsweredAlert()
+            }
         } else {
-            coordinator?.showHistoryCardDetail(card: card)
+            if !card.user1Answered && !card.user2Answered {
+                showNonAnsweredAlert()
+            } else {
+                coordinator?.showHistoryCardDetail(card: card)
+            }
         }
     }
     
@@ -742,11 +825,21 @@ extension HomeViewController {
         }
         
         weekCardsContainer.flex.define { flex in
-            if UserdefaultKey.coupleType == .solo || historyCards.isEmpty {
+            let cardSystemDate = CardService.shared.getCardSystemDate()
+            let calendar = Calendar.current
+            let filteredCards = historyCards.filter { card in
+                let isToday = calendar.isDate(card.date, inSameDayAs: cardSystemDate)
+                if isToday {
+                    return card.user1Answered && card.user2Answered
+                }
+                return true
+            }
+            
+            if UserdefaultKey.coupleType == .solo || filteredCards.isEmpty {
                 let emptyView = createEmptyWeekView()
                 flex.addItem(emptyView)
             } else {
-                let sortedCards = historyCards.sorted { $0.date > $1.date }
+                let sortedCards = filteredCards.sorted { $0.date > $1.date }
                 sortedCards.enumerated().forEach { index, card in
                     let cardView = createWeekCard(card: card, index: index)
                     let isLast = index == sortedCards.count - 1
