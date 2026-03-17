@@ -65,30 +65,12 @@ extension CardHistoryResponseDTO {
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
-    
-    private func replaceNicknames(in text: String?, isUser1Current: Bool) -> String? {
-        guard let text else { return nil }
+  
+    private func nicknameReplacements(isUser1Current: Bool) -> [(target: String, name: String)] {
         let nicknames = UserdefaultKey.nicknameInfo
         let user1Name = isUser1Current ? (nicknames?.userNickname ?? "유저1") : (nicknames?.anotherUserNickname ?? "유저1")
         let user2Name = isUser1Current ? (nicknames?.anotherUserNickname ?? "유저2") : (nicknames?.userNickname ?? "유저2")
-        
-        let josaReplace = [
-            ("라서", "이라서"), ("라고", "이라고"), ("라면", "이라면"),
-            ("라는", "이라는"), ("이니까", "이니까"), ("니까", "이니까"),
-            ("이랑", "이랑"), ("이나", "이나"),
-            ("는", "은"), ("가", "이"), ("를", "을"), ("와", "과"),
-            ("야", "아"), ("로", "으로"), ("나", "이나"), ("랑", "이랑"),
-            ("란", "이란"), ("네", "이네"), ("다", "이다"), ("며", "이며")
-        ]
-        
-        var result = text
-        for (user, name) in [("유저1", user1Name), ("유저2", user2Name)] {
-            for (wrong, correct) in josaReplace {
-                result = result.replacingOccurrences(of: "\(user)\(wrong)", with: "\(name)님\(correct)")
-            }
-            result = result.replacingOccurrences(of: user, with: "\(name)님")
-        }
-        return result
+        return [("유저1", user1Name), ("유저2", user2Name)]
     }
     
     func toEntity() -> [QuestionCard] {
@@ -127,12 +109,13 @@ extension CardHistoryResponseDTO {
                 userId1: shouldSwap ? self.user2Id : self.user1Id,
                 userId2: shouldSwap ? self.user1Id : self.user2Id,
                 feedback: card.feedback.map { f in
-                    CardFeedback(
+                    let r = nicknameReplacements(isUser1Current: isUser1Current)
+                    return CardFeedback(
                         id: f.feedbackId ?? 0,
-                        summary: replaceNicknames(in: f.summary, isUser1Current: isUser1Current) ?? "",
-                        matchPoints: replaceNicknames(in: f.matchPoints, isUser1Current: isUser1Current) ?? "",
-                        differences: replaceNicknames(in: f.differences, isUser1Current: isUser1Current) ?? "",
-                        tip: replaceNicknames(in: f.conversationStarter, isUser1Current: isUser1Current) ?? ""
+                        summary: (f.summary ?? "").replacingNicknames(r),
+                        matchPoints: (f.matchPoints ?? "").replacingNicknames(r),
+                        differences: (f.differences ?? "").replacingNicknames(r),
+                        tip: (f.conversationStarter ?? "").replacingNicknames(r)
                     )
                 },
                 pocked: card.pocked
