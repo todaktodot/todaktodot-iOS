@@ -188,7 +188,7 @@ final class HistoryCardDetailViewController: UIViewController {
     
     private func setupMyAnswer() {
         let nicknameLabel = TDLabel().then {
-            $0.text = "내 닉네임"
+            $0.text = UserdefaultKey.nicknameInfo?.userNickname
             $0.font = .pretenSemiBold(16)
             $0.textColor = .mainPurple
         }
@@ -270,7 +270,7 @@ final class HistoryCardDetailViewController: UIViewController {
     
     private func setupPartnerAnswer() {
         let nicknameLabel = TDLabel().then {
-            $0.text = "연인 닉네임"
+            $0.text = UserdefaultKey.nicknameInfo?.anotherUserNickname
             $0.font = .pretenSemiBold(16)
             $0.textColor = .mainPurple
         }
