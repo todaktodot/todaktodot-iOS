@@ -78,6 +78,10 @@ final class MaskingLabel: UILabel {
         setup()
     }
     
+    deinit {
+        bubbleTimer?.invalidate()
+    }
+    
     private func setup() {
         isUserInteractionEnabled = true
         clipsToBounds = false
@@ -211,6 +215,9 @@ final class MaskingLabel: UILabel {
             bubbleTimer?.invalidate()
             return
         }
+        
+        // 이미 제거된 버블 참조 일괄 정리
+        bubbles.removeAll { $0.superlayer == nil }
         
         let bubblesCount = Int(Double(cachedPositions.count) * tuning.bubblesPerCharacter)
         
