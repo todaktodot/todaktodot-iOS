@@ -103,7 +103,14 @@ final class DailyCardViewController: UIViewController, View {
             })
             .disposed(by: disposeBag)
         
-        // UI 업데이트 없을때 상대방이 모드 선택할 시
+        reactor.state.map { $0.shouldRetryAndGoHome }
+            .filter { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] _ in
+                self?.showRetryAndGoHomeAlert()
+            })
+            .disposed(by: disposeBag)
+        
         reactor.state.map { $0.shouldShowAlreadySelectedAlert }
             .filter { $0 }
             .observe(on: MainScheduler.instance)
@@ -182,8 +189,6 @@ final class DailyCardViewController: UIViewController, View {
             primaryButtonTitle: "이걸로 할게요",
             primaryButtonAction: {
                 reactor.action.onNext(.selectCardType(coupleCardId: card.coupleCardId, cardType: cardType))
-                let action: DailyCardReactor.Action = cardType == .roleplay ? .tapSituationButton : .tapBalanceButton
-                reactor.action.onNext(action)
             },
             secondaryButtonTitle: "취소",
             secondaryButtonAction: {}
@@ -203,6 +208,18 @@ final class DailyCardViewController: UIViewController, View {
         case .none:
             break
         }
+    }
+    
+    private func showRetryAndGoHomeAlert() {
+        showAlert(
+            icon: UIImage(resource: .warning),
+            title: "잠시 후 다시 시도해주세요",
+            description: nil,
+            primaryButtonTitle: "확인",
+            primaryButtonAction: { [weak self] in
+                self?.coordinator?.navigateToHome()
+            }
+        )
     }
 }
 

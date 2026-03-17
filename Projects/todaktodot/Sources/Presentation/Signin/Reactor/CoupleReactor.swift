@@ -75,7 +75,7 @@ final class CoupleReactor: Reactor {
         case .tapConnectButton(let code):
             return coupleUseCase.connectCouple(code: code)
                 .flatMap { _ -> Observable<Mutation> in
-                    return self.coupleUseCase.assignCards(endDate: self.calNextSunday())
+                    return self.coupleUseCase.assignCards(startDate: CardService.shared.getCardSystemDate().toYYYYMMDD(), endDate: self.calNextSunday())
                         .map { .setCoupleConnectSuccess($0) }
                         .catch { .just(.setError($0)) }
                 }
@@ -100,7 +100,7 @@ final class CoupleReactor: Reactor {
         case .tapSoloStartButton:
             return coupleUseCase.soloStart()
                 .flatMap { _ -> Observable<Mutation> in
-                    return self.coupleUseCase.assignCards(endDate: self.calNextSunday())
+                    return self.coupleUseCase.assignCards(startDate: CardService.shared.getCardSystemDate().toYYYYMMDD(), endDate: self.calNextSunday())
                         .map { .setSoloStart($0) }
                         .catch { .just(.setError($0)) }
                 }

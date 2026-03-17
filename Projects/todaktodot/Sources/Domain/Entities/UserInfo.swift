@@ -13,7 +13,7 @@ enum CoupleType: String, Codable {
     case connected = "CONNECTED"
 }
 
-struct UserInfo: Decodable {
+struct UserInfo: Codable {
     let userId: Int
     let coupleId: Int?
     let isTerm: Bool
@@ -21,4 +21,10 @@ struct UserInfo: Decodable {
     let coupleType: CoupleType
     let createdMyNickname: Bool
     let createdCoupleInfo: Bool
+    let nicknameInfo: NicknameInfo?
+}
+
+struct NicknameInfo: Codable {
+    let userNickname: String
+    let anotherUserNickname: String
 }

@@ -189,6 +189,7 @@ private final class TabItemView: UIView {
             .direction(.row)
             .justifyContent(.center)
             .alignItems(.center)
+            .paddingLeft(12)
             .define { flex in
                 flex.addItem(iconImageView).size(23)
                 flex.addItem(titleLabel).marginLeft(8)

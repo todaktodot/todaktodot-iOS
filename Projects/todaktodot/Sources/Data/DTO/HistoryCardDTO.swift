@@ -22,6 +22,7 @@ struct HistoryCardDTO: Decodable {
     let mode: CardMode?
     let subject: CardSubject?
     let selected: Bool?
+    let selectedByUserId: Int?
     let situation: String?
     let coupleCardId: Int?
     let cardId: Int?
@@ -50,11 +51,11 @@ struct HistoryOptionDTO: Decodable {
 }
 
 struct FeedbackDTO: Decodable {
-    let feedbackId: Int
-    let summary: String
-    let matchPoints: String
-    let differences: String
-    let conversationStarter: String
+    let feedbackId: Int?
+    let summary: String?
+    let matchPoints: String?
+    let differences: String?
+    let conversationStarter: String?
 }
 
 // MARK: - Mapping Extension
@@ -64,12 +65,20 @@ extension CardHistoryResponseDTO {
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
+  
+    private func nicknameReplacements(isUser1Current: Bool) -> [(target: String, name: String)] {
+        let nicknames = UserdefaultKey.nicknameInfo
+        let user1Name = isUser1Current ? (nicknames?.userNickname ?? "유저1") : (nicknames?.anotherUserNickname ?? "유저1")
+        let user2Name = isUser1Current ? (nicknames?.anotherUserNickname ?? "유저2") : (nicknames?.userNickname ?? "유저2")
+        return [("유저1", user1Name), ("유저2", user2Name)]
+    }
     
     func toEntity() -> [QuestionCard] {
         let currentUserId = UserdefaultKey.userId
+        let isUser1Current = currentUserId == self.user1Id
         
         return historyCards?.map { card in
-            let shouldSwap = currentUserId != self.user1Id
+            let shouldSwap = !isUser1Current
             
             return QuestionCard(
                 id: card.cardId ?? 0,
@@ -94,17 +103,19 @@ extension CardHistoryResponseDTO {
                 } ?? [],
                 situation: card.situation ?? "",
                 isSelected: card.selected ?? false,
+                selectedByUserId: card.selectedByUserId,
                 user1Answered: shouldSwap ? (card.user2Answered ?? false) : (card.user1Answered ?? false),
                 user2Answered: shouldSwap ? (card.user1Answered ?? false) : (card.user2Answered ?? false),
                 userId1: shouldSwap ? self.user2Id : self.user1Id,
                 userId2: shouldSwap ? self.user1Id : self.user2Id,
                 feedback: card.feedback.map { f in
-                    CardFeedback(
-                        id: f.feedbackId,
-                        summary: f.summary,
-                        score: Int(f.matchPoints.filter { $0.isNumber }) ?? 0,
-                        differences: f.differences,
-                        tip: f.conversationStarter
+                    let r = nicknameReplacements(isUser1Current: isUser1Current)
+                    return CardFeedback(
+                        id: f.feedbackId ?? 0,
+                        summary: (f.summary ?? "").replacingNicknames(r),
+                        matchPoints: (f.matchPoints ?? "").replacingNicknames(r),
+                        differences: (f.differences ?? "").replacingNicknames(r),
+                        tip: (f.conversationStarter ?? "").replacingNicknames(r)
                     )
                 },
                 pocked: card.pocked
