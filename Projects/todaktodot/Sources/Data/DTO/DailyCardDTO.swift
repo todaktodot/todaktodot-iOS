@@ -83,6 +83,7 @@ extension DailyCardResponseDTO {
                 },
                 situation: card.situation ?? "",
                 isSelected: false,
+                selectedByUserId: nil,
                 user1Answered: false,
                 user2Answered: false,
                 userId1: nil,

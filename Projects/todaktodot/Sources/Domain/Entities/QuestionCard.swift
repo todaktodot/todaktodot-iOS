@@ -20,6 +20,7 @@ struct QuestionCard: Codable {
     
     // + 히스토리
     let isSelected: Bool
+    let selectedByUserId: Int?
     let user1Answered: Bool
     let user2Answered: Bool
     let userId1: Int?
@@ -54,7 +55,7 @@ struct QuestionOption: Codable {
 struct CardFeedback: Codable {
     let id: Int
     let summary: String
-    let score: Int
+    let matchPoints: String
     let differences: String
     let tip: String
 }

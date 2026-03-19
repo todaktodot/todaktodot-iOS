@@ -48,6 +48,9 @@ enum UserdefaultKey {
     @UserDefaultCodable(key: "coupleType", defaultValue: .null)
     static var coupleType: CoupleType
     
+    @UserDefaultCodable(key: "nicknameInfo", defaultValue: nil)
+    static var nicknameInfo: NicknameInfo?
+    
     // MARK: -
     @UserDefault(key: "connectedDate", defaultValue: Date())
     static var connectedDate: Date
@@ -67,6 +70,9 @@ enum UserdefaultKey {
     @UserDefault(key: "lastTooltipShownDate", defaultValue: nil)
     static var lastTooltipShownDate: String?
     
+    @UserDefault(key: "lastPokeDate", defaultValue: nil)
+    static var lastPokeDate: String?
+    
     static func resetUserDefaults() {
         let preservedDeviceToken = self.diviceToken
 
@@ -80,9 +86,11 @@ enum UserdefaultKey {
     static func resetAuthUserDefaults() {
         self.accessToken = nil
         self.refreshToken = nil
+        self.nicknameInfo = nil
         
         self.weeklyCards = []
         self.lastWeeklyCardDate = nil
+        self.lastPokeDate = nil
         
         UserDefaults.standard.synchronize()
     }

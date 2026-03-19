@@ -53,6 +53,7 @@ struct MockCardData {
             ],
             situation: "비용",
             isSelected: false,
+            selectedByUserId: nil,
             user1Answered: false,
             user2Answered: false,
             userId1: nil,
@@ -94,6 +95,7 @@ struct MockCardData {
             ],
             situation: "약속",
             isSelected: false,
+            selectedByUserId: nil,
             user1Answered: false,
             user2Answered: false,
             userId1: nil,
@@ -135,6 +137,7 @@ struct MockCardData {
             ],
             situation: "여행",
             isSelected: false,
+            selectedByUserId: nil,
             user1Answered: false,
             user2Answered: false,
             userId1: nil,
@@ -179,6 +182,7 @@ struct MockCardData {
             ],
             situation: "데이트",
             isSelected: true,
+            selectedByUserId: nil,
             user1Answered: true,
             user2Answered: true,
             userId1: 1001,
@@ -186,7 +190,7 @@ struct MockCardData {
             feedback: CardFeedback(
                 id: 1,
                 summary: "두 분 모두 편안한 분위기를 선호하시네요!",
-                score: 85,
+                matchPoints: "공통점 텍스트",
                 differences: "데이트 스타일은 비슷하지만, 활동성에서 약간의 차이가 있어요.",
                 tip: "서로의 페이스를 존중하며 다양한 데이트를 시도해보세요."
             ),
@@ -225,6 +229,7 @@ struct MockCardData {
             ],
             situation: "가치관",
             isSelected: true,
+            selectedByUserId: nil,
             user1Answered: true,
             user2Answered: true,
             userId1: 1001,
@@ -232,7 +237,7 @@ struct MockCardData {
             feedback: CardFeedback(
                 id: 3,
                 summary: "금전 가치관에서 차이가 있어요.",
-                score: 68,
+                matchPoints: "공통점 텍스트",
                 differences: "한 분은 저축을, 한 분은 경험을 중시하시네요.",
                 tip: "서로의 가치관을 이해하고 균형점을 찾아보세요."
             ),
@@ -271,6 +276,7 @@ struct MockCardData {
             ],
             situation: "갈등",
             isSelected: true,
+            selectedByUserId: nil,
             user1Answered: true,
             user2Answered: true,
             userId1: 1001,
@@ -278,7 +284,7 @@ struct MockCardData {
             feedback: CardFeedback(
                 id: 4,
                 summary: "갈등 해결 방식이 달라요.",
-                score: 72,
+                matchPoints: "공통점 텍스트",
                 differences: "한 분은 즉각적인 해결을, 한 분은 신중한 접근을 선호하시네요.",
                 tip: "서로의 방식을 존중하며 중간 지점을 찾아보세요."
             ),
@@ -317,6 +323,7 @@ struct MockCardData {
             ],
             situation: "빈도",
             isSelected: true,
+            selectedByUserId: nil,
             user1Answered: true,
             user2Answered: true,
             userId1: 1001,
@@ -324,7 +331,7 @@ struct MockCardData {
             feedback: CardFeedback(
                 id: 5,
                 summary: "연락 빈도 선호가 다르네요.",
-                score: 65,
+                matchPoints: "공통점 텍스트",
                 differences: "한 분은 자주 연락하고 싶어하고, 한 분은 적당한 거리를 선호해요.",
                 tip: "서로의 스타일을 이해하고 편안한 빈도를 찾아보세요."
             ),
@@ -363,6 +370,7 @@ struct MockCardData {
             ],
             situation: "주말",
             isSelected: true,
+            selectedByUserId: nil,
             user1Answered: true,
             user2Answered: false,
             userId1: 1001,
@@ -403,6 +411,7 @@ struct MockCardData {
             ],
             situation: "선물",
             isSelected: true,
+            selectedByUserId: nil,
             user1Answered: false,
             user2Answered: false,
             userId1: 1001,
