@@ -26,7 +26,10 @@ struct AIReportDetailDTO: Decodable {
 
 struct InsightInfo: Decodable {
     let insightId: Int
-    let content: String
+    let summary: String?
+    let economyPart: String?
+    let lifestylePart: String?
+    let lovePart: String?
 }
 
 struct Subject: Decodable {
@@ -47,7 +50,12 @@ extension AIReportDetailDTO {
                        loveSyncRate: CGFloat((Double(loveSyncRate) ?? 0) / 100.0),
                        dailycardAnswerRate: CGFloat((Double(dailycardAnswerRate) ?? 0) / 100.0),
                        totalDailycardAnswerCnt: Int(totalDailycardAnswerCnt) ?? 0,
-                       insightInfo: insightInfo,
+                       insight: [
+                        insightInfo.summary,
+                        insightInfo.economyPart,
+                        insightInfo.lifestylePart,
+                        insightInfo.lovePart
+                       ],
                        similarSubjectList: similarSubjectList,
                        differentSubjectList: diffrentSubjectList)
     }
@@ -63,7 +71,10 @@ extension AIReportDetailDTO {
         dailycardAnswerRate: "85",
         insightInfo: InsightInfo(
             insightId: 1,
-            content: "이번 주 A와 B는 서로 다른 관점을 가지면서도 핵심 가치에서는 놀라울 정도로 일치하는 모습을 보였어요. 특히 연애관에서는 상당한 싱크로율을 보이며, 서로를 배려하는 마음이 답변 곳곳에 드러났어요. 경제관에서는 실용성과 낭만 사이에서 서로 다른 균형점을 찾고 있지만, 이런 차이가 오히려 서로에게 새로운 시각을 제공하고 있습니다. 생활관 부분에서 가장 많은 차이를 보였는데, 이는 각자의 생활 패턴과 우선순위가 다르기 때문으로 보여요."
+            summary: nil,
+            economyPart: nil,
+            lifestylePart: nil,
+            lovePart: nil
         ),
         similarSubjectList: [
             Subject(coupleCardId: 202, issuedDt: "2026-02-17", mode: "커피모드", subject: "연애관")

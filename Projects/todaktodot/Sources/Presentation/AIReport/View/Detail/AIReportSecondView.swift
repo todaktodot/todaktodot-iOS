@@ -12,6 +12,8 @@ import Then
 import Lottie
 
 final class AIReportSecondView: UIView {
+    private var descriptionTexts: [String?] = []
+    private var subTitles = ["요약", "경제관", "생활관", "연애관"]
     
     private let titleLabel = TDLabel().then {
         $0.text = "AI가 두 분의 대화를\n더 자세히 분석해보았어요"
@@ -26,12 +28,6 @@ final class AIReportSecondView: UIView {
         $0.textColor = .grayScale900
     }
     
-    private let reportResultLabel = TDLabel().then {
-        $0.font = .pretenRegular(16)
-        $0.textColor = .grayScale800
-        $0.numberOfLines = 0
-    }
-    
     private let reportBackgroundView = UIView().then {
         $0.layer.cornerRadius = 16
         $0.backgroundColor = .white
@@ -40,11 +36,34 @@ final class AIReportSecondView: UIView {
     private let imageView = UIImageView(image: UIImage(resource: .bookFill))
     
     func configure(detail: AIReportDetail, hiddenTitle: Bool) {
-        reportResultLabel.text = detail.insightInfo.content
+        if let myNickname = UserdefaultKey.nicknameInfo?.userNickname, let partnerNickname = UserdefaultKey.nicknameInfo?.anotherUserNickname {
+            descriptionTexts = detail.insight.map {
+                $0?.replacingNicknames([("A", myNickname), ("B", partnerNickname)])
+            }
+        } else {
+            descriptionTexts = detail.insight
+        }
         setupViews()
         
         if hiddenTitle {
             titleLabel.removeFromSuperview()
+        }
+    }
+    
+    private func subTitleLabel(text: String) -> TDLabel {
+        TDLabel().then {
+            $0.text = text
+            $0.font = .pretenSemiBold(16)
+            $0.textColor = .grayScale900
+        }
+    }
+    
+    private func descriptionLabel(text: String?) -> TDLabel {
+        TDLabel().then {
+            $0.text = text ?? "답변 내용이 없어요."
+            $0.font = .pretenRegular(16)
+            $0.textColor = .grayScale800
+            $0.numberOfLines = 0
         }
     }
     
@@ -68,8 +87,14 @@ final class AIReportSecondView: UIView {
                         .marginLeft(4)
                 }
             
-            $0.addItem(reportResultLabel)
-                .marginTop(8)
+            $0.addItem()
+                .define {
+                    for (title, text) in zip(subTitles, descriptionTexts) {
+                        $0.addItem(subTitleLabel(text: title))
+                            .marginTop(8)
+                        $0.addItem(descriptionLabel(text: text))
+                    }
+                }
         }
         
         reportBackgroundView.flex.layout(mode: .adjustHeight)

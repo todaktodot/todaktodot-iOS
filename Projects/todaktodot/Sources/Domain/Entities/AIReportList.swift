@@ -9,8 +9,8 @@ import Foundation
 
 struct AIReportList: Codable {
     let yearMonth: String
-    let month: Int
-    let week: Int
+    var month: Int
+    var week: Int
     let reportId: Int
 }
 
