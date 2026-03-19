@@ -37,8 +37,6 @@ enum AnalyticsService {
         case soloStartSelect
         
         // MARK: - 데일리 카드
-        /// P 데일리 카드 작성 진입
-        case dailyCardWriteBegin(cardId: Int) // TODO: 아이디 이슈로 나중에 지우거나 적용
         
         /// P 데일리 카드 유형 선택 클릭
         case selectDailyCardType(cardId: Int, cardType: CardType)
@@ -127,8 +125,6 @@ extension AnalyticsService.Event {
             return AnalyticsEventTutorialComplete
         case .soloStartSelect:
             return "self_browse_select"
-        case .dailyCardWriteBegin:
-            return AnalyticsEventSelectItem
         case .selectDailyCardType:
             return AnalyticsEventSelectContent
         case .dailyCardDetailBegin:
@@ -196,13 +192,7 @@ extension AnalyticsService.Event {
             return [
                 "trigger_element": "self_browse_button"
             ]
-
-        case .dailyCardWriteBegin(let cardId):
-            return [
-                AnalyticsParameterItemCategory: "daily_card",
-                AnalyticsParameterItemID: cardId
-            ]
-
+            
         case .selectDailyCardType(let cardId, let cardType):
             return [
                 AnalyticsParameterContentType: cardType.rawValue,

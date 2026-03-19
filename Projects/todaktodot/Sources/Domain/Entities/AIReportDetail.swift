@@ -17,7 +17,7 @@ struct AIReportDetail: Decodable {
     let loveSyncRate: CGFloat
     let dailycardAnswerRate: CGFloat
     let totalDailycardAnswerCnt: Int
-    let insightInfo: InsightInfo
+    let insight: [String?]
     let similarSubjectList: [Subject]
     let differentSubjectList: [Subject]
 }

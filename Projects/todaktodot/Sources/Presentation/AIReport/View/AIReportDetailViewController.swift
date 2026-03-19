@@ -86,7 +86,7 @@ final class AIReportDetailViewController: CustomBackViewController, View {
     }
     
     func bind(reactor: AIReportReactor) {
-        if step == .third || step == .full {
+        if step == .third || step == .full || step == .history {
             reactor.state
                 .compactMap { $0.historyData }
                 .subscribe { [weak self] data in

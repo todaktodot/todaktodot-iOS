@@ -18,6 +18,7 @@ final class AIReportWeekCardView: UIView {
     }
     
     var onTap: ((Int) -> Void)?
+    private var isTapEnabled = true
     
     private var week: Int?
     private var reportId: Int?
@@ -53,8 +54,8 @@ final class AIReportWeekCardView: UIView {
         effect: UIBlurEffect(style: .light)
     )
     
-    init() {
-        super.init(frame: .zero)
+    override init(frame: CGRect = .zero) {
+        super.init(frame: frame)
         setupUI()
         
     }
@@ -121,16 +122,20 @@ final class AIReportWeekCardView: UIView {
             chevron.tintColor  = .grayScale400
         }
         
-        if week != 1 {
-            layer.shadowColor = UIColor(hex: "774F9E").cgColor
-            layer.shadowOpacity = 0.15
-            layer.shadowOffset = CGSize(width: 0, height: -2)
-            layer.shadowRadius = 20
-        }
+        layer.shadowColor = UIColor(hex: "774F9E").cgColor
+        layer.shadowOpacity = 0.15
+        layer.shadowOffset = CGSize(width: 0, height: -2)
+        layer.shadowRadius = 20
     }
     
     @objc private func weekCardTapped() {
-        guard let reportId else { return }
+        guard let reportId, isTapEnabled else { return }
+        
+        isTapEnabled = false
         onTap?(reportId)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.isTapEnabled = true
+        }
     }
 }
