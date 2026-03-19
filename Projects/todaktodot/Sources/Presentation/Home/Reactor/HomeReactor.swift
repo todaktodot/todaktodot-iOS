@@ -49,6 +49,7 @@ final class HomeReactor: Reactor {
         case setError(Error)
         case setShowTooltip(Bool)
         case setShowPokeError(Bool)
+        case setWeeklyCardsFetchFailed(Bool)
     }
     
     struct State {
@@ -60,6 +61,7 @@ final class HomeReactor: Reactor {
         var todayCards: [QuestionCard] = []
         var shouldShowTooltip: Bool = false
         var shouldShowPokeError: Bool = false
+        var weeklyCardsFetchFailed: Bool = false
     }
     
     let initialState = State()
@@ -151,54 +153,26 @@ final class HomeReactor: Reactor {
                         CardService.shared.saveWeeklyCards(cards)
                         UserdefaultKey.lastWeeklyCardDate = endDate.toDate()
                         let todayCards = CardService.shared.getTodayCards()
-                        return .just(.setTodayCards(todayCards))
+                        let status = todayCards.isEmpty ? .bothUnanswered : self.determineAnswerStatus(from: todayCards)
+                        return .concat([
+                            .just(.setWeeklyCardsFetchFailed(false)),
+                            .just(.setTodayCards(todayCards)),
+                            .just(.setAnswerStatus(status))
+                        ])
                     case .failure:
-                        let mockCards = MockCardData.dailyCards
-                        let today = Date()
-                        let calendar = Calendar.current
-                        let todayCards = mockCards.filter { calendar.isDate($0.date, inSameDayAs: today) }
-                        return .just(.setTodayCards(todayCards))
+                        return .just(.setWeeklyCardsFetchFailed(true))
 //                        return .just(.setError(error))
                     }
                 }
+            
         case .loadTodayCards:
-            let todayString = CardService.shared.getCardSystemDate().toYYYYMMDD()
-            return cardUseCase.fetchWeeklyCards(startDate: todayString, endDate: todayString)
-                .flatMap { result -> Observable<Mutation> in
-                    switch result {
-                    case .success(let cards):
-                        print("✅ 오늘 카드 서버 패치 완료: \(cards.count)개")
-                        let status = cards.isEmpty ? .bothUnanswered : self.determineAnswerStatus(from: cards)
-                        return .concat([
-                            .just(.setTodayCards(cards)),
-                            .just(.setAnswerStatus(status))
-                        ])
-                    case .failure:
-                        print("⚠️ 서버 실패 - 로컬 주간 카드 확인")
-                        let savedTodayCards = CardService.shared.getTodayCards()
-                        print("💾 로컬 저장된 오늘 카드: \(savedTodayCards.count)개")
-                        
-                        if savedTodayCards.isEmpty {
-                            print("🔄 Mock 데이터 사용")
-                            let mockCards = MockCardData.dailyCards
-                            let today = Date()
-                            let calendar = Calendar.current
-                            let todayCards = mockCards.filter { calendar.isDate($0.date, inSameDayAs: today) }
-                            print("📦 Mock 오늘 카드: \(todayCards.count)개")
-                            let status = todayCards.isEmpty ? .bothUnanswered : self.determineAnswerStatus(from: todayCards)
-                            return .concat([
-                                .just(.setTodayCards(todayCards)),
-                                .just(.setAnswerStatus(status))
-                            ])
-                        }
-                        
-                        let status = savedTodayCards.isEmpty ? .bothUnanswered : self.determineAnswerStatus(from: savedTodayCards)
-                        return .concat([
-                            .just(.setTodayCards(savedTodayCards)),
-                            .just(.setAnswerStatus(status))
-                        ])
-                    }
-                }
+            let savedTodayCards = CardService.shared.getTodayCards()
+            let status = savedTodayCards.isEmpty ? .bothUnanswered : self.determineAnswerStatus(from: savedTodayCards)
+            return .concat([
+                .just(.setTodayCards(savedTodayCards)),
+                .just(.setAnswerStatus(status))
+            ])
+            
         case .assignCards:
             let today = Date()
             let calendar = Calendar.current
@@ -255,6 +229,8 @@ final class HomeReactor: Reactor {
             newState.shouldShowTooltip = show
         case .setShowPokeError(let show):
             newState.shouldShowPokeError = show
+        case .setWeeklyCardsFetchFailed(let failed):
+            newState.weeklyCardsFetchFailed = failed
         }
         return newState
     }

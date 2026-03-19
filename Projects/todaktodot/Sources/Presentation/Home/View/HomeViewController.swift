@@ -176,10 +176,13 @@ final class HomeViewController: BaseViewController, View {
     }
     
     private func fetchAllCards() {
+        let savedTodayCards = CardService.shared.getTodayCards()
 
         if let lastWeeklyDate = UserdefaultKey.lastWeeklyCardDate,
-           lastWeeklyDate >= Date() {
+           lastWeeklyDate >= Date(),
+           !savedTodayCards.isEmpty {
             print("✅ 주간 카드 저장됨")
+            reactor?.action.onNext(.loadTodayCards)
         } else {
             print("📥 주간 카드 백그라운드 패치 시작")
             fetchWeeklyCards()
@@ -326,6 +329,15 @@ final class HomeViewController: BaseViewController, View {
                 guard let self = self, let reactor = self.reactor else { return }
                 self.showPokeErrorAlert()
                 reactor.action.onNext(.dismissPokeError)
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state.map { $0.weeklyCardsFetchFailed }
+            .distinctUntilChanged()
+            .filter { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] _ in
+                self?.showWeeklyCardsFetchFailedAlert()
             })
             .disposed(by: disposeBag)
         
@@ -1045,6 +1057,18 @@ extension HomeViewController {
             description: nil,
             primaryButtonTitle: "확인",
             primaryButtonAction: {}
+        )
+    }
+    
+    private func showWeeklyCardsFetchFailedAlert() {
+        showAlert(
+            icon: UIImage(resource: .unsmile),
+            title: "데일리카드 가져오기에 실패했어요.\n다시 시도해보세요.",
+            description: nil,
+            primaryButtonTitle: "다시 시도",
+            primaryButtonAction: { [weak self] in
+                self?.fetchWeeklyCards()
+            }
         )
     }
     
