@@ -40,6 +40,7 @@ final class DailyCardReactor: Reactor {
         case setSubmitSuccess(SubmitAnswerResult)
         case setSubmitError(Error)
         case setCardTypeSelected(CardType)
+        case setShouldRetryAndGoHome
         case setCardTypeSelectionError
     }
     
@@ -51,6 +52,7 @@ final class DailyCardReactor: Reactor {
         var isLoading: Bool = false
         var submitResult: SubmitAnswerResult?
         var submitError: Error?
+        var shouldRetryAndGoHome: Bool = false
         var shouldShowAlreadySelectedAlert: Bool = false
     }
     
@@ -71,22 +73,23 @@ final class DailyCardReactor: Reactor {
             }
             return .just(.navigateToDetail(card))
         case .selectCardType(let coupleCardId, let cardType):
+            let targetCard = dailyCards.first(where: { $0.type == cardType })
             return Observable.concat([
                 .just(.setLoading(true)),
                 cardUseCase.selectCardType(coupleCardId: coupleCardId)
                     .flatMap { result -> Observable<Mutation> in
                         switch result {
                         case .success:
+                            if let card = targetCard {
+                                return .just(.navigateToDetail(card))
+                            }
                             return .just(.setCardTypeSelected(cardType))
                         case .failure(let error):
-                            // 에러 메시지에 "이미 유형이 선택된" 포함 여부로 판단
-                            let errorMessage = error.localizedDescription
-                            if errorMessage.contains("이미 유형이 선택된") || errorMessage.contains("400") {
-                                print("⚠️ 400 에러 - 이미 선택된 카드")
-                                return .just(.setCardTypeSelectionError)
-                            }
-                            print("❌ selectCardType 실패: \(error)")
-                            return .empty()
+//                            let errorMessage = error.localizedDescription
+//                            if errorMessage.contains("이미 유형이 선택된") || errorMessage.contains("400") {
+//                                return .just(.setCardTypeSelectionError)
+//                            }
+                            return .just(.setShouldRetryAndGoHome)
                         }
                     },
                 .just(.setLoading(false))
@@ -126,7 +129,8 @@ final class DailyCardReactor: Reactor {
             newState.submitResult = nil
         case .setCardTypeSelected(let cardType):
             newState.historySelectedType = cardType
-            newState.shouldShowAlreadySelectedAlert = false
+        case .setShouldRetryAndGoHome:
+            newState.shouldRetryAndGoHome = true
         case .setCardTypeSelectionError:
             newState.shouldShowAlreadySelectedAlert = true
         }
