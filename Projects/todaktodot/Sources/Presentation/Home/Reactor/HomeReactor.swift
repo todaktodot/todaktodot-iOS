@@ -54,7 +54,7 @@ final class HomeReactor: Reactor {
     
     struct State {
         var answerStatus: AnswerStatus = .bothUnanswered
-        var isPoked: Bool = false
+        var isPoked: Bool = UserdefaultKey.lastPokeDate == CardService.shared.getCardSystemDate().toYYYYMMDD()
         var shouldShowNotificationAlert: Bool = true
         var isCoupleConnected: Bool = UserdefaultKey.coupleType == .connected
         var historyCards: [QuestionCard] = []
@@ -96,6 +96,7 @@ final class HomeReactor: Reactor {
                     switch result {
                     case .success:
                         print("✅ 콕찌르기 성공")
+                        UserdefaultKey.lastPokeDate = CardService.shared.getCardSystemDate().toYYYYMMDD()
                         return .just(.setPoked(true))
                     case .failure(let error):
                         print("⚠️ 콕찌르기 실패: \(error)")
@@ -127,7 +128,7 @@ final class HomeReactor: Reactor {
                             UserdefaultKey.lastTooltipShownDate = todayString
                         }
                         
-                        let isPoked = todayCards.first?.pocked ?? false
+                        let isPoked = (todayCards.first?.pocked ?? false) || UserdefaultKey.lastPokeDate == todayString
                         
                         return .concat([
                             .just(.setHistoryCardsWithStatus(cards, status)),

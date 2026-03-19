@@ -70,6 +70,9 @@ enum UserdefaultKey {
     @UserDefault(key: "lastTooltipShownDate", defaultValue: nil)
     static var lastTooltipShownDate: String?
     
+    @UserDefault(key: "lastPokeDate", defaultValue: nil)
+    static var lastPokeDate: String?
+    
     static func resetUserDefaults() {
         let preservedDeviceToken = self.diviceToken
 
@@ -87,6 +90,7 @@ enum UserdefaultKey {
         
         self.weeklyCards = []
         self.lastWeeklyCardDate = nil
+        self.lastPokeDate = nil
         
         UserDefaults.standard.synchronize()
     }
