@@ -42,9 +42,19 @@ final class AIReportCoordinator: Coordinator {
     }
     
     func showHistoryCard(card: QuestionCard) {
-        let coordinator = HomeCoordinator(navigationController: navigationController)
-        addChild(coordinator)
-        coordinator.showHistoryCardDetail(card: card)
+        if navigationController.viewControllers.filter({ $0 is HistoryCardDetailViewController }).count == 0 {
+            navigationController.viewControllers.removeAll(where: { $0 is LoadingViewController })
+            
+            let coordinator = HomeCoordinator(navigationController: navigationController)
+            addChild(coordinator)
+            coordinator.showHistoryCardDetail(card: card, animated: false)
+        }
+    }
+    
+    func showLoading() {
+        let loadingVC = LoadingViewController()
+        loadingVC.coordinator = self
+        navigationController.pushViewController(loadingVC, animated: true)
     }
     
     func navigateBack() {

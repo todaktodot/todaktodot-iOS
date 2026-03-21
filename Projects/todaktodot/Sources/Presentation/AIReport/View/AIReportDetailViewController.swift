@@ -112,6 +112,7 @@ final class AIReportDetailViewController: CustomBackViewController, View {
             .disposed(by: disposeBag)
         
         thirdDetailView.onTapTopic = { id in
+            self.coordinator?.showLoading()
             reactor.action.onNext(.tapTopicCard(id))
         }
     }
