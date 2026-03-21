@@ -166,6 +166,13 @@ final class HomeViewController: BaseViewController, View {
         setupUI()
         showMainCardSkeleton()
         fetchAllCards()
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillEnterForeground),
+            name: UIApplication.willEnterForegroundNotification,
+            object: nil
+        )
     }
     
     private func fetchAllCards() {
@@ -421,6 +428,10 @@ final class HomeViewController: BaseViewController, View {
     @objc private func showInfoPopup() {
         let popupView = InfoPopupView()
         popupView.show(in: view, alignedWith: mainCard)
+    }
+    
+    @objc private func appWillEnterForeground() {
+        fetchHistoryCards()
     }
     
     private func updatePokeButton(isPoked: Bool) {
