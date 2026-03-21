@@ -155,7 +155,7 @@ final class HistoryCardDetailViewController: UIViewController {
     
     private func setupSituation() {
         let situationTitle = TDLabel().then {
-            $0.text = "🍽️ 레스토랑 데이트"
+            $0.text = card.situation
             $0.font = .pretenMedium(14)
             $0.textColor = .mainPurple
         }
@@ -392,11 +392,12 @@ final class HistoryCardDetailViewController: UIViewController {
             let titles = ["요약", "공통점", "차이점", "조언"]
             let bodies = [card.feedback?.summary, card.feedback?.matchPoints, card.feedback?.differences, card.feedback?.tip]
             for (i, title) in titles.enumerated() {
-                if i > 0 { attr.append(NSAttributedString(string: "\n\n", attributes: baseAttrs)) }
+                guard let body = bodies[i], !body.isEmpty else { continue }
+                if attr.length > 1 { attr.append(NSAttributedString(string: "\n\n", attributes: baseAttrs)) }
                 var boldAttrs = baseAttrs; boldAttrs[.font] = bold
                 var regularAttrs = baseAttrs; regularAttrs[.font] = regular
                 attr.append(NSAttributedString(string: title, attributes: boldAttrs))
-                attr.append(NSAttributedString(string: "\n" + (bodies[i] ?? ""), attributes: regularAttrs))
+                attr.append(NSAttributedString(string: "\n" + body, attributes: regularAttrs))
             }
             attr.append(NSAttributedString(string: "\n", attributes: baseAttrs))
             $0.attributedText = attr
