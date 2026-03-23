@@ -37,6 +37,7 @@ final class CustomProgressBar: UIView {
         $0.text = "000%"
         $0.font = .pretenRegular(16)
         $0.textColor = .grayScale800
+        $0.textAlignment = .right
     }
 
     private let barHeight: CGFloat = 10

@@ -13,7 +13,7 @@ import Lottie
 
 final class EmptyReportView: UIView {
     private let dateLabel = TDLabel().then {
-        $0.thisWeekRangeString()
+        $0.lastWeekRangeString()
         $0.font = .pretenMedium(14)
         $0.textColor = .grayScale600
     }

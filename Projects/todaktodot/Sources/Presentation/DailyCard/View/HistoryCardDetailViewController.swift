@@ -9,13 +9,19 @@ import UIKit
 import FlexLayout
 import PinLayout
 import Then
+import ReactorKit
+import RxSwift
+import Lottie
 
-final class HistoryCardDetailViewController: CustomBackViewController, CustomBackViewControllerDelegate {
+final class HistoryCardDetailViewController: CustomBackViewController, CustomBackViewControllerDelegate, View {
     
+    var disposeBag = DisposeBag()
     weak var coordinator: HomeCoordinator?
     private let card: QuestionCard
     private var multipleChoice: Question?
     private var subjectiveChoice: Question?
+    private var feedbackLabel: MaskingLabel?
+    private var didShowLoading = false
     
     private let scrollView = UIScrollView()
     private let rootFlexContainer = UIView()
@@ -60,6 +66,15 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     
     private let statusContainer = UIView()
     
+    // AI 피드백 로딩/에러 UI
+    private let feedbackLoadingContainer = UIView().then {
+        $0.isHidden = true
+    }
+    
+    private let feedbackErrorContainer = UIView().then {
+        $0.isHidden = true
+    }
+    
     init(card: QuestionCard) {
         self.card = card
         self.multipleChoice = card.questions.first(where: { $0.type == .multipleChoice })
@@ -76,6 +91,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         self.delegate = self
         hidesBottomBarWhenPushed = true
         setupUI()
+        reactor?.action.onNext(.checkFeedback)
         AnalyticsService.log(.historyCardDetailBegin(cardId: card.coupleCardId))
         AnalyticsService.log(.historyCardType(status: card.isBothAnswered ? .both : card.user1Answered ? .mineOnly : .partnerOnly))
     }
@@ -91,6 +107,8 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         setupAnswerSections()
         if card.user1Answered && card.user2Answered {
             setupAIFeedback()
+            setupFeedbackLoadingView()
+            setupFeedbackErrorView()
         }
         
         rootFlexContainer.flex
@@ -102,6 +120,8 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
                 flex.addItem(myAnswerContainer).marginTop(28)
                 flex.addItem(partnerAnswerContainer).marginTop(12)
                 flex.addItem(aiFeedbackContainer).marginTop(28)
+                flex.addItem(feedbackLoadingContainer).marginTop(28)
+                flex.addItem(feedbackErrorContainer).marginTop(28)
                 flex.addItem(statusContainer).marginTop(4)
             }
         
@@ -374,28 +394,12 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         }
 
         let feedbackText = MaskingLabel(textColor: .grayScale900).then {
-            let bold = UIFont.pretenBold(16)
-            let regular = UIFont.pretenRegular(16)
-            let kern: CGFloat = 1.26
-            let paraStyle = NSMutableParagraphStyle()
-            paraStyle.lineSpacing = 3.0
-            paraStyle.lineBreakMode = .byCharWrapping
-            let baseAttrs: [NSAttributedString.Key: Any] = [.kern: kern, .paragraphStyle: paraStyle]
-            
-            let attr = NSMutableAttributedString(string: "\n", attributes: baseAttrs)
-            let titles = ["요약", "공통점", "차이점", "조언"]
-            let bodies = [card.feedback?.summary, card.feedback?.matchPoints, card.feedback?.differences, card.feedback?.tip]
-            for (i, title) in titles.enumerated() {
-                guard let body = bodies[i], !body.isEmpty else { continue }
-                if attr.length > 1 { attr.append(NSAttributedString(string: "\n\n", attributes: baseAttrs)) }
-                var boldAttrs = baseAttrs; boldAttrs[.font] = bold
-                var regularAttrs = baseAttrs; regularAttrs[.font] = regular
-                attr.append(NSAttributedString(string: title, attributes: boldAttrs))
-                attr.append(NSAttributedString(string: "\n" + body, attributes: regularAttrs))
-            }
-            attr.append(NSAttributedString(string: "\n", attributes: baseAttrs))
-            $0.attributedText = attr
             $0.numberOfLines = 0
+        }
+        self.feedbackLabel = feedbackText
+        let feedback = card.feedback ?? HistoryCardDetailReactor.cachedFeedback(for: card.coupleCardId)
+        if let feedback {
+            updateFeedbackLabel(feedbackText, with: feedback)
         }
         
         aiFeedbackContainer.addSubview(bubbleContainer)
@@ -446,12 +450,196 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         rootFlexContainer.pin.top().horizontally()
         rootFlexContainer.flex.layout(mode: .adjustHeight)
         scrollView.contentSize = rootFlexContainer.frame.size
-        
-        // tail 위치 설정
-        if let tailImageView = aiFeedbackContainer.subviews.first(where: { $0.accessibilityIdentifier == "tailImageView" }) {
-            tailImageView.pin.bottom(0).right(0).width(40).height(22)
-            aiFeedbackContainer.bringSubviewToFront(tailImageView)
+        layoutTail()
+    }
+    
+    private func layoutTail() {
+        for container in [aiFeedbackContainer, feedbackLoadingContainer, feedbackErrorContainer] {
+            if let tailImageView = container.subviews.first(where: { $0.accessibilityIdentifier == "tailImageView" }) {
+                tailImageView.pin.bottom(0).right(0).width(40).height(22)
+                container.bringSubviewToFront(tailImageView)
+            }
         }
+    }
+    
+    // MARK: - Reactor Binding
+    
+    func bind(reactor: HistoryCardDetailReactor) {
+        reactor.pulse(\.$feedbackState)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] state in
+                self?.updateFeedbackUI(state: state)
+            })
+            .disposed(by: disposeBag)
+    }
+    
+    private func updateFeedbackUI(state: HistoryCardDetailReactor.FeedbackState) {
+        switch state {
+        case .none:
+            aiFeedbackContainer.flex.isIncludedInLayout(false)
+            feedbackLoadingContainer.flex.isIncludedInLayout(false)
+            feedbackErrorContainer.flex.isIncludedInLayout(false)
+            statusContainer.flex.isIncludedInLayout(false)
+            aiFeedbackContainer.isHidden = true
+            feedbackLoadingContainer.isHidden = true
+            feedbackErrorContainer.isHidden = true
+            statusContainer.isHidden = true
+            rootFlexContainer.flex.layout(mode: .adjustHeight)
+            scrollView.contentSize = rootFlexContainer.frame.size
+            
+        case .generating:
+            didShowLoading = true
+            aiFeedbackContainer.flex.isIncludedInLayout(false)
+            aiFeedbackContainer.isHidden = true
+            feedbackErrorContainer.flex.isIncludedInLayout(false)
+            feedbackErrorContainer.isHidden = true
+            feedbackLoadingContainer.flex.isIncludedInLayout(true)
+            feedbackLoadingContainer.isHidden = false
+            statusContainer.flex.isIncludedInLayout(true)
+            statusContainer.isHidden = false
+            rootFlexContainer.flex.layout(mode: .adjustHeight)
+            scrollView.contentSize = rootFlexContainer.frame.size
+            
+        case .loaded(let feedback):
+            if let label = feedbackLabel {
+                updateFeedbackLabel(label, with: feedback)
+            }
+            feedbackLoadingContainer.flex.isIncludedInLayout(false)
+            feedbackLoadingContainer.isHidden = true
+            feedbackErrorContainer.flex.isIncludedInLayout(false)
+            feedbackErrorContainer.isHidden = true
+            statusContainer.flex.isIncludedInLayout(true)
+            statusContainer.isHidden = false
+            
+            aiFeedbackContainer.flex.isIncludedInLayout(true)
+            aiFeedbackContainer.isHidden = false
+            
+            rootFlexContainer.flex.layout(mode: .adjustHeight)
+            scrollView.contentSize = rootFlexContainer.frame.size
+            layoutTail()
+            
+            guard didShowLoading else { return }
+            
+            // 상단 기준으로 아래로 펼쳐지는 애니메이션
+            aiFeedbackContainer.alpha = 0
+            let originalBounds = aiFeedbackContainer.bounds
+            aiFeedbackContainer.layer.anchorPoint = CGPoint(x: 0.5, y: 0)
+            aiFeedbackContainer.layer.position.y -= originalBounds.height / 2
+            aiFeedbackContainer.transform = CGAffineTransform(scaleX: 1, y: 0.01)
+            
+            UIView.animate(withDuration: 0.45, delay: 0, usingSpringWithDamping: 0.85, initialSpringVelocity: 0.5, options: .curveEaseOut) {
+                self.aiFeedbackContainer.alpha = 1
+                self.aiFeedbackContainer.transform = .identity
+            } completion: { _ in
+                self.aiFeedbackContainer.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+                self.aiFeedbackContainer.layer.position.y += originalBounds.height / 2
+            }
+            return
+            
+        case .error:
+            aiFeedbackContainer.flex.isIncludedInLayout(false)
+            aiFeedbackContainer.isHidden = true
+            feedbackLoadingContainer.flex.isIncludedInLayout(false)
+            feedbackLoadingContainer.isHidden = true
+            statusContainer.flex.isIncludedInLayout(false)
+            statusContainer.isHidden = true
+            feedbackErrorContainer.flex.isIncludedInLayout(true)
+            feedbackErrorContainer.isHidden = false
+            rootFlexContainer.flex.layout(mode: .adjustHeight)
+            scrollView.contentSize = rootFlexContainer.frame.size
+        }
+    }
+    
+    // MARK: - Feedback Loading / Error Views
+    
+    private func setupFeedbackLoadingView() {
+        let boxView = UIView().then {
+            $0.backgroundColor = .white
+            $0.layer.cornerRadius = 16
+            $0.layer.borderWidth = 1
+            $0.layer.borderColor = UIColor.mainPurple.cgColor
+            $0.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
+        }
+        let lottie = LottieAnimationView(name: "loading2").then {
+            $0.loopMode = .loop
+            $0.play()
+        }
+        let loadingLabel = TDLabel().then {
+            $0.text = "로딩중..."
+            $0.font = .pretenBold(16)
+            $0.textColor = .mainPurple
+            $0.textAlignment = .center
+        }
+        let tailImageView = UIImageView().then {
+            $0.image = UIImage(named: "BoxTail")
+            $0.contentMode = .scaleAspectFit
+            $0.accessibilityIdentifier = "tailImageView"
+        }
+        
+        feedbackLoadingContainer.flex.paddingBottom(21).define { flex in
+            flex.addItem(boxView).padding(20).alignItems(.center).define { boxFlex in
+                boxFlex.addItem(lottie).size(60)
+                boxFlex.addItem(loadingLabel).marginTop(4)
+            }
+        }
+        feedbackLoadingContainer.addSubview(tailImageView)
+    }
+    
+    private func setupFeedbackErrorView() {
+        let boxView = UIView().then {
+            $0.backgroundColor = .white
+            $0.layer.cornerRadius = 16
+            $0.layer.borderWidth = 1
+            $0.layer.borderColor = UIColor.grayScale300.cgColor
+            $0.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
+        }
+        let emojiImageView = UIImageView().then {
+            $0.image = UIImage(named: "FeedbackUnsmile")
+            $0.contentMode = .scaleAspectFit
+        }
+        let errorLabel = TDLabel().then {
+            $0.text = "피드백을 가져오지 못했어요"
+            $0.font = .pretenBold(16)
+            $0.textColor = .mainPurple
+            $0.textAlignment = .center
+        }
+        let tailImageView = UIImageView().then {
+            $0.image = UIImage(named: "BoxTail")
+            $0.contentMode = .scaleAspectFit
+            $0.accessibilityIdentifier = "tailImageView"
+        }
+        
+        feedbackErrorContainer.flex.paddingBottom(21).define { flex in
+            flex.addItem(boxView).padding(20).alignItems(.center).define { boxFlex in
+                boxFlex.addItem(emojiImageView).width(38).height(38)
+                boxFlex.addItem(errorLabel).marginTop(11)
+            }
+        }
+        feedbackErrorContainer.addSubview(tailImageView)
+    }
+    
+    private func updateFeedbackLabel(_ label: MaskingLabel, with feedback: CardFeedback) {
+        let bold = UIFont.pretenBold(16)
+        let regular = UIFont.pretenRegular(16)
+        let kern: CGFloat = 1.26
+        let paraStyle = NSMutableParagraphStyle()
+        paraStyle.lineSpacing = 3.0
+        paraStyle.lineBreakMode = .byCharWrapping
+        let baseAttrs: [NSAttributedString.Key: Any] = [.kern: kern, .paragraphStyle: paraStyle]
+        
+        let attr = NSMutableAttributedString(string: "\n", attributes: baseAttrs)
+        let titles = ["요약", "공통점", "차이점", "조언"]
+        let bodies = [feedback.summary, feedback.matchPoints, feedback.differences, feedback.tip]
+        for (i, title) in titles.enumerated() {
+            guard !bodies[i].isEmpty else { continue }
+            if attr.length > 1 { attr.append(NSAttributedString(string: "\n\n", attributes: baseAttrs)) }
+            var boldAttrs = baseAttrs; boldAttrs[.font] = bold
+            var regularAttrs = baseAttrs; regularAttrs[.font] = regular
+            attr.append(NSAttributedString(string: title, attributes: boldAttrs))
+            attr.append(NSAttributedString(string: "\n" + bodies[i], attributes: regularAttrs))
+        }
+        attr.append(NSAttributedString(string: "\n", attributes: baseAttrs))
+        label.attributedText = attr
     }
     
     func navigateBack() {
