@@ -397,7 +397,8 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
             $0.numberOfLines = 0
         }
         self.feedbackLabel = feedbackText
-        if let feedback = card.feedback {
+        let feedback = card.feedback ?? HistoryCardDetailReactor.cachedFeedback(for: card.coupleCardId)
+        if let feedback {
             updateFeedbackLabel(feedbackText, with: feedback)
         }
         
@@ -464,14 +465,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     // MARK: - Reactor Binding
     
     func bind(reactor: HistoryCardDetailReactor) {
-        reactor.state.map(\.feedbackState)
-            .distinctUntilChanged { lhs, rhs in
-                switch (lhs, rhs) {
-                case (.none, .none), (.generating, .generating), (.error, .error): return true
-                case (.loaded, .loaded): return true
-                default: return false
-                }
-            }
+        reactor.pulse(\.$feedbackState)
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] state in
                 self?.updateFeedbackUI(state: state)

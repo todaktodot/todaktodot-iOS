@@ -10,6 +10,25 @@ import RxSwift
 
 final class HistoryCardDetailReactor: Reactor {
     
+    // 히스토리카드 업데이트 타이밍때문에 피드백 두번 로딩할때가 있어서 만들어둠
+    private static var feedbackCache: [Int: CardFeedback] = [:]
+    private static var feedbackCacheOrder: [Int] = []
+    private static let maxCacheSize = 7
+    
+    static func cachedFeedback(for coupleCardId: Int) -> CardFeedback? {
+        feedbackCache[coupleCardId]
+    }
+    
+    private static func cacheFeedback(_ feedback: CardFeedback, for coupleCardId: Int) {
+        feedbackCache[coupleCardId] = feedback
+        feedbackCacheOrder.removeAll { $0 == coupleCardId }
+        feedbackCacheOrder.append(coupleCardId)
+        if feedbackCacheOrder.count > maxCacheSize {
+            let removed = feedbackCacheOrder.removeFirst()
+            feedbackCache.removeValue(forKey: removed)
+        }
+    }
+    
     private let cardUseCase: CardUseCase
     private let maxRetryCount = 3
     private let pollingInterval: RxTimeInterval = .seconds(5)
@@ -20,7 +39,7 @@ final class HistoryCardDetailReactor: Reactor {
         case loaded(CardFeedback)
         case error
     }
-    
+
     enum Action {
         case checkFeedback
     }
@@ -31,7 +50,7 @@ final class HistoryCardDetailReactor: Reactor {
     
     struct State {
         var card: QuestionCard
-        var feedbackState: FeedbackState
+        @Pulse var feedbackState: FeedbackState
     }
     
     let initialState: State
@@ -42,6 +61,8 @@ final class HistoryCardDetailReactor: Reactor {
         let initialFeedback: FeedbackState
         if let feedback = card.feedback {
             initialFeedback = .loaded(feedback)
+        } else if let cached = Self.feedbackCache[card.coupleCardId] {
+            initialFeedback = .loaded(cached)
         } else if card.isBothAnswered {
             initialFeedback = .generating
         } else {
@@ -95,6 +116,9 @@ final class HistoryCardDetailReactor: Reactor {
         switch mutation {
         case .setFeedbackState(let feedbackState):
             newState.feedbackState = feedbackState
+            if case .loaded(let feedback) = feedbackState {
+                Self.cacheFeedback(feedback, for: state.card.coupleCardId)
+            }
         }
         return newState
     }
