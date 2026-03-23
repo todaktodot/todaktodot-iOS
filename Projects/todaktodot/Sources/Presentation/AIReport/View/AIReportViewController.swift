@@ -217,6 +217,7 @@ final class AIReportViewController: BaseViewController, View {
             flex.addItem(emptyReportView).display(.none)
             flex.addItem(lastWeekAIReportView).display(.none)
             flex.addItem(storageAIReportView).display(.none)
+            flex.addItem().height(600)
         }
     }
     
@@ -252,7 +253,7 @@ final class AIReportViewController: BaseViewController, View {
         
         layoutSelectedLine(index: 0)
         
-        scrollView.contentSize = CGSize(width: contentView.frame.width, height: contentView.frame.height + 100)
+        scrollView.contentSize = CGSize(width: contentView.frame.width, height: contentView.frame.height)
     }
     
     private func layoutSelectedLine(index: Int) {
@@ -273,6 +274,8 @@ final class AIReportViewController: BaseViewController, View {
         lastWeekAIReportView.flex.display(segment == .storage ? .none : creatable ? .flex : .none)
         storageAIReportView.flex.display(segment == .storage ? .flex : .none)
         contentView.flex.layout(mode: .adjustHeight)
+        
+        scrollView.setContentOffset(.zero, animated: false)
         
         layoutSelectedLine(index: segment == .lastWeek ? 0 : 1)
     }

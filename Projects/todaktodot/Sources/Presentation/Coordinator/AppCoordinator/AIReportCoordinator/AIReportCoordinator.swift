@@ -13,6 +13,7 @@ final class AIReportCoordinator: Coordinator {
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
     weak var tabBarCoordinator: TabBarCoordinator?
+    private weak var currentLoadingViewController: LoadingViewController?
     private let reactor = AIReportReactor(useCase: AIReportUseCase(repository: AIReportRepositoryImpl(networkManager: NetworkManager.shared)))
     
     init(navigationController: UINavigationController) {
@@ -42,9 +43,27 @@ final class AIReportCoordinator: Coordinator {
     }
     
     func showHistoryCard(card: QuestionCard) {
-        let coordinator = HomeCoordinator(navigationController: navigationController)
-        addChild(coordinator)
-        coordinator.showHistoryCardDetail(card: card)
+        if navigationController.viewControllers.filter({ $0 is HistoryCardDetailViewController }).count == 0 {
+            if let loadingVC = currentLoadingViewController,
+               navigationController.viewControllers.contains(loadingVC) {
+                navigationController.popToViewController(loadingVC, animated: false)
+                navigationController.popViewController(animated: false)
+            } else {
+                navigationController.viewControllers.removeAll(where: { $0 is LoadingViewController })
+            }
+            currentLoadingViewController = nil
+            
+            let coordinator = HomeCoordinator(navigationController: navigationController)
+            addChild(coordinator)
+            coordinator.showHistoryCardDetail(card: card, animated: false)
+        }
+    }
+    
+    func showLoading() {
+        let loadingVC = LoadingViewController()
+        loadingVC.coordinator = self
+        navigationController.pushViewController(loadingVC, animated: true)
+        currentLoadingViewController = loadingVC
     }
     
     func navigateBack() {

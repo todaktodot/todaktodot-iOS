@@ -112,11 +112,13 @@ final class HomeCoordinator: Coordinator {
         navigationController.pushViewController(dailyCardDetailViewController, animated: true)
     }
     
-    func showHistoryCardDetail(card: QuestionCard) {
+    func showHistoryCardDetail(card: QuestionCard, animated: Bool = true) {
+        let reactor = HistoryCardDetailReactor(cardUseCase: cardUseCase, card: card)
         let dailyCardDetailViewController = HistoryCardDetailViewController(card: card)
+        dailyCardDetailViewController.reactor = reactor
         dailyCardDetailViewController.coordinator = self
         dailyCardDetailViewController.hidesBottomBarWhenPushed = true
-        navigationController.pushViewController(dailyCardDetailViewController, animated: true)
+        navigationController.pushViewController(dailyCardDetailViewController, animated: animated)
     }
     
     func navigateToHome() {

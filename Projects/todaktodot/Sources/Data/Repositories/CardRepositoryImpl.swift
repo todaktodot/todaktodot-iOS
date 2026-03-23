@@ -120,6 +120,24 @@ final class CardRepositoryImpl: CardRepository {
             .catch { error in .just(.failure(error)) }
     }
     
+    func fetchHistoryCardDetail(coupleCardId: Int) -> Observable<Result<QuestionCard, Error>> {
+        let endpoint = Endpoint<CardHistoryResponseDTO>(
+            baseURL: .todaktodotAPI,
+            path: "/api/daily-card/history/detail",
+            method: .get,
+            parameters: ["coupleCardId": coupleCardId]
+        )
+        
+        return networkManager.request(with: endpoint)
+            .map { responseDTO in
+                guard let card = responseDTO.toEntity().first else {
+                    return .failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "카드를 찾을 수 없습니다."]))
+                }
+                return .success(card)
+            }
+            .catch { error in .just(.failure(error)) }
+    }
+    
     func notiAgree() -> Observable<Bool> {
         let parameters: [String: String] = [ "infoAlarmYN" : "Y" ]
         

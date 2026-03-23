@@ -8,13 +8,16 @@
 import UIKit
 
 extension UILabel {
-    func thisWeekRangeString() {
+    func lastWeekRangeString() {
         var calendar = Calendar.current
         calendar.firstWeekday = 2
         
         let today = Date()
         
-        let weekComponents = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)
+        guard let lastWeek = calendar.date(byAdding: .weekOfYear, value: -1, to: today) else { return }
+        
+        let weekComponents = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: lastWeek)
+        
         guard let monday = calendar.date(from: weekComponents),
               let sunday = calendar.date(byAdding: .day, value: 6, to: monday)
         else { return }

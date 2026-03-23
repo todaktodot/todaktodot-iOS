@@ -31,6 +31,7 @@ final class HomeReactor: Reactor {
         case checkFirstLaunch
         case dismissNotificationAlert
         case dismissPokeError
+        case dismissPokeSuccess
         case fetchHistoryCards(startDate: String, endDate: String)
         case fetchWeeklyCards(startDate: String, endDate: String)
         case loadTodayCards
@@ -50,6 +51,7 @@ final class HomeReactor: Reactor {
         case setShowTooltip(Bool)
         case setShowPokeError(Bool)
         case setWeeklyCardsFetchFailed(Bool)
+        case setDidPokeSuccess(Bool)
     }
     
     struct State {
@@ -62,6 +64,7 @@ final class HomeReactor: Reactor {
         var shouldShowTooltip: Bool = false
         var shouldShowPokeError: Bool = false
         var weeklyCardsFetchFailed: Bool = false
+        @Pulse var didPokeSuccess: Bool = false
     }
     
     let initialState = State()
@@ -97,7 +100,10 @@ final class HomeReactor: Reactor {
                     case .success:
                         print("✅ 콕찌르기 성공")
                         UserdefaultKey.lastPokeDate = CardService.shared.getCardSystemDate().toYYYYMMDD()
-                        return .just(.setPoked(true))
+                        return .concat([
+                            .just(.setPoked(true)),
+                            .just(.setDidPokeSuccess(true))
+                        ])
                     case .failure(let error):
                         print("⚠️ 콕찌르기 실패: \(error)")
                         return .just(.setShowPokeError(true))
@@ -111,6 +117,8 @@ final class HomeReactor: Reactor {
             return .just(.setShowNotificationAlert(false))
         case .dismissPokeError:
             return .just(.setShowPokeError(false))
+        case .dismissPokeSuccess:
+            return .just(.setDidPokeSuccess(false))
         case .fetchHistoryCards(let startDate, let endDate):
             return cardUseCase.fetchHistoryCards(startDate: startDate, endDate: endDate)
                 .flatMap { result -> Observable<Mutation> in
@@ -232,6 +240,8 @@ final class HomeReactor: Reactor {
             newState.shouldShowPokeError = show
         case .setWeeklyCardsFetchFailed(let failed):
             newState.weeklyCardsFetchFailed = failed
+        case .setDidPokeSuccess(let success):
+            newState.didPokeSuccess = success
         }
         return newState
     }
