@@ -125,7 +125,7 @@ final class HomeViewController: BaseViewController, View {
         $0.numberOfLines = 0
     }
     
-    private let tooltipContainer = UIView().then {
+    private let tooltipContainer = TouchPassthroughView().then {
         $0.isHidden = true
         $0.clipsToBounds = false
     }
