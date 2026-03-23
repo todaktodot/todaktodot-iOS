@@ -44,6 +44,10 @@ final class CardUseCase {
         repository.pokeDailyCard(coupleCardId: coupleCardId)
     }
     
+    func fetchHistoryCardDetail(coupleCardId: Int) -> Observable<Result<QuestionCard, Error>> {
+        repository.fetchHistoryCardDetail(coupleCardId: coupleCardId)
+    }
+    
     func notiAgree() -> Observable<Bool> {
         repository.notiAgree()
     }
