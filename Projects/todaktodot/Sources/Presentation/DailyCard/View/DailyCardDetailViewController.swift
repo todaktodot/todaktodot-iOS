@@ -124,6 +124,8 @@ final class DailyCardDetailViewController: UIViewController, View {
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tapGesture.cancelsTouchesInView = false
         view.addGestureRecognizer(tapGesture)
+        
+        AnalyticsService.log(.dailyCardDetailBegin(cardId: card.coupleCardId))
     }
     
     func bind(reactor: DailyCardReactor) {
@@ -499,6 +501,9 @@ extension DailyCardDetailViewController {
             primaryButtonTitle: "확인",
             primaryButtonAction: { [weak self] in
                 self?.coordinator?.navigateToHome()
+                if let id = self?.card.coupleCardId {
+                    AnalyticsService.log(.dailyCardAnswerCompleted(cardId: id))
+                }
             }
         )
     }

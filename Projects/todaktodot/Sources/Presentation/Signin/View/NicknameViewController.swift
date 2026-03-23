@@ -86,6 +86,10 @@ final class NicknameViewController: UIViewController, View {
         hideKeyboardwhenTappedAround()
         setupViews()
         setupFlexLayout()
+        
+        if flowType.value == .create || flowType.value == .join {
+            AnalyticsService.log(.nicknameSetBegin)
+        }
     }
     
     override func viewDidLayoutSubviews() {
@@ -143,6 +147,10 @@ final class NicknameViewController: UIViewController, View {
                     case .edit:
                         self.coordinator?.navigateBack()
                     }
+                }
+                
+                if flowType.value != .edit {
+                    AnalyticsService.log(.nicknameSetCompleted)
                 }
             })
             .disposed(by: disposeBag)

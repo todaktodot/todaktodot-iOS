@@ -139,6 +139,7 @@ final class AIReportViewController: BaseViewController, View {
             .subscribe { [weak self] _ in
                 guard let self else { return }
                 currentSegment.accept(.lastWeek)
+                AnalyticsService.log(.reportSegmentTap(type: .lastWeek))
             }
             .disposed(by: disposeBag)
 
@@ -146,19 +147,29 @@ final class AIReportViewController: BaseViewController, View {
             .subscribe { [weak self] _ in
                 guard let self else { return }
                 currentSegment.accept(.storage)
+                AnalyticsService.log(.reportSegmentTap(type: .storage))
             }
             .disposed(by: disposeBag)
         
         lastWeekAIReportView.reportDetailButton.rx.tap
+            .do(onNext: {
+                self.lastWeekAIReportView.reportDetailButton.isEnabled = false
+            })
             .compactMap { [weak self] _ in
                 guard let self = self,
                       let reportId = self.reportId else { return nil }
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self.lastWeekAIReportView.reportDetailButton.isEnabled = true
+                }
+                AnalyticsService.log(.lastWeekReportClick)
                 return .tapReportDetailButton(reportId)
             }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
         storageAIReportView.onCardTap = { id in
+            AnalyticsService.log(.reportDetailBegin(reportId: id))
             reactor.action.onNext(.tapStorageReport(id))
         }
     }
@@ -206,6 +217,7 @@ final class AIReportViewController: BaseViewController, View {
             flex.addItem(emptyReportView).display(.none)
             flex.addItem(lastWeekAIReportView).display(.none)
             flex.addItem(storageAIReportView).display(.none)
+            flex.addItem().height(600)
         }
     }
     
@@ -241,7 +253,7 @@ final class AIReportViewController: BaseViewController, View {
         
         layoutSelectedLine(index: 0)
         
-        scrollView.contentSize = CGSize(width: contentView.frame.width, height: contentView.frame.height + 100)
+        scrollView.contentSize = CGSize(width: contentView.frame.width, height: contentView.frame.height)
     }
     
     private func layoutSelectedLine(index: Int) {
@@ -262,6 +274,8 @@ final class AIReportViewController: BaseViewController, View {
         lastWeekAIReportView.flex.display(segment == .storage ? .none : creatable ? .flex : .none)
         storageAIReportView.flex.display(segment == .storage ? .flex : .none)
         contentView.flex.layout(mode: .adjustHeight)
+        
+        scrollView.setContentOffset(.zero, animated: false)
         
         layoutSelectedLine(index: segment == .lastWeek ? 0 : 1)
     }

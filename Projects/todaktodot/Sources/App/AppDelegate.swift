@@ -75,6 +75,24 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         }
     }
     
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                didReceive response: UNNotificationResponse,
+                                withCompletionHandler completionHandler: @escaping () -> Void) {
+        let title = response.notification.request.content.title
+        
+        if title.contains("질문이") {
+            AnalyticsService.log(.pushOpen(type: .todayCardArrived))
+        } else if title.contains("콕") {
+            AnalyticsService.log(.pushOpen(type: .nudge))
+        } else if title.contains("방금") {
+            AnalyticsService.log(.pushOpen(type: .partnerCompleted))
+        } else if title.contains("모두") {
+            AnalyticsService.log(.pushOpen(type: .bothCompleted))
+        }
+        
+        completionHandler()
+    }
+    
     private func showCustomInAppPush(title: String, body: String) {
         guard let windowScene = UIApplication.shared.connectedScenes
             .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene, let window = windowScene.keyWindow else {

@@ -10,7 +10,7 @@ import FlexLayout
 import PinLayout
 import Then
 
-final class HistoryCardDetailViewController: UIViewController {
+final class HistoryCardDetailViewController: CustomBackViewController, CustomBackViewControllerDelegate {
     
     weak var coordinator: HomeCoordinator?
     private let card: QuestionCard
@@ -73,21 +73,15 @@ final class HistoryCardDetailViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        self.delegate = self
         hidesBottomBarWhenPushed = true
         setupUI()
+        AnalyticsService.log(.historyCardDetailBegin(cardId: card.coupleCardId))
+        AnalyticsService.log(.historyCardType(status: card.isBothAnswered ? .both : card.user1Answered ? .mineOnly : .partnerOnly))
     }
 
     private func setupUI() {
         view.backgroundColor = .lightPurple
-        
-        let backButton = UIBarButtonItem(
-            image: UIImage(systemName: "chevron.left"),
-            style: .plain,
-            target: self,
-            action: #selector(backButtonTapped)
-        )
-        backButton.tintColor = .grayScale900
-        navigationItem.leftBarButtonItem = backButton
         
         view.addSubview(scrollView)
         scrollView.addSubview(rootFlexContainer)
@@ -460,7 +454,7 @@ final class HistoryCardDetailViewController: UIViewController {
         }
     }
     
-    @objc private func backButtonTapped() {
+    func navigateBack() {
         coordinator?.navigateBack()
     }
 }

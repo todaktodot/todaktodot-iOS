@@ -41,6 +41,7 @@ final class SigninCoordinator: Coordinator {
                 networkManager: networkManager
                 )
         )
+        
         let coupleConnectViewController = CoupleConnectViewController()
         coupleConnectViewController.coordinator = self
         coupleConnectViewController.reactor = CoupleReactor(coupleUseCase: useCase)

@@ -13,6 +13,7 @@ import RxRelay
 
 final class CodeTextFieldView: UIView {
     let isCodeFull = PublishRelay<Bool>()
+    let isPaste = BehaviorRelay<Bool>(value: false)
     
     private let hiddenTextField = UITextField().then {
         $0.keyboardType = .asciiCapable
@@ -144,6 +145,7 @@ extension CodeTextFieldView: UITextFieldDelegate {
         if updatedText.count >= 6 {
             updatedText = String(updatedText.prefix(6))
             textField.endEditing(true)
+            isPaste.accept(true)
         }
         
         textField.text = updatedText

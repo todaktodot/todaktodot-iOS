@@ -16,8 +16,21 @@ final class AIReportStorageView: UIView {
     var onCardTap: ((Int) -> Void)?
     
     private var monthButtons: [MonthButton] = []
-    private var selectedMonth: Int = 1
-    private var listData: [AIReportList]? = nil
+    private var cards: [AIReportWeekCardView] = []
+    private var lastWeek: Int = 1
+    private var selectedYear: Int
+    private var selectedMonth: Int = 1 {
+        didSet {
+            lastWeek = displayWeekInfo(month: selectedMonth).week
+        }
+    }
+    
+    private var listData: [AIReportList]? = nil {
+        didSet {
+            configCards(listData: listData)
+        }
+    }
+    
     private let titleLabel = TDLabel().then {
         $0.text = "지난 우리의 대화를\nAI 리포트로 확인해보세요"
         $0.font = .pretenSemiBold(24)
@@ -25,40 +38,50 @@ final class AIReportStorageView: UIView {
         $0.numberOfLines = 2
     }
     
-    private let yearButton = ImageTextButton(spacing: 4, imageSize: 12, imageFirst: false).then {
-        $0.customText.text = "2026년"
+    private let yearButton = ImageTextButton(spacing: 4, imageSize: 12, imageFirst: false).then { // TODO: 2027년 선택 로직
         $0.customText.font = .pretenSemiBold(18)
         $0.customImage.image = UIImage(systemName: "chevron.down")
         $0.customImage.tintColor = .black
-        
-        let item = UIAction(title: "2026년", handler: { _ in
-        })
-        
-        $0.menu = UIMenu(title: "년도 선택", children: [item])
         $0.showsMenuAsPrimaryAction = true
     }
     
+    private let cardsContentView = UIView()
+    private let monthsContentView = UIView()
     private let monthScrollView = UIScrollView().then {
         $0.showsHorizontalScrollIndicator = false
     }
-    private let monthContentView = UIView()
-    private let cards: [AIReportWeekCardView] = [
-        AIReportWeekCardView(),
-        AIReportWeekCardView(),
-        AIReportWeekCardView(),
-        AIReportWeekCardView()
-    ]
+    
+    func setTodayYear(year: Int) {
+        yearButton.customText.text = "\(year)년"
+        
+        let item = (2026...year).map {
+            UIAction(title: "\($0)년", handler: { _ in
+            })
+        }
+        
+        yearButton.menu = UIMenu(title: "년도 선택", children: item)
+    }
     
     override init(frame: CGRect = .zero) {
+        let calendar = Calendar.current
+        self.selectedYear = calendar.component(.year, from: Date())
         super.init(frame: frame)
+        
+        setTodayYear(year: self.selectedYear)
+        
+        let prev = displayWeekInfo()
+        selectedMonth = prev.month
+        lastWeek = prev.week
+        cards = (0..<lastWeek).map { _ in AIReportWeekCardView() }
+        
         setupViews()
         setupMonthButtons()
     }
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        monthContentView.flex.layout(mode: .adjustWidth)
-        monthScrollView.contentSize = monthContentView.frame.size
+        monthsContentView.flex.layout(mode: .adjustWidth)
+        monthScrollView.contentSize = monthsContentView.frame.size
     }
     
     required init?(coder: NSCoder) {
@@ -66,8 +89,30 @@ final class AIReportStorageView: UIView {
     }
     
     func configure(listData: [AIReportList]) {
-        self.listData = listData
-        configCards(listData: listData)
+        let calendar = Calendar.current
+        let mapData = listData.map {
+            var data = $0
+            
+            if data.week > 1 {
+                data.week -= 1
+            } else {
+                var components = DateComponents()
+                components.year = selectedYear
+                components.month = data.month
+                components.day = 1
+                
+                if let currentDate = calendar.date(from: components),
+                   let prevMonthDate = calendar.date(byAdding: .month, value: -1, to: currentDate) {
+                    
+                    let prevMonth = calendar.component(.month, from: prevMonthDate)
+                    data.month = prevMonth
+                    data.week = toLastWeekCount(month: prevMonth)
+                }
+            }
+            
+            return data
+        }
+        self.listData = mapData
     }
     
     private func setupViews() {
@@ -83,37 +128,36 @@ final class AIReportStorageView: UIView {
                 .marginTop(20)
                 .marginHorizontal(-20)
             
-            cards.forEach { card in
-                card.onTap = { [weak self] reportId in
-                    self?.onCardTap?(reportId)
-                }
-            }
-            
-            $0.addItem().marginTop(20).define { flex in
-                for (displayIndex, weekNumber) in (1...4).reversed().enumerated() {
-                    let card = cards[weekNumber - 1]
-                    flex.addItem(card)
-                        .height(displayIndex == 3 ? 62 : 62 + 31)
-                        .marginTop(displayIndex != 0 ? -31 : 0)
-                        .marginHorizontal(0)
-                }
+            $0.addItem(cardsContentView)
+                .marginTop(20)
+        }
+        
+        cardsContentView.flex.define { flex in
+            for (displayIndex, weekNumber) in (1...lastWeek).reversed().enumerated() {
+                let card = cards[weekNumber - 1]
+                flex.addItem(card)
+                    .height(displayIndex == (lastWeek-1) ? 62 : 62 + 31)
+                    .marginTop(displayIndex != 0 ? -31 : 0)
+                    .marginHorizontal(0)
             }
         }
         
-        monthScrollView.addSubview(monthContentView)
+        monthScrollView.addSubview(monthsContentView)
     }
     
     private func setupMonthButtons() {
-        let months = Array(1...Calendar.current.component(.month, from: Date()))
+        let thisMonth = displayWeekInfo(month: selectedMonth).month
+        let months = Array(1...thisMonth)
         
         monthButtons = months.map {
             let button = MonthButton(month: $0)
             button.addTarget(self, action: #selector(monthTapped(_:)), for: .touchUpInside)
             return button
         }
-        monthButtons.first?.update(selected: selectedMonth)
         
-        monthContentView.flex
+        monthButtons.first { $0.month == thisMonth }?.update(selected: thisMonth)
+        
+        monthsContentView.flex
             .direction(.row)
             .gap(8)
             .define { flex in
@@ -147,8 +191,11 @@ final class AIReportStorageView: UIView {
         )
     }
     
-    private func configCards(listData: [AIReportList]) {
-        for weekNumber in (1...4) {
+    private func configCards(listData: [AIReportList]?) {
+        guard let listData else {
+            return
+        }
+        for weekNumber in (1...lastWeek) {
             if let report = listData.first(where: {
                 $0.month == selectedMonth &&
                 $0.week == weekNumber
@@ -167,24 +214,89 @@ final class AIReportStorageView: UIView {
                 )
             }
         }
+        
+        cards.forEach { card in
+            card.onTap = { [weak self] reportId in
+                self?.onCardTap?(reportId)
+            }
+        }
+        
+        cardsContentView.flex.markDirty()
     }
     
     private func updateCards() {
+        cards = (0..<lastWeek).map { _ in AIReportWeekCardView() }
+        
         guard let listData else {
-            for i in 0..<4 {
+            for i in 0..<lastWeek-1 {
                 cards[i].configure(
                     month: selectedMonth,
                     week: i + 1,
                     isActive: false
                 )
             }
-            flex.layout()
             return
         }
         
-        configCards(listData: listData)
+        cardsContentView.subviews.forEach { $0.removeFromSuperview() }
         
+        cardsContentView.flex.define { flex in
+            for (displayIndex, weekNumber) in (1...lastWeek).reversed().enumerated() {
+                let card = cards[weekNumber - 1]
+                flex.addItem(card)
+                    .height(displayIndex == (lastWeek-1) ? 62 : 62 + 31)
+                    .marginTop(displayIndex != 0 ? -31 : 0)
+                    .marginHorizontal(0)
+            }
+        }
+        
+        configCards(listData: listData)
         flex.layout()
+    }
+    
+    func displayWeekInfo(month: Int? = nil) -> (month: Int, week: Int) {
+        let calendar = Calendar.current
+        let today = Date()
+        
+        let currentWeek = calendar.component(.weekOfMonth, from: today)
+        let currentMonth = calendar.component(.month, from: today)
+        let targetMonth = month ?? currentMonth
+        
+        if targetMonth == currentMonth {
+            if currentWeek > 1 {
+                return (currentMonth, currentWeek - 1)
+            }
+            
+            guard let prevMonthDate = calendar.date(byAdding: .month, value: -1, to: today) else {
+                return (currentMonth, 1)
+            }
+            
+            let prevMonth = calendar.component(.month, from: prevMonthDate)
+            return (prevMonth, toLastWeekCount(month: prevMonth))
+        }
+        
+        return (targetMonth, toLastWeekCount(month: targetMonth))
+    }
+    
+    func toLastWeekCount(month: Int) -> Int {
+        let calendar = Calendar.current
+        
+        var components = DateComponents()
+        components.year = selectedYear
+        components.month = month
+        components.day = 1
+        
+        guard let firstDate = calendar.date(from: components),
+              let range = calendar.range(of: .day, in: .month, for: firstDate) else {
+            return 0
+        }
+        
+        components.day = range.count
+        guard let lastDate = calendar.date(from: components) else {
+            return 0
+        }
+        
+        return calendar.component(.weekOfMonth, from: lastDate)
     }
     
     @objc private func monthTapped(_ sender: MonthButton) {

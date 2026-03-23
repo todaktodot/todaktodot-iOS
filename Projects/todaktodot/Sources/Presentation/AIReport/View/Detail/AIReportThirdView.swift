@@ -35,6 +35,7 @@ final class AIReportThirdView: UIView {
     
     private var similarTopics: [TopicDetailButton] = []
     private var differentTopics: [TopicDetailButton] = []
+    private var isTapEnabled = true
     
     func configure(detail: AIReportDetail, hiddenTitle: Bool) {
         similarTopics = detail.similarSubjectList.map {
@@ -81,6 +82,13 @@ final class AIReportThirdView: UIView {
     }
     
     @objc private func buttonTap(_ sender: TopicDetailButton) {
+        guard isTapEnabled else { return }
+        isTapEnabled = false
+        
         onTapTopic?(sender.coupleCardId)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+            self?.isTapEnabled = true
+        }
     }
 }
