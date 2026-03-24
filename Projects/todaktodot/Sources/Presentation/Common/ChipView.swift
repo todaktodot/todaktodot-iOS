@@ -18,7 +18,7 @@ final class ChipView: UIView {
         backgroundColor = .white
         layer.borderWidth = 1
         layer.borderColor = UIColor.grayScale200.cgColor
-        layer.cornerRadius = 20
+        layer.cornerRadius = 18.5
         
         label.text = title
         label.font = .pretenMedium(14)

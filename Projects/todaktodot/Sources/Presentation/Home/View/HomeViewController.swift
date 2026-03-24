@@ -24,6 +24,7 @@ final class HomeViewController: BaseViewController, View {
     private let scrollView = UIScrollView()
     private let contentContainer = UIView()
     private var firstAnimation = true
+    private var currentAnswerStatus: AnswerStatus?
     private var hasShownCardTypeTooltip = false
     private let mainCard = UIView().then {
         $0.backgroundColor = .white
@@ -249,14 +250,6 @@ final class HomeViewController: BaseViewController, View {
                 } else {
                     self.tooltipContainer.isHidden = true
                 }
-            })
-            .disposed(by: disposeBag)
-        
-        reactor.state.map { $0.answerStatus }
-            .distinctUntilChanged()
-            .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] status in
-                self?.updateMainCard(for: status)
             })
             .disposed(by: disposeBag)
         
@@ -634,50 +627,64 @@ extension HomeViewController {
     }
     
     private func updateMainCard(for status: AnswerStatus) {
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.lineHeightMultiple = 1.5
+        let isFirstSet = currentAnswerStatus == nil
+        let didChange = currentAnswerStatus != status
+        currentAnswerStatus = status
         
-        pokeButton.flex.isIncludedInLayout(false)
-        
-        switch status {
-        case .bothUnanswered:
-            titleLabel.attributedText = NSAttributedString(
-                string: "오늘의 질문이 도착했어요\n먼저 답해볼까요?",
-                attributes: [.paragraphStyle: paragraphStyle]
-            )
-            pokeButton.isHidden = true
-            arrowButton.isHidden = false
+        let applyUpdate = { [self] in
+            let paragraphStyle = NSMutableParagraphStyle()
+            paragraphStyle.lineHeightMultiple = 1.5
             
-        case .partnerAnswered:
-            titleLabel.attributedText = NSAttributedString(
-                string: "연인이 벌써 답했어요!\n내가 답하면 바로\n확인할 수 있어요",
-                attributes: [.paragraphStyle: paragraphStyle]
-            )
-            pokeButton.isHidden = true
-            arrowButton.isHidden = false
+            pokeButton.flex.isIncludedInLayout(false)
             
-        case .myAnswered:
-            titleLabel.attributedText = NSAttributedString(
-                string: "답변 완료!\n연인이 답하기 전까지\n확인할 수 없어요",
-                attributes: [.paragraphStyle: paragraphStyle]
-            )
-            pokeButton.isHidden = false
-            pokeButton.flex.isIncludedInLayout(true).height(48).marginTop(16)
-            arrowButton.isHidden = true
+            switch status {
+            case .bothUnanswered:
+                titleLabel.attributedText = NSAttributedString(
+                    string: "오늘의 질문이 도착했어요\n먼저 답해볼까요?",
+                    attributes: [.paragraphStyle: paragraphStyle]
+                )
+                pokeButton.isHidden = true
+                arrowButton.isHidden = false
+                
+            case .partnerAnswered:
+                titleLabel.attributedText = NSAttributedString(
+                    string: "연인이 벌써 답했어요!\n내가 답하면 바로\n확인할 수 있어요",
+                    attributes: [.paragraphStyle: paragraphStyle]
+                )
+                pokeButton.isHidden = true
+                arrowButton.isHidden = false
+                
+            case .myAnswered:
+                titleLabel.attributedText = NSAttributedString(
+                    string: "답변 완료!\n연인이 답하기 전까지\n확인할 수 없어요",
+                    attributes: [.paragraphStyle: paragraphStyle]
+                )
+                pokeButton.isHidden = false
+                pokeButton.flex.isIncludedInLayout(true).height(48).marginTop(16)
+                arrowButton.isHidden = true
+                
+            case .bothAnswered:
+                titleLabel.attributedText = NSAttributedString(
+                    string: "두 사람 모두 답변 완료!\n아래 카드에서 내용을\n확인해보세요",
+                    attributes: [.paragraphStyle: paragraphStyle]
+                )
+                pokeButton.isHidden = true
+                arrowButton.isHidden = true
+            }
             
-        case .bothAnswered:
-            titleLabel.attributedText = NSAttributedString(
-                string: "두 사람 모두 답변 완료!\n아래 카드에서 내용을\n확인해보세요",
-                attributes: [.paragraphStyle: paragraphStyle]
-            )
-            pokeButton.isHidden = true
-            arrowButton.isHidden = true
+            titleLabel.flex.markDirty()
+            mainCard.flex.markDirty()
+            contentContainer.flex.layout(mode: .adjustHeight)
+            scrollView.contentSize = contentContainer.frame.size
         }
         
-        titleLabel.flex.markDirty()
-        mainCard.flex.markDirty()
-        contentContainer.flex.layout(mode: .adjustHeight)
-        scrollView.contentSize = contentContainer.frame.size
+        if isFirstSet || !didChange {
+            applyUpdate()
+        } else {
+            UIView.transition(with: mainCard, duration: 0.3, options: .transitionCrossDissolve) {
+                applyUpdate()
+            }
+        }
     }
     
     private func updateTodayCardUI(_ cards: [QuestionCard]) {
