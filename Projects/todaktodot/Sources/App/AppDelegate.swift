@@ -19,11 +19,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         FirebaseApp.configure()
         
-        let authOption: UNAuthorizationOptions = [.alert, .badge, .sound]
         UNUserNotificationCenter.current().delegate = self
-        UNUserNotificationCenter.current().requestAuthorization(
-            options: authOption,
-            completionHandler: {_, _ in })
         application.registerForRemoteNotifications()
         Messaging.messaging().delegate = self
         
