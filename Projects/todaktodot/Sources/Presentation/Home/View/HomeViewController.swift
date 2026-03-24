@@ -1151,12 +1151,21 @@ extension HomeViewController {
             primaryButtonTitle: "알림켜기",
             primaryButtonAction: { [weak self] in
                 self?.reactor?.action.onNext(.notiAgree)
+                self?.requestAuthorization()
             },
             secondaryButtonTitle: "나중에 할게요",
             secondaryButtonAction: { [weak self] in
                 self?.reactor?.action.onNext(.dismissNotificationAlert)
+                self?.requestAuthorization()
             }
         )
+    }
+    
+    private func requestAuthorization() {
+        let authOption: UNAuthorizationOptions = [.alert, .badge, .sound]
+        UNUserNotificationCenter.current().requestAuthorization(
+            options: authOption,
+            completionHandler: {_, _ in })
     }
 }
 
