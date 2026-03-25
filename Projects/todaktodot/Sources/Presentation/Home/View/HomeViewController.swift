@@ -728,16 +728,13 @@ extension HomeViewController {
         chip1.updateTitle("\(card.mode.emoji) \(card.mode.displayName)")
         chip2.updateTitle("\(card.subject.emoji) \(card.subject.displayName)")
         
-        // 상대방이 선택한 카드면 타입 칩 테두리를 보라색으로
+        // chip3는 type이 .none이 아닐 때만 표시
         let isSelectedByPartner: Bool = {
             guard let selectedBy = card.selectedByUserId,
                   let myId = UserdefaultKey.userId else { return false }
             return selectedBy != myId
         }()
-        chip3.setHighlighted(isSelectedByPartner)
-        showCardTypeTooltip(isSelectedByPartner)
         
-        // chip3는 type이 .none이 아닐 때만 표시
         if card.type != .none {
             chip3.updateTitle("\(card.type.emoji) \(card.type.displayName)")
             chip3.isHidden = false
@@ -750,7 +747,13 @@ extension HomeViewController {
         
         chip1.flex.width(chip1.intrinsicContentSize.width)
         chip2.flex.width(chip2.intrinsicContentSize.width)
-        chip1.superview?.flex.layout(mode: .adjustWidth)
+        
+        mainCard.flex.layout(mode: .adjustHeight)
+        contentContainer.flex.layout(mode: .adjustHeight)
+        mainCard.layoutIfNeeded()
+        
+        chip3.setHighlighted(isSelectedByPartner)
+        showCardTypeTooltip(isSelectedByPartner)
         
         hideMainCardSkeleton()
     }
