@@ -272,12 +272,12 @@ final class HomeViewController: BaseViewController, View {
             })
             .disposed(by: disposeBag)
 
-        isPokedStream
-            .skip(1)
+        reactor.pulse(\.$didPokeSuccess)
             .filter { $0 }
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] _ in
                 self?.showPokeAlert()
+                self?.reactor?.action.onNext(.dismissPokeSuccess)
             })
             .disposed(by: disposeBag)
         
