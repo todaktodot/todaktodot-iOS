@@ -416,7 +416,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
                 titleFlex.addItem(iconImageView).size(28)
                 titleFlex.addItem(titleLabel).marginLeft(4)
             }
-            contentFlex.addItem(feedbackText).marginTop(8)
+            contentFlex.addItem(feedbackText).marginTop(24).marginBottom(12)
         }
         
         aiFeedbackContainer.flex.paddingBottom(21).define { flex in
@@ -624,21 +624,22 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         let kern: CGFloat = 1.26
         let paraStyle = NSMutableParagraphStyle()
         paraStyle.lineSpacing = 3.0
-        paraStyle.lineBreakMode = .byCharWrapping
+        paraStyle.lineBreakMode = .byWordWrapping
+        paraStyle.lineBreakStrategy = .hangulWordPriority
         let baseAttrs: [NSAttributedString.Key: Any] = [.kern: kern, .paragraphStyle: paraStyle]
         
-        let attr = NSMutableAttributedString(string: "\n", attributes: baseAttrs)
+        let attr = NSMutableAttributedString(string: "", attributes: baseAttrs)
         let titles = ["요약", "공통점", "차이점", "조언"]
         let bodies = [feedback.summary, feedback.matchPoints, feedback.differences, feedback.tip]
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
         for (i, title) in titles.enumerated() {
             guard !bodies[i].isEmpty else { continue }
-            if attr.length > 1 { attr.append(NSAttributedString(string: "\n\n", attributes: baseAttrs)) }
+            if attr.length > 0 { attr.append(NSAttributedString(string: "\n\n", attributes: baseAttrs)) }
             var boldAttrs = baseAttrs; boldAttrs[.font] = bold
             var regularAttrs = baseAttrs; regularAttrs[.font] = regular
             attr.append(NSAttributedString(string: title, attributes: boldAttrs))
             attr.append(NSAttributedString(string: "\n" + bodies[i], attributes: regularAttrs))
         }
-        attr.append(NSAttributedString(string: "\n", attributes: baseAttrs))
         label.attributedText = attr
     }
     
@@ -646,5 +647,6 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         coordinator?.navigateBack()
     }
 }
+
 
 
