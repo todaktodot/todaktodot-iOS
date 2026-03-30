@@ -338,14 +338,11 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         }
         
         aiFeedbackContainer.addSubview(bubbleContainer)
+        aiFeedbackContainer.addSubview(tailImageView)
         bubbleContainer.addSubview(contentContainer)
         contentContainer.addSubview(iconImageView)
         contentContainer.addSubview(titleLabel)
         contentContainer.addSubview(feedbackText)
-        
-        let bubbleWrapper = UIView()
-        bubbleWrapper.addSubview(bubbleContainer)
-        bubbleWrapper.addSubview(tailImageView)
         
         contentContainer.flex.paddingHorizontal(20).paddingVertical(21).define { contentFlex in
             contentFlex.addItem().direction(.row).alignItems(.center).define { titleFlex in
@@ -355,14 +352,10 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
             contentFlex.addItem(feedbackText).marginTop(24).marginBottom(12)
         }
         
-        bubbleWrapper.flex.define { flex in
+        aiFeedbackContainer.flex.paddingBottom(22).define { flex in
             flex.addItem(bubbleContainer).define { bubbleFlex in
                 bubbleFlex.addItem(contentContainer)
             }
-        }
-        
-        aiFeedbackContainer.flex.paddingBottom(22).define { flex in
-            flex.addItem(bubbleWrapper)
         }
         
         populateStatusView(aiFeedbackStatus)
