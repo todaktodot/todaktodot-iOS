@@ -36,7 +36,8 @@ final class MaskingLabel: UILabel {
             if let text = text {
                 let paragraphStyle = NSMutableParagraphStyle()
                 paragraphStyle.lineSpacing =  1.26
-                paragraphStyle.lineBreakMode = .byCharWrapping
+                paragraphStyle.lineBreakMode = .byWordWrapping
+                paragraphStyle.lineBreakStrategy = .hangulWordPriority
                 
                 let color = isMasked ? UIColor.clear : originalTextColor
                 let attributedText = NSAttributedString(
@@ -62,7 +63,8 @@ final class MaskingLabel: UILabel {
     override var attributedText: NSAttributedString? {
         didSet {
             originalText = attributedText?.string
-            lineBreakMode = .byCharWrapping
+            lineBreakMode = .byWordWrapping
+
         }
     }
     
@@ -125,7 +127,9 @@ final class MaskingLabel: UILabel {
       
         let fullRange = NSRange(location: 0, length: attrString.length)
         let para = NSMutableParagraphStyle()
-        para.lineBreakMode = .byCharWrapping
+       
+        para.lineBreakMode = .byWordWrapping
+        para.lineBreakStrategy = .hangulWordPriority
         para.lineSpacing = 4.0 // 버블 스페이싱 조절. 텍스트랑 다르고 눈대중이라 테스트 더 해봐야함
         attrString.addAttribute(.paragraphStyle, value: para, range: fullRange)
         
