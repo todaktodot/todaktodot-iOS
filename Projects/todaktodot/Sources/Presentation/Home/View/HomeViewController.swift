@@ -749,7 +749,6 @@ extension HomeViewController {
         chip2.flex.width(chip2.intrinsicContentSize.width)
         
         mainCard.flex.layout(mode: .adjustHeight)
-        contentContainer.flex.layout(mode: .adjustHeight)
         mainCard.layoutIfNeeded()
         
         chip3.setHighlighted(isSelectedByPartner)
@@ -890,6 +889,7 @@ extension HomeViewController {
     }
     
     func cardAmimation() {
+        guard !weekCardsContainer.subviews.isEmpty else { return }
         weekCardsContainer.subviews.enumerated().forEach { index, view in
             view.transform = CGAffineTransform(translationX: 0, y: -50)
             view.alpha = 0
@@ -903,10 +903,6 @@ extension HomeViewController {
                 animations: {
                     view.transform = .identity
                     view.alpha = 1
-                },
-                completion: { [weak self] _ in
-                    if index == self?.weekCardsContainer.subviews.count ?? 0 - 1 {
-                    }
                 }
             )
         }
