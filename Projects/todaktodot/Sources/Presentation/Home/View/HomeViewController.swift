@@ -628,8 +628,9 @@ extension HomeViewController {
     
     private func updateMainCard(for status: AnswerStatus) {
         let isFirstSet = currentAnswerStatus == nil
-        let didChange = currentAnswerStatus != status
+        let previousStatus = currentAnswerStatus
         currentAnswerStatus = status
+        let shouldAnimatePokeButton = !isFirstSet && previousStatus != .myAnswered && status == .myAnswered
         
         let applyUpdate = { [self] in
             let paragraphStyle = NSMutableParagraphStyle()
@@ -675,15 +676,19 @@ extension HomeViewController {
             titleLabel.flex.markDirty()
             mainCard.flex.markDirty()
             contentContainer.flex.layout(mode: .adjustHeight)
+            mainCard.layoutIfNeeded()
             scrollView.contentSize = contentContainer.frame.size
         }
         
-        if isFirstSet || !didChange {
-            applyUpdate()
-        } else {
-            UIView.transition(with: mainCard, duration: 0.3, options: .transitionCrossDissolve) {
-                applyUpdate()
-            }
+        applyUpdate()
+        
+        guard shouldAnimatePokeButton else { return }
+        
+        pokeButton.alpha = 0
+        pokeButton.transform = CGAffineTransform(translationX: 0, y: 8)
+        UIView.animate(withDuration: 0.22, delay: 0, options: [.curveEaseOut, .beginFromCurrentState]) {
+            self.pokeButton.alpha = 1
+            self.pokeButton.transform = .identity
         }
     }
     
