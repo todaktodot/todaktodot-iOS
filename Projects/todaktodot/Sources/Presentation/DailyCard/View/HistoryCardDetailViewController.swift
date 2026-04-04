@@ -63,17 +63,37 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         $0.layer.shadowOpacity = 0.2
         $0.layer.masksToBounds = false
     }
+    private let aiFeedbackStatus = UIView()
     
-    private let statusContainer = UIView()
-    
-    // AI 피드백 로딩/에러 UI
-    private let feedbackLoadingContainer = UIView().then {
+    private let feedbackLoadingBubble = UIView().then {
         $0.isHidden = true
+        $0.layer.shadowColor = UIColor.mainPurple.cgColor
+        $0.layer.shadowOffset = CGSize(width: 5, height: 5)
+        $0.layer.shadowRadius = 20
+        $0.layer.shadowOpacity = 0.2
+        $0.layer.masksToBounds = false
     }
+    private let feedbackLoadingStatus = UIView().then { $0.isHidden = true }
     
-    private let feedbackErrorContainer = UIView().then {
+    private let feedbackRetryBubble = UIView().then {
         $0.isHidden = true
+        $0.layer.shadowColor = UIColor.mainPurple.cgColor
+        $0.layer.shadowOffset = CGSize(width: 5, height: 5)
+        $0.layer.shadowRadius = 20
+        $0.layer.shadowOpacity = 0.2
+        $0.layer.masksToBounds = false
     }
+    private let feedbackRetryStatus = UIView().then { $0.isHidden = true }
+    
+    private let feedbackErrorBubble = UIView().then {
+        $0.isHidden = true
+        $0.layer.shadowColor = UIColor.mainPurple.cgColor
+        $0.layer.shadowOffset = CGSize(width: 5, height: 5)
+        $0.layer.shadowRadius = 20
+        $0.layer.shadowOpacity = 0.2
+        $0.layer.masksToBounds = false
+    }
+    private let feedbackErrorStatus = UIView().then { $0.isHidden = true }
     
     init(card: QuestionCard) {
         self.card = card
@@ -104,10 +124,12 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         
         setupModeIndicators()
         setupSituation()
-        setupAnswerSections()
+        setupMyAnswer()
+        setupPartnerAnswer()
         if card.user1Answered && card.user2Answered {
             setupAIFeedback()
             setupFeedbackLoadingView()
+            setupFeedbackRetryView()
             setupFeedbackErrorView()
         }
         
@@ -120,9 +142,13 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
                 flex.addItem(myAnswerContainer).marginTop(28)
                 flex.addItem(partnerAnswerContainer).marginTop(12)
                 flex.addItem(aiFeedbackContainer).marginTop(28)
-                flex.addItem(feedbackLoadingContainer).marginTop(28)
-                flex.addItem(feedbackErrorContainer).marginTop(28)
-                flex.addItem(statusContainer).marginTop(4)
+                flex.addItem(aiFeedbackStatus).marginTop(12)
+                flex.addItem(feedbackLoadingBubble).marginTop(28)
+                flex.addItem(feedbackLoadingStatus).marginTop(12)
+                flex.addItem(feedbackRetryBubble).marginTop(28)
+                flex.addItem(feedbackRetryStatus).marginTop(12)
+                flex.addItem(feedbackErrorBubble).marginTop(28)
+                flex.addItem(feedbackErrorStatus).marginTop(12)
             }
         
         mainCardContainer.flex
@@ -173,195 +199,103 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
             $0.font = .pretenMedium(14)
             $0.textColor = .mainPurple
         }
-        
-        let situationText = card.title
-        
         let situationLabel = TDLabel().then {
             $0.font = .pretenRegular(16)
             $0.textColor = .grayScale800
             $0.numberOfLines = 0
-            
             let paragraphStyle = NSMutableParagraphStyle()
             paragraphStyle.lineHeightMultiple = 1.5
             $0.attributedText = NSAttributedString(
-                string: situationText,
+                string: card.title,
                 attributes: [.paragraphStyle: paragraphStyle]
             )
         }
-        
         situationContainer.flex.padding(20).define { flex in
             flex.addItem(situationTitle)
             flex.addItem(situationLabel).marginTop(8)
         }
     }
     
-    private func setupAnswerSections() {
-        setupMyAnswer()
-        setupPartnerAnswer()
-    }
-    
     private func setupMyAnswer() {
-        let nicknameLabel = TDLabel().then {
-            $0.text = UserdefaultKey.nicknameInfo?.userNickname
-            $0.font = .pretenSemiBold(16)
-            $0.textColor = .mainPurple
-        }
-        
-        // user1이 답변하지 않은 경우
-        guard card.user1Answered else {
-            let notAnsweredLabel = TDLabel().then {
-                $0.text = "답변하지 않았어요 🥲"
-                $0.font = .pretenRegular(16)
-                $0.textColor = .grayScale600
-                $0.numberOfLines = 0
-            }
-            
-            myAnswerContainer.flex.padding(20).define { flex in
-                flex.addItem(nicknameLabel)
-                flex.addItem(notAnsweredLabel).marginTop(12)
-            }
-            return
-        }
-        
-        let answerLabel = TDLabel().then {
-            $0.text = "답변"
-            $0.font = .pretenMedium(14)
-            $0.textColor = .grayScale600
-            $0.backgroundColor = .grayScale100
-            $0.layer.cornerRadius = 12
-            $0.layer.masksToBounds = true
-            $0.textAlignment = .center
-            $0.flex.paddingHorizontal(10).paddingVertical(2)
-        }
-        
-        let answerText = TDLabel().then {
-            // user1Answer는 옵션 번호 (예: "1")
-            let optionNo = Int(multipleChoice?.user1Answer ?? "0") ?? 0
-            let optionContent = multipleChoice?.options.first(where: { $0.id == optionNo })?.text ?? "답변 없음"
-            $0.text = optionContent
-            $0.font = .pretenRegular(16)
-            $0.textColor = .grayScale800
-            $0.numberOfLines = 0
-        }
-        
-        let answerRow = UIView()
-        answerRow.flex.direction(.row).alignItems(.start).define { flex in
-            flex.addItem(answerLabel)
-            flex.addItem(answerText).marginLeft(8).grow(1).shrink(1)
-        }
-        
-        let reasonLabel = TDLabel().then {
-            $0.text = "이유"
-            $0.font = .pretenMedium(14)
-            $0.textColor = .grayScale600
-            $0.backgroundColor = .grayScale100
-            $0.layer.cornerRadius = 12
-            $0.layer.masksToBounds = true
-            $0.textAlignment = .center
-            $0.flex.paddingHorizontal(10).paddingVertical(2)
-        }
-        
-        let reasonText = TDLabel().then {
-            $0.text = subjectiveChoice?.user1Answer ?? "답변하지 않았어요 🥲"
-            $0.font = .pretenRegular(16)
-            $0.baselineAdjustment = .alignCenters
-            $0.textColor = subjectiveChoice?.user1Answer == nil ? .grayScale600 : .grayScale800
-            $0.numberOfLines = 0
-        }
-        
-        let reasonRow = UIView()
-        reasonRow.flex.direction(.row).alignItems(.start).define { flex in
-            flex.addItem(reasonLabel)
-            flex.addItem(reasonText).marginLeft(8).grow(1).shrink(1)
-        }
-        
-        myAnswerContainer.flex.padding(20).define { flex in
-            flex.addItem(nicknameLabel)
-            flex.addItem(answerRow).marginTop(12)
-            flex.addItem(reasonRow).marginTop(18)
-        }
+        setupAnswerContainer(
+            myAnswerContainer,
+            nickname: UserdefaultKey.nicknameInfo?.userNickname,
+            answered: card.user1Answered,
+            answerText: {
+                let optionNo = Int(self.multipleChoice?.user1Answer ?? "0") ?? 0
+                return self.multipleChoice?.options.first(where: { $0.id == optionNo })?.text ?? "답변 없음"
+            }(),
+            reasonText: subjectiveChoice?.user1Answer
+        )
     }
     
     private func setupPartnerAnswer() {
+        setupAnswerContainer(
+            partnerAnswerContainer,
+            nickname: UserdefaultKey.nicknameInfo?.anotherUserNickname,
+            answered: card.user2Answered,
+            answerText: {
+                let optionNo = Int(self.multipleChoice?.user2Answer ?? "0") ?? 0
+                return self.multipleChoice?.options.first(where: { $0.id == optionNo })?.text ?? "답변 없음"
+            }(),
+            reasonText: subjectiveChoice?.user2Answer
+        )
+    }
+    
+    private func setupAnswerContainer(_ container: UIView, nickname: String?, answered: Bool, answerText: String, reasonText: String?) {
         let nicknameLabel = TDLabel().then {
-            $0.text = UserdefaultKey.nicknameInfo?.anotherUserNickname
+            $0.text = nickname
             $0.font = .pretenSemiBold(16)
             $0.textColor = .mainPurple
         }
-
-        // user2가 답변하지 않은 경우
-        guard card.user2Answered else {
+        
+        guard answered else {
             let notAnsweredLabel = TDLabel().then {
                 $0.text = "답변하지 않았어요 🥲"
                 $0.font = .pretenRegular(16)
                 $0.textColor = .grayScale600
                 $0.numberOfLines = 0
             }
-            
-            partnerAnswerContainer.flex.padding(20).define { flex in
+            container.flex.padding(20).define { flex in
                 flex.addItem(nicknameLabel)
                 flex.addItem(notAnsweredLabel).marginTop(12)
             }
             return
         }
-
-        let answerLabel = TDLabel().then {
-            $0.text = "답변"
-            $0.font = .pretenMedium(14)
-            $0.textColor = .grayScale600
-            $0.backgroundColor = .grayScale100
-            $0.layer.cornerRadius = 12
-            $0.layer.masksToBounds = true
-            $0.textAlignment = .center
-            $0.flex.paddingHorizontal(10).paddingVertical(2)
-        }
         
-        let answerText = TDLabel().then {
-            // user2Answer는 옵션 번호 (예: "2")
-            let optionNo = Int(multipleChoice?.user2Answer ?? "0") ?? 0
-            let optionContent = multipleChoice?.options.first(where: { $0.id == optionNo })?.text ?? "답변 없음"
-            $0.text = optionContent
-            $0.font = .pretenRegular(16)
-            $0.textColor = .grayScale800
-            $0.numberOfLines = 0
-
-        }
+        let answerRow = makeTagRow(tag: "답변", content: answerText)
+        let reasonRow = makeTagRow(tag: "이유", content: reasonText ?? "답변하지 않았어요 🥲", contentColor: reasonText == nil ? .grayScale600 : .grayScale800)
         
-        let answerRow = UIView()
-        answerRow.flex.direction(.row).alignItems(.start).define { flex in
-            flex.addItem(answerLabel)
-            flex.addItem(answerText).marginLeft(8).grow(1).shrink(1)
-        }
-        
-        let reasonLabel = TDLabel().then {
-            $0.text = "이유"
-            $0.font = .pretenMedium(14)
-            $0.textColor = .grayScale600
-            $0.backgroundColor = .grayScale100
-            $0.layer.cornerRadius = 12
-            $0.layer.masksToBounds = true
-            $0.textAlignment = .center
-            $0.flex.paddingHorizontal(10).paddingVertical(2)
-        }
-        
-        let reasonText = TDLabel().then {
-            $0.text = subjectiveChoice?.user2Answer ?? "답변하지 않았어요 🥲"
-            $0.font = .pretenRegular(16)
-            $0.textColor = subjectiveChoice?.user2Answer == nil ? .grayScale600 : .grayScale800
-            $0.numberOfLines = 0
-        }
-        
-        let reasonRow = UIView()
-        reasonRow.flex.direction(.row).alignItems(.start).define { flex in
-            flex.addItem(reasonLabel)
-            flex.addItem(reasonText).marginLeft(8).grow(1).shrink(1)
-        }
-        
-        partnerAnswerContainer.flex.padding(20).define { flex in
+        container.flex.padding(20).define { flex in
             flex.addItem(nicknameLabel)
             flex.addItem(answerRow).marginTop(12)
             flex.addItem(reasonRow).marginTop(18)
         }
+    }
+    
+    private func makeTagRow(tag: String, content: String, contentColor: UIColor = .grayScale800) -> UIView {
+        let tagLabel = TDLabel().then {
+            $0.text = tag
+            $0.font = .pretenMedium(14)
+            $0.textColor = .grayScale600
+            $0.backgroundColor = .grayScale100
+            $0.layer.cornerRadius = 12
+            $0.layer.masksToBounds = true
+            $0.textAlignment = .center
+            $0.flex.paddingHorizontal(10).paddingVertical(2)
+        }
+        let contentLabel = TDLabel().then {
+            $0.text = content
+            $0.font = .pretenRegular(16)
+            $0.textColor = contentColor
+            $0.numberOfLines = 0
+        }
+        let row = UIView()
+        row.flex.direction(.row).alignItems(.start).define { flex in
+            flex.addItem(tagLabel)
+            flex.addItem(contentLabel).marginLeft(8).grow(1).shrink(1)
+        }
+        return row
     }
 
     private func setupAIFeedback() {
@@ -372,6 +306,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
             $0.layer.borderColor = UIColor.mainPurple.cgColor
             $0.layer.masksToBounds = false
             $0.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
+            $0.accessibilityIdentifier = "bubbleBox"
         }
         
         let tailImageView = UIImageView().then {
@@ -408,8 +343,9 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         contentContainer.addSubview(titleLabel)
         contentContainer.addSubview(feedbackText)
         
-        // tail을 마지막에 추가해서 z-index 최상위로
-        aiFeedbackContainer.addSubview(tailImageView)
+        let bubbleWrapper = UIView()
+        bubbleWrapper.addSubview(bubbleContainer)
+        bubbleWrapper.addSubview(tailImageView)
         
         contentContainer.flex.paddingHorizontal(20).paddingVertical(21).define { contentFlex in
             contentFlex.addItem().direction(.row).alignItems(.center).define { titleFlex in
@@ -419,29 +355,17 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
             contentFlex.addItem(feedbackText).marginTop(24).marginBottom(12)
         }
         
-        aiFeedbackContainer.flex.paddingBottom(21).define { flex in
+        bubbleWrapper.flex.define { flex in
             flex.addItem(bubbleContainer).define { bubbleFlex in
                 bubbleFlex.addItem(contentContainer)
             }
         }
         
-        let statusLabel = TDLabel().then {
-            $0.text = "답변 공개 완료!"
-            $0.font = .pretenMedium(16)
-            $0.textColor = .grayScale900
+        aiFeedbackContainer.flex.paddingBottom(22).define { flex in
+            flex.addItem(bubbleWrapper)
         }
         
-        let subtitleLabel = TDLabel().then {
-            $0.text = "서로의 이유를 더 자세히 들어보고 대화를 이어가보세요."
-            $0.font = .pretenRegular(14)
-            $0.textColor = .grayScale800
-            $0.numberOfLines = 0
-        }
-        
-        statusContainer.flex.paddingTop(12).define { flex in
-            flex.addItem(statusLabel)
-            flex.addItem(subtitleLabel).marginTop(4)
-        }
+        populateStatusView(aiFeedbackStatus)
     }
     
     override func viewDidLayoutSubviews() {
@@ -454,11 +378,11 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     }
     
     private func layoutTail() {
-        for container in [aiFeedbackContainer, feedbackLoadingContainer, feedbackErrorContainer] {
-            if let tailImageView = container.subviews.first(where: { $0.accessibilityIdentifier == "tailImageView" }) {
-                tailImageView.pin.bottom(0).right(0).width(40).height(22)
-                container.bringSubviewToFront(tailImageView)
-            }
+        let bubbles = [aiFeedbackContainer, feedbackLoadingBubble, feedbackRetryBubble, feedbackErrorBubble]
+        for bubble in bubbles {
+            guard let tail = bubble.subviews.first(where: { $0.accessibilityIdentifier == "tailImageView" }) else { continue }
+            tail.pin.bottom(1).right(0).width(40).height(22)
+            bubble.bringSubviewToFront(tail)
         }
     }
     
@@ -474,83 +398,56 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     }
     
     private func updateFeedbackUI(state: HistoryCardDetailReactor.FeedbackState) {
+        let allBubbles = [aiFeedbackContainer, feedbackLoadingBubble, feedbackRetryBubble, feedbackErrorBubble]
+        let allStatuses = [aiFeedbackStatus, feedbackLoadingStatus, feedbackRetryStatus, feedbackErrorStatus]
+        
+        func show(bubble: UIView, status: UIView?, animated: Bool = false) {
+            allBubbles.forEach {
+                $0.flex.isIncludedInLayout($0 === bubble)
+                $0.isHidden = $0 !== bubble
+            }
+            allStatuses.forEach {
+                let visible = $0 === status
+                $0.flex.isIncludedInLayout(visible)
+                $0.isHidden = !visible
+            }
+            rootFlexContainer.flex.layout(mode: .adjustHeight)
+            scrollView.contentSize = rootFlexContainer.frame.size
+            layoutTail()
+            
+            guard animated else { return }
+            bubble.alpha = 0
+            bubble.transform = CGAffineTransform(translationX: 0, y: 10)
+            UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseOut) {
+                bubble.alpha = 1
+                bubble.transform = .identity
+            }
+        }
+        
         switch state {
         case .none:
-            aiFeedbackContainer.flex.isIncludedInLayout(false)
-            feedbackLoadingContainer.flex.isIncludedInLayout(false)
-            feedbackErrorContainer.flex.isIncludedInLayout(false)
-            statusContainer.flex.isIncludedInLayout(false)
-            aiFeedbackContainer.isHidden = true
-            feedbackLoadingContainer.isHidden = true
-            feedbackErrorContainer.isHidden = true
-            statusContainer.isHidden = true
+            allBubbles.forEach { $0.flex.isIncludedInLayout(false); $0.isHidden = true }
+            allStatuses.forEach { $0.flex.isIncludedInLayout(false); $0.isHidden = true }
             rootFlexContainer.flex.layout(mode: .adjustHeight)
             scrollView.contentSize = rootFlexContainer.frame.size
             
         case .generating:
             didShowLoading = true
-            aiFeedbackContainer.flex.isIncludedInLayout(false)
-            aiFeedbackContainer.isHidden = true
-            feedbackErrorContainer.flex.isIncludedInLayout(false)
-            feedbackErrorContainer.isHidden = true
-            feedbackLoadingContainer.flex.isIncludedInLayout(true)
-            feedbackLoadingContainer.isHidden = false
-            statusContainer.flex.isIncludedInLayout(true)
-            statusContainer.isHidden = false
-            rootFlexContainer.flex.layout(mode: .adjustHeight)
-            scrollView.contentSize = rootFlexContainer.frame.size
+            show(bubble: feedbackLoadingBubble, status: feedbackLoadingStatus)
             
         case .loaded(let feedback):
-            if let label = feedbackLabel {
-                updateFeedbackLabel(label, with: feedback)
-            }
-            feedbackLoadingContainer.flex.isIncludedInLayout(false)
-            feedbackLoadingContainer.isHidden = true
-            feedbackErrorContainer.flex.isIncludedInLayout(false)
-            feedbackErrorContainer.isHidden = true
-            statusContainer.flex.isIncludedInLayout(true)
-            statusContainer.isHidden = false
+            if let label = feedbackLabel { updateFeedbackLabel(label, with: feedback) }
+            show(bubble: aiFeedbackContainer, status: aiFeedbackStatus, animated: didShowLoading)
             
-            aiFeedbackContainer.flex.isIncludedInLayout(true)
-            aiFeedbackContainer.isHidden = false
-            
-            rootFlexContainer.flex.layout(mode: .adjustHeight)
-            scrollView.contentSize = rootFlexContainer.frame.size
-            layoutTail()
-            
-            guard didShowLoading else { return }
-            
-            // 상단 기준으로 아래로 펼쳐지는 애니메이션
-            aiFeedbackContainer.alpha = 0
-            let originalBounds = aiFeedbackContainer.bounds
-            aiFeedbackContainer.layer.anchorPoint = CGPoint(x: 0.5, y: 0)
-            aiFeedbackContainer.layer.position.y -= originalBounds.height / 2
-            aiFeedbackContainer.transform = CGAffineTransform(scaleX: 1, y: 0.01)
-            
-            UIView.animate(withDuration: 0.45, delay: 0, usingSpringWithDamping: 0.85, initialSpringVelocity: 0.5, options: .curveEaseOut) {
-                self.aiFeedbackContainer.alpha = 1
-                self.aiFeedbackContainer.transform = .identity
-            } completion: { _ in
-                self.aiFeedbackContainer.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-                self.aiFeedbackContainer.layer.position.y += originalBounds.height / 2
-            }
-            return
+        case .retryable:
+            show(bubble: feedbackRetryBubble, status: feedbackRetryStatus, animated: true)
             
         case .error:
-            aiFeedbackContainer.flex.isIncludedInLayout(false)
-            aiFeedbackContainer.isHidden = true
-            feedbackLoadingContainer.flex.isIncludedInLayout(false)
-            feedbackLoadingContainer.isHidden = true
-            statusContainer.flex.isIncludedInLayout(false)
-            statusContainer.isHidden = true
-            feedbackErrorContainer.flex.isIncludedInLayout(true)
-            feedbackErrorContainer.isHidden = false
-            rootFlexContainer.flex.layout(mode: .adjustHeight)
-            scrollView.contentSize = rootFlexContainer.frame.size
+            show(bubble: feedbackErrorBubble, status: feedbackErrorStatus, animated: true)
         }
     }
     
-    // MARK: - Feedback Loading / Error Views
+    // MARK: - Feedback State Views
     
     private func setupFeedbackLoadingView() {
         let boxView = UIView().then {
@@ -570,29 +467,22 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
             $0.textColor = .mainPurple
             $0.textAlignment = .center
         }
-        let tailImageView = UIImageView().then {
-            $0.image = UIImage(named: "BoxTail")
-            $0.contentMode = .scaleAspectFit
-            $0.accessibilityIdentifier = "tailImageView"
-        }
+        let tail = makeTailImageView()
         
-        feedbackLoadingContainer.flex.paddingBottom(21).define { flex in
-            flex.addItem(boxView).padding(20).alignItems(.center).define { boxFlex in
-                boxFlex.addItem(lottie).size(60)
-                boxFlex.addItem(loadingLabel).marginTop(4)
+        feedbackLoadingBubble.addSubview(boxView)
+        feedbackLoadingBubble.addSubview(tail)
+        feedbackLoadingBubble.flex.paddingBottom(22).define { flex in
+            flex.addItem(boxView).padding(20).alignItems(.center).define { f in
+                f.addItem(lottie).size(60)
+                f.addItem(loadingLabel).marginTop(4)
             }
         }
-        feedbackLoadingContainer.addSubview(tailImageView)
+        populateStatusView(feedbackLoadingStatus)
     }
     
-    private func setupFeedbackErrorView() {
-        let boxView = UIView().then {
-            $0.backgroundColor = .white
-            $0.layer.cornerRadius = 16
-            $0.layer.borderWidth = 1
-            $0.layer.borderColor = UIColor.grayScale300.cgColor
-            $0.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
-        }
+    private func setupFeedbackRetryView() {
+        let (boxView, tail) = makeFeedbackBubbleBox()
+        let header = makeFeedbackHeader()
         let emojiImageView = UIImageView().then {
             $0.image = UIImage(named: "FeedbackUnsmile")
             $0.contentMode = .scaleAspectFit
@@ -603,19 +493,120 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
             $0.textColor = .mainPurple
             $0.textAlignment = .center
         }
-        let tailImageView = UIImageView().then {
+        let retryButton = UIButton().then {
+            var config = UIButton.Configuration.plain()
+            config.imagePadding = 6
+            config.imagePlacement = .trailing
+            config.image = UIImage(systemName: "arrow.clockwise")?.withTintColor(.white, renderingMode: .alwaysOriginal).resized(to: CGSize(width: 24, height: 24))
+            config.attributedTitle = AttributedString("다시 불러오기", attributes: AttributeContainer([
+                .font: UIFont.pretenSemiBold(16),
+                .foregroundColor: UIColor.white
+            ]))
+            config.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 14, bottom: 6, trailing: 14)
+            $0.configuration = config
+            $0.backgroundColor = .darkPurple
+            $0.layer.cornerRadius = 17
+            $0.clipsToBounds = true
+        }
+        
+        feedbackRetryBubble.addSubview(boxView)
+        feedbackRetryBubble.addSubview(tail)
+        feedbackRetryBubble.flex.paddingBottom(22).define { flex in
+            flex.addItem(boxView).paddingHorizontal(20).paddingVertical(21).define { f in
+                f.addItem(header)
+                f.addItem(emojiImageView).width(38).height(38).alignSelf(.center).marginTop(16)
+                f.addItem(errorLabel).marginTop(11).alignSelf(.center)
+                f.addItem(retryButton).marginTop(16).alignSelf(.center)
+            }
+        }
+        populateStatusView(feedbackRetryStatus)
+        
+        retryButton.rx.tap
+            .map { HistoryCardDetailReactor.Action.regenerate }
+            .bind(to: reactor!.action)
+            .disposed(by: disposeBag)
+    }
+    
+    private func setupFeedbackErrorView() {
+        let (boxView, tail) = makeFeedbackBubbleBox()
+        let header = makeFeedbackHeader()
+        let emojiImageView = UIImageView().then {
+            $0.image = UIImage(named: "FeedbackUnsmile")
+            $0.contentMode = .scaleAspectFit
+        }
+        let errorLabel = TDLabel().then {
+            $0.text = "피드백을 불러올 수 없어요\n잠시 후 다시 시도해 주세요"
+            $0.font = .pretenBold(16)
+            $0.textColor = .mainPurple
+            $0.textAlignment = .center
+            $0.numberOfLines = 0
+        }
+        
+        feedbackErrorBubble.addSubview(boxView)
+        feedbackErrorBubble.addSubview(tail)
+        feedbackErrorBubble.flex.paddingBottom(22).define { flex in
+            flex.addItem(boxView).paddingHorizontal(20).paddingVertical(21).define { f in
+                f.addItem(header)
+                f.addItem(emojiImageView).width(38).height(38).alignSelf(.center).marginTop(16)
+                f.addItem(errorLabel).marginTop(11).alignSelf(.center)
+            }
+        }
+        populateStatusView(feedbackErrorStatus)
+    }
+    
+    private func makeFeedbackBubbleBox() -> (UIView, UIImageView) {
+        let box = UIView().then {
+            $0.backgroundColor = .white
+            $0.layer.cornerRadius = 16
+            $0.layer.borderWidth = 1
+            $0.layer.borderColor = UIColor.mainPurple.cgColor
+            $0.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
+        }
+        return (box, makeTailImageView())
+    }
+    
+    private func makeFeedbackHeader() -> UIView {
+        let iconImageView = UIImageView().then {
+            $0.image = UIImage(named: "book_fill")
+            $0.contentMode = .scaleAspectFit
+        }
+        let titleLabel = TDLabel().then {
+            $0.text = "AI 피드백"
+            $0.font = .pretenSemiBold(16)
+            $0.textColor = .mainPurple
+        }
+        let header = UIView()
+        header.flex.direction(.row).alignItems(.center).define { flex in
+            flex.addItem(iconImageView).size(28)
+            flex.addItem(titleLabel).marginLeft(4)
+        }
+        return header
+    }
+    
+    private func makeTailImageView() -> UIImageView {
+        UIImageView().then {
             $0.image = UIImage(named: "BoxTail")
             $0.contentMode = .scaleAspectFit
             $0.accessibilityIdentifier = "tailImageView"
         }
-        
-        feedbackErrorContainer.flex.paddingBottom(21).define { flex in
-            flex.addItem(boxView).padding(20).alignItems(.center).define { boxFlex in
-                boxFlex.addItem(emojiImageView).width(38).height(38)
-                boxFlex.addItem(errorLabel).marginTop(11)
-            }
+    }
+    
+    private func populateStatusView(_ view: UIView) {
+        let statusLabel = TDLabel().then {
+            $0.text = "답변 공개 완료!"
+            $0.font = .pretenMedium(16)
+            $0.textColor = .grayScale900
         }
-        feedbackErrorContainer.addSubview(tailImageView)
+        let subtitleLabel = TDLabel().then {
+            $0.text = "서로의 이유를 더 자세히 들어보고 대화를 이어가보세요."
+            $0.font = .pretenRegular(14)
+            $0.textColor = .grayScale800
+            $0.numberOfLines = 0
+        }
+        view.flex.paddingTop(12).define { flex in
+            flex.addItem(statusLabel)
+            flex.addItem(subtitleLabel).marginTop(4)
+        }
     }
     
     private func updateFeedbackLabel(_ label: MaskingLabel, with feedback: CardFeedback) {
@@ -647,6 +638,3 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         coordinator?.navigateBack()
     }
 }
-
-
-
