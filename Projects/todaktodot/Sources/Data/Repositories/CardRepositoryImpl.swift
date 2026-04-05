@@ -138,8 +138,19 @@ final class CardRepositoryImpl: CardRepository {
             .catch { error in .just(.failure(error)) }
     }
     
-    func notiAgree() -> Observable<Bool> {
-        var parameters: [String: String] = [ "infoAlarmYN" : "Y" ]
+    func generateFeedback(coupleCardId: Int, cardId: Int, issuedDate: String) -> Observable<Result<Void, Error>> {
+        let endpoint = Endpoint<Empty>(
+            baseURL: .todaktodotAPI,
+            path: "/api/feedback/generate",
+            method: .post,
+            parameters: ["coupleCardId": coupleCardId, "cardId": cardId, "issuedDate": issuedDate]
+        )
+        return networkManager.request(with: endpoint)
+            .map { _ in Result<Void, Error>.success(()) }
+            .catch { error in .just(.failure(error)) }
+    }
+    
+    func notiAgree() -> Observable<Bool> {        var parameters: [String: String] = [ "infoAlarmYN" : "Y" ]
         
         let endpoint = Endpoint<Empty>(
             baseURL: .todaktodotAPI,

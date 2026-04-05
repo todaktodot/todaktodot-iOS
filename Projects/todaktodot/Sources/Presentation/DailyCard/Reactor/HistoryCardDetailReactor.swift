@@ -5,6 +5,7 @@
 //  Created by daye on 3/24/26.
 //
 
+import Foundation
 import ReactorKit
 import RxSwift
 
@@ -14,6 +15,43 @@ final class HistoryCardDetailReactor: Reactor {
     private static var feedbackCache: [Int: CardFeedback] = [:]
     private static var feedbackCacheOrder: [Int] = []
     private static let maxCacheSize = 7
+    
+    private static var weekKey: String {
+        (UserdefaultKey.lastWeeklyCardDate ?? CardService.shared.getCardSystemDate()).toYYYYMMDD()
+    }
+    
+    private static func hasAction(_ action: String, for date: String) -> Bool {
+        UserdefaultKey.feedbackActionHistory["week_\(weekKey)"]?[date]?.contains(action) ?? false
+    }
+    
+    private static func markAction(_ action: String, for date: String) {
+        var history = UserdefaultKey.feedbackActionHistory
+        let key = "week_\(weekKey)"
+        var week = history[key] ?? [:]
+        var actions = week[date] ?? []
+        guard !actions.contains(action) else { return }
+        actions.append(action)
+        week[date] = actions
+        history[key] = week
+        history.keys.filter { $0 != key }.forEach { history.removeValue(forKey: $0) }
+        UserdefaultKey.feedbackActionHistory = history
+    }
+    
+    static func hasPolled(for date: String) -> Bool {
+        hasAction("polled", for: date)
+    }
+    
+    static func hasRegenerated(for date: String) -> Bool {
+        hasAction("regenerated", for: date)
+    }
+    
+    static func markPolled(for date: String) {
+        markAction("polled", for: date)
+    }
+    
+    static func markRegenerated(for date: String) {
+        markAction("regenerated", for: date)
+    }
     
     static func cachedFeedback(for coupleCardId: Int) -> CardFeedback? {
         feedbackCache[coupleCardId]
@@ -30,18 +68,24 @@ final class HistoryCardDetailReactor: Reactor {
     }
     
     private let cardUseCase: CardUseCase
-    private let maxRetryCount = 3
-    private let pollingInterval: RxTimeInterval = .seconds(5)
+    private let pollingInterval: RxTimeInterval = .seconds(3)
+    
+    private static let webhookURL: String = {
+        guard let value = Bundle.main.infoDictionary?["DISCORD_WEBHOOK_URL"] as? String else { return "" }
+        return value.removingPercentEncoding ?? value
+    }()
     
     enum FeedbackState {
         case none
         case generating
         case loaded(CardFeedback)
+        case retryable
         case error
     }
 
     enum Action {
         case checkFeedback
+        case regenerate
     }
     
     enum Mutation {
@@ -58,15 +102,21 @@ final class HistoryCardDetailReactor: Reactor {
     init(cardUseCase: CardUseCase, card: QuestionCard) {
         self.cardUseCase = cardUseCase
         
+        let id = card.coupleCardId
         let initialFeedback: FeedbackState
+        
         if let feedback = card.feedback {
             initialFeedback = .loaded(feedback)
-        } else if let cached = Self.feedbackCache[card.coupleCardId] {
+        } else if let cached = Self.feedbackCache[id] {
             initialFeedback = .loaded(cached)
-        } else if card.isBothAnswered {
-            initialFeedback = .generating
-        } else {
+        } else if !card.isBothAnswered {
             initialFeedback = .none
+        } else if Self.hasRegenerated(for: card.date.toYYYYMMDD()) {
+            initialFeedback = .error
+        } else if Self.hasPolled(for: card.date.toYYYYMMDD()) {
+            initialFeedback = .retryable
+        } else {
+            initialFeedback = .generating
         }
         
         self.initialState = State(card: card, feedbackState: initialFeedback)
@@ -76,39 +126,77 @@ final class HistoryCardDetailReactor: Reactor {
         switch action {
         case .checkFeedback:
             guard case .generating = currentState.feedbackState else { return .empty() }
-            
             let coupleCardId = currentState.card.coupleCardId
+            let date = currentState.card.date.toYYYYMMDD()
+            Self.markPolled(for: date)
+            return pollFeedback(coupleCardId: coupleCardId, fallback: .retryable)
             
-            return Observable<Int>.interval(pollingInterval, scheduler: MainScheduler.instance)
-                .take(maxRetryCount)
-                .flatMapLatest { [weak self] _ -> Observable<Mutation> in
-                    guard let self else { return .empty() }
-                    return self.cardUseCase.fetchHistoryCardDetail(coupleCardId: coupleCardId)
-                        .flatMap { result -> Observable<Mutation> in
-                            switch result {
-                            case .success(let card):
-                                if let feedback = card.feedback {
-                                    return .just(.setFeedbackState(.loaded(feedback)))
-                                }
-                                return .empty()
-                            case .failure:
-                                return .just(.setFeedbackState(.error))
-                            }
+        case .regenerate:
+            let card = currentState.card
+            let issuedDate = card.date.toYYYYMMDD()
+            return Observable.concat(
+                .just(.setFeedbackState(.generating)),
+                cardUseCase.generateFeedback(coupleCardId: card.coupleCardId, cardId: card.id, issuedDate: issuedDate)
+                    .flatMap { [weak self] result -> Observable<Mutation> in
+                        guard let self else { return .empty() }
+                        Self.markRegenerated(for: issuedDate)
+                        switch result {
+                        case .success:
+                            return self.pollFeedback(coupleCardId: card.coupleCardId, fallback: .error)
+                        case .failure(let error):
+                            Self.sendWebhook(card: card)
+                            return .just(.setFeedbackState(.error))
                         }
-                }
-                .take(until: { mutation in
-                    if case .setFeedbackState(.loaded) = mutation { return true }
-                    if case .setFeedbackState(.error) = mutation { return true }
-                    return false
-                }, behavior: .inclusive)
-                .concat(Observable.deferred { [weak self] in
-                    guard let self else { return .empty() }
-                    if case .generating = self.currentState.feedbackState {
-                        return .just(.setFeedbackState(.error))
                     }
-                    return .empty()
-                })
+            )
         }
+    }
+    
+    private func pollFeedback(coupleCardId: Int, fallback: FeedbackState) -> Observable<Mutation> {
+        return Observable<Int>.timer(pollingInterval, scheduler: MainScheduler.instance)
+            .flatMapLatest { [weak self] _ -> Observable<Mutation> in
+                guard let self else { return .empty() }
+                return self.cardUseCase.fetchHistoryCardDetail(coupleCardId: coupleCardId)
+                    .flatMap { [weak self] result -> Observable<Mutation> in
+                        guard let self else { return .empty() }
+                        switch result {
+                        case .success(let card):
+                            if let feedback = card.feedback {
+                                return .just(.setFeedbackState(.loaded(feedback)))
+                            }
+                            if case .error = fallback { Self.sendWebhook(card: self.currentState.card) }
+                            return .just(.setFeedbackState(fallback))
+                        case .failure(let error):
+                            if case .error = fallback { Self.sendWebhook(card: self.currentState.card) }
+                            return .just(.setFeedbackState(fallback))
+                        }
+                    }
+            }
+    }
+    
+    private static func sendWebhook(card: QuestionCard) {
+        let date = card.date.toYYYYMMDD()
+        guard !hasAction("webhook", for: date) else { return }
+        markAction("webhook", for: date)
+       
+        guard let url = URL(string: webhookURL) else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let body: [String: Any] = [
+            "embeds": [[
+                "title": "📍 AI 피드백 생성 실패",
+                "color": 15158332,
+                "timestamp": ISO8601DateFormatter().string(from: Date()),
+                "footer": ["text": "🍎 iOS"],
+                "fields": [
+                    ["name": "coupleCardId", "value": "\(card.coupleCardId)", "inline": false],
+                    ["name": "coupleId", "value": "\(UserdefaultKey.coupleId ?? -1)", "inline": false]
+                ]
+            ]]
+        ]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        URLSession.shared.dataTask(with: request).resume()
     }
     
     func reduce(state: State, mutation: Mutation) -> State {

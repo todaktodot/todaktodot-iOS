@@ -73,6 +73,11 @@ enum UserdefaultKey {
     @UserDefault(key: "lastPokeDate", defaultValue: nil)
     static var lastPokeDate: String?
     
+    // MARK: - AI 피드백 폴링/재생성 이력
+    // key: dailyweek_{lastWeeklyCardDate}, value: { "2026-04-05": ["polled", "regenerated"] }
+    @UserDefault(key: "feedbackActionHistory", defaultValue: [:])
+    static var feedbackActionHistory: [String: [String: [String]]]
+    
     static func resetUserDefaults() {
         let preservedDeviceToken = self.diviceToken
 
@@ -91,6 +96,7 @@ enum UserdefaultKey {
         self.weeklyCards = []
         self.lastWeeklyCardDate = nil
         self.lastPokeDate = nil
+        self.feedbackActionHistory = [:]
         
         UserDefaults.standard.synchronize()
     }
