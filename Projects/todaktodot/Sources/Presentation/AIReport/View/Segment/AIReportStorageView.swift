@@ -18,7 +18,12 @@ final class AIReportStorageView: UIView {
     private var monthButtons: [MonthButton] = []
     private var cards: [AIReportWeekCardView] = []
     private var lastWeek: Int = 1
-    private var selectedYear: Int
+    private var selectedYear: Int = 2026 {
+        didSet {
+            yearButton.customText.text = "\(selectedYear)년"
+            // TODO: 년도 변경시 로직 추가하기
+        }
+    }
     private var selectedMonth: Int = 1 {
         didSet {
             lastWeek = displayWeekInfo(month: selectedMonth).week
@@ -29,6 +34,12 @@ final class AIReportStorageView: UIView {
         didSet {
             configCards(listData: listData)
         }
+    }
+    
+    private var monthCalendar: Calendar {
+        var calendar = Calendar(identifier: .iso8601)
+        calendar.timeZone = .current
+        return calendar
     }
     
     private let titleLabel = TDLabel().then {
@@ -45,29 +56,19 @@ final class AIReportStorageView: UIView {
         $0.showsMenuAsPrimaryAction = true
     }
     
+    private let today = Date()
     private let cardsContentView = UIView()
     private let monthsContentView = UIView()
     private let monthScrollView = UIScrollView().then {
         $0.showsHorizontalScrollIndicator = false
     }
     
-    func setTodayYear(year: Int) {
-        yearButton.customText.text = "\(year)년"
-        
-        let item = (2026...year).map {
-            UIAction(title: "\($0)년", handler: { _ in
-            })
-        }
-        
-        yearButton.menu = UIMenu(title: "년도 선택", children: item)
-    }
-    
     override init(frame: CGRect = .zero) {
-        let calendar = Calendar.current
-        self.selectedYear = calendar.component(.year, from: Date())
         super.init(frame: frame)
         
-        setTodayYear(year: self.selectedYear)
+        let currentYear = monthCalendar.component(.year, from: today)
+        selectedYear = currentYear
+        setMenu(year: currentYear)
         
         let prev = displayWeekInfo()
         selectedMonth = prev.month
@@ -89,7 +90,7 @@ final class AIReportStorageView: UIView {
     }
     
     func configure(listData: [AIReportList]) {
-        let calendar = Calendar.current
+        let calendar = monthCalendar
         let mapData = listData.map {
             var data = $0
             
@@ -113,6 +114,18 @@ final class AIReportStorageView: UIView {
             return data
         }
         self.listData = mapData
+    }
+    
+    func setMenu(year: Int) {
+        let currentYear = monthCalendar.component(.year, from: Date())
+        let item = (2026...currentYear).map { [weak self] year in
+            UIAction(title: "\(year)년", handler: { [weak self] _ in
+                self?.selectedYear = year
+            })
+        }
+        
+        yearButton.customText.text = "\(year)년"
+        yearButton.menu = UIMenu(title: "년도 선택", children: item)
     }
     
     private func setupViews() {
@@ -146,8 +159,14 @@ final class AIReportStorageView: UIView {
     }
     
     private func setupMonthButtons() {
-        let thisMonth = displayWeekInfo(month: selectedMonth).month
-        let months = Array(1...thisMonth)
+        monthButtons.removeAll()
+        monthsContentView.subviews.forEach { $0.removeFromSuperview() }
+        
+        let currentYear = monthCalendar.component(.year, from: Date())
+        let currentMonth = monthCalendar.component(.month, from: Date())
+        
+        let maxMonth = (selectedYear == currentYear) ? currentMonth : 12
+        let months = Array(1...maxMonth)
         
         monthButtons = months.map {
             let button = MonthButton(month: $0)
@@ -155,7 +174,7 @@ final class AIReportStorageView: UIView {
             return button
         }
         
-        monthButtons.first { $0.month == thisMonth }?.update(selected: thisMonth)
+        monthButtons.first { $0.month == currentMonth }?.update(selected: currentMonth)
         
         monthsContentView.flex
             .direction(.row)
@@ -170,11 +189,14 @@ final class AIReportStorageView: UIView {
                         .paddingVertical(10)
                 }
             }
+        
+        monthsContentView.flex.markDirty()
     }
     
     private func updateMonthButtons(_ sender: MonthButton) {
         selectedMonth = sender.month
         monthButtons.forEach { $0.update(selected: sender.month) }
+        
         let targetX =
         sender.center.x
         - monthScrollView.bounds.width / 2
@@ -255,14 +277,13 @@ final class AIReportStorageView: UIView {
     }
     
     func displayWeekInfo(month: Int? = nil) -> (month: Int, week: Int) {
-        let calendar = Calendar.current
-        let today = Date()
-        
+        let calendar = monthCalendar
+        let currentYear = calendar.component(.year, from: today)
         let currentWeek = calendar.component(.weekOfMonth, from: today)
         let currentMonth = calendar.component(.month, from: today)
         let targetMonth = month ?? currentMonth
         
-        if targetMonth == currentMonth {
+        if targetMonth == currentMonth && currentYear == selectedYear {
             if currentWeek > 1 {
                 return (currentMonth, currentWeek - 1)
             }
@@ -279,7 +300,7 @@ final class AIReportStorageView: UIView {
     }
     
     func toLastWeekCount(month: Int) -> Int {
-        let calendar = Calendar.current
+        let calendar = monthCalendar
         
         var components = DateComponents()
         components.year = selectedYear
