@@ -443,13 +443,9 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     // MARK: - Feedback State Views
     
     private func setupFeedbackLoadingView() {
-        let boxView = UIView().then {
-            $0.backgroundColor = .white
-            $0.layer.cornerRadius = 16
-            $0.layer.borderWidth = 1
-            $0.layer.borderColor = UIColor.mainPurple.cgColor
-            $0.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner]
-        }
+        let (boxView, tail) = makeFeedbackBubbleBox()
+        let header = makeFeedbackHeader()
+        let loadingContent = UIView()
         let lottie = LottieAnimationView(name: "loading2").then {
             $0.loopMode = .loop
             $0.play()
@@ -460,14 +456,20 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
             $0.textColor = .mainPurple
             $0.textAlignment = .center
         }
-        let tail = makeTailImageView()
         
         feedbackLoadingBubble.addSubview(boxView)
         feedbackLoadingBubble.addSubview(tail)
+        boxView.addSubview(loadingContent)
+        
+        loadingContent.flex.alignItems(.center).define { flex in
+            flex.addItem(lottie).size(60)
+            flex.addItem(loadingLabel).marginTop(4)
+        }
+        
         feedbackLoadingBubble.flex.paddingBottom(22).define { flex in
-            flex.addItem(boxView).padding(20).alignItems(.center).define { f in
-                f.addItem(lottie).size(60)
-                f.addItem(loadingLabel).marginTop(4)
+            flex.addItem(boxView).paddingHorizontal(20).paddingVertical(21).define { f in
+                f.addItem(header)
+                f.addItem(loadingContent).marginTop(16).alignSelf(.center)
             }
         }
         populateStatusView(feedbackLoadingStatus)
