@@ -51,4 +51,8 @@ final class CardUseCase {
     func notiAgree() -> Observable<Bool> {
         repository.notiAgree()
     }
+    
+    func generateFeedback(coupleCardId: Int, cardId: Int, issuedDate: String) -> Observable<Result<Void, Error>> {
+        repository.generateFeedback(coupleCardId: coupleCardId, cardId: cardId, issuedDate: issuedDate)
+    }
 }
