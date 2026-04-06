@@ -80,11 +80,12 @@ jobs:
           
           printf "" > Projects/todaktodot/Config/Debug.xcconfig
           
-          printf "KAKAO_APP_KEY = %s\nKAKAO_URL_KEY = %s\nGOOGLE_URL_KEY = %s\nTODAKTODOT_API = %s\nPRODUCT_BUNDLE_IDENTIFIER = %s\nAPP_DISPLAY_NAME = %s\n" \
+          printf "KAKAO_APP_KEY = %s\nKAKAO_URL_KEY = %s\nGOOGLE_URL_KEY = %s\nTODAKTODOT_API = %s\nDISCORD_WEBHOOK_URL = %s\nPRODUCT_BUNDLE_IDENTIFIER = %s\nAPP_DISPLAY_NAME = %s\n" \
           "${{ secrets.KAKAO_APP_KEY }}" \
           "${{ secrets.KAKAO_URL_KEY }}" \
           "${{ secrets.GOOGLE_URL_KEY }}" \
           "${{ secrets.TODAKTODOT_API }}" \
+          "${{ secrets.DISCORD_WEBHOOK_URL_FEEDBACK }}" \
           "info.todaktodot" \
           "투닥투닷" \
           > Projects/todaktodot/Config/Release.xcconfig
@@ -101,11 +102,12 @@ jobs:
 
       - name: Update xcconfig files
         run: |
-          printf "KAKAO_APP_KEY = %s\nKAKAO_URL_KEY = %s\nGOOGLE_URL_KEY = %s\nTODAKTODOT_API = %s\nPRODUCT_BUNDLE_IDENTIFIER = %s\nAPP_DISPLAY_NAME = %s\n" \
+          printf "KAKAO_APP_KEY = %s\nKAKAO_URL_KEY = %s\nGOOGLE_URL_KEY = %s\nTODAKTODOT_API = %s\nDISCORD_WEBHOOK_URL = %s\nPRODUCT_BUNDLE_IDENTIFIER = %s\nAPP_DISPLAY_NAME = %s\n" \
           "${{ secrets.KAKAO_APP_KEY_DEV }}" \
           "${{ secrets.KAKAO_URL_KEY_DEV }}" \
           "${{ secrets.GOOGLE_URL_KEY_DEV }}" \
-          "${{ secrets.TODAKTODOT_API }}" \
+          "${{ secrets.TODAKTODOT_API_DEV }}" \
+          "${{ secrets.DISCORD_WEBHOOK_URL_FEEDBACK }}" \
           "info.todaktodot.dev" \
           "투닥투닷 dev" \
           > Projects/todaktodot/Config/Release.xcconfig
