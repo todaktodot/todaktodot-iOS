@@ -192,6 +192,9 @@ final class HomeViewController: BaseViewController, View {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        if let status = currentAnswerStatus {
+            updateMainCard(for: status)
+        }
         fetchHistoryCards()
     }
     
@@ -336,8 +339,17 @@ final class HomeViewController: BaseViewController, View {
         
         arrowButton.rx.tap
             .do(onNext: { print("🔘 Arrow button tap detected!") })
-            .subscribe(onNext: { [weak self] in
+            .withLatestFrom(reactor.state.map { $0.answerStatus })
+            .subscribe(onNext: { [weak self] status in
                 guard let self = self else { return }
+                
+                if self.isAnswerSubmissionUnavailable(for: status) {
+                    self.updateMainCard(for: status)
+                    self.showAnswerUnavailableAlert()
+                    self.fetchHistoryCards()
+                    return
+                }
+                
                 let cardSystemDate = CardService.shared.getCardSystemDate()
                 let todayCard = self.historyCards.first { Calendar.current.isDate($0.date, inSameDayAs: cardSystemDate) }
                 
@@ -437,6 +449,9 @@ final class HomeViewController: BaseViewController, View {
     }
     
     @objc private func appWillEnterForeground() {
+        if let status = currentAnswerStatus {
+            updateMainCard(for: status)
+        }
         fetchHistoryCards()
     }
     
@@ -450,6 +465,13 @@ final class HomeViewController: BaseViewController, View {
             pokeButton.backgroundColor = TodotColors.Button.purpleButton1
             pokeButton.isEnabled = true
         }
+    }
+    
+    private func isAnswerSubmissionUnavailable(for status: AnswerStatus) -> Bool {
+        let hour = Calendar.current.component(.hour, from: Date())
+        let isClosedHours = hour >= 4 && hour < 8
+        let hasNotAnswered = status == .bothUnanswered || status == .partnerAnswered
+        return isClosedHours && hasNotAnswered
     }
     
     override func viewDidLayoutSubviews() {
@@ -482,7 +504,7 @@ extension HomeViewController {
         let descParagraphStyle = NSMutableParagraphStyle()
         descParagraphStyle.lineHeightMultiple = 1.5
         descriptionLabel.attributedText = NSAttributedString(
-            string: "오전 8시 기준으로 질문이 바뀌니 8시가 지나기\n전에 답해보세요.",
+            string: "매일 08시 업데이트· 다음날 04시 작성 마감\n04시~ 08시 사이에는 답변할 수 없어요",
             attributes: [.paragraphStyle: descParagraphStyle]
         )
         
@@ -635,25 +657,30 @@ extension HomeViewController {
         let applyUpdate = { [self] in
             let paragraphStyle = NSMutableParagraphStyle()
             paragraphStyle.lineHeightMultiple = 1.5
+            let isAnswerUnavailable = isAnswerSubmissionUnavailable(for: status)
             
             pokeButton.flex.isIncludedInLayout(false)
             
             switch status {
             case .bothUnanswered:
                 titleLabel.attributedText = NSAttributedString(
-                    string: "오늘의 질문이 도착했어요\n먼저 답해볼까요?",
+                    string: isAnswerUnavailable
+                        ? "지금은 답변할 수 없어요\n오전 8시에 새 질문이 도착해요"
+                        : "오늘의 질문이 도착했어요\n먼저 답해볼까요?",
                     attributes: [.paragraphStyle: paragraphStyle]
                 )
                 pokeButton.isHidden = true
-                arrowButton.isHidden = false
+                arrowButton.isHidden = isAnswerUnavailable
                 
             case .partnerAnswered:
                 titleLabel.attributedText = NSAttributedString(
-                    string: "연인이 벌써 답했어요!\n내가 답하면 바로\n확인할 수 있어요",
+                    string: isAnswerUnavailable
+                        ? "답변할 수 없어요\n오전 8시에 새 질문이 도착해요"
+                        : "연인이 벌써 답했어요!\n내가 답하면 바로\n확인할 수 있어요",
                     attributes: [.paragraphStyle: paragraphStyle]
                 )
                 pokeButton.isHidden = true
-                arrowButton.isHidden = false
+                arrowButton.isHidden = isAnswerUnavailable
                 
             case .myAnswered:
                 titleLabel.attributedText = NSAttributedString(
@@ -1066,6 +1093,16 @@ extension HomeViewController {
         showAlert(
             icon: UIImage(resource: .unsmile),
             title: "답변 내용이 없어 확인할 수 없어요",
+            description: nil,
+            primaryButtonTitle: "확인",
+            primaryButtonAction: {}
+        )
+    }
+    
+    private func showAnswerUnavailableAlert() {
+        showAlert(
+            icon: UIImage(resource: .unsmile),
+            title: "지금은 답변할 수 없어요\n오전 8시에 새 질문이 도착해요",
             description: nil,
             primaryButtonTitle: "확인",
             primaryButtonAction: {}
