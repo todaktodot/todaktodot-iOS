@@ -26,6 +26,7 @@ final class HomeViewController: BaseViewController, View {
     private var firstAnimation = true
     private var currentAnswerStatus: AnswerStatus?
     private var hasShownCardTypeTooltip = false
+    private var liftedCardView: UIView?
     private let mainCard = UIView().then {
         $0.backgroundColor = .white
         $0.layer.cornerRadius = 20
@@ -918,6 +919,27 @@ extension HomeViewController {
         weekCardsContainer.flex.layout()
         weekCardsContainer.pin.width(view.frame.width - 40)
         
+        let longPress = UILongPressGestureRecognizer(target: self, action: #selector(handleCardLongPress(_:)))
+        longPress.minimumPressDuration = 0.3
+        weekCardsContainer.addGestureRecognizer(longPress)
+    }
+    
+    private func weekCardTapped(from view: UIView) {
+        guard let card = historyCards.first(where: { $0.id == view.tag }) else { return }
+        let isToday = Calendar.current.isDate(card.date, inSameDayAs: CardService.shared.getCardSystemDate())
+        if isToday {
+            if card.user1Answered && card.user2Answered {
+                coordinator?.showHistoryCardDetail(card: card)
+            } else {
+                showNonAnsweredAlert()
+            }
+        } else {
+            if !card.user1Answered && !card.user2Answered {
+                showNonAnsweredAlert()
+            } else {
+                coordinator?.showHistoryCardDetail(card: card)
+            }
+        }
     }
     
     func cardAmimation() {
@@ -1141,5 +1163,50 @@ extension HomeViewController {
 extension HomeViewController: BaseViewControllerDelegate {
     func navigateToMyPage() {
         coordinator?.navigateToMyPage(self.navigationController, tabBarCoordinator: coordinator?.tabBarCoordinator)
+    }
+}
+
+extension HomeViewController {
+    @objc private func handleCardLongPress(_ gesture: UILongPressGestureRecognizer) {
+        let location = gesture.location(in: weekCardsContainer)
+
+        switch gesture.state {
+        case .began, .changed:
+            let target = weekCardsContainer.subviews.reversed().first { view in
+                let touchRect = CGRect(x: view.frame.minX, y: view.frame.minY, width: view.frame.width, height: 83)
+                return touchRect.contains(location)
+            }
+
+            if target !== liftedCardView {
+                if let prev = liftedCardView {
+                    UIView.animate(withDuration: 0.25, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.3) {
+                        prev.transform = .identity
+                        prev.layer.shadowOpacity = 0.08
+                    }
+                }
+                liftedCardView = target
+                if let card = target {
+                    UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5) {
+                        card.transform = CGAffineTransform(translationX: 0, y: -12).scaledBy(x: 1.02, y: 1.02)
+                        card.layer.shadowOpacity = 0.18
+                    }
+                }
+            }
+
+        case .ended, .cancelled:
+            if let card = liftedCardView {
+                UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.3) {
+                    card.transform = .identity
+                    card.layer.shadowOpacity = 0.08
+                }
+                if gesture.state == .ended, let tapped = liftedCardView {
+                    weekCardTapped(from: tapped)
+                }
+            }
+            liftedCardView = nil
+
+        default:
+            break
+        }
     }
 }
