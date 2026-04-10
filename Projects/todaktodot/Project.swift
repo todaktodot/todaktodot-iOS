@@ -15,6 +15,22 @@ let googleServiceInfoScript = TargetScript.post(
     basedOnDependencyAnalysis: false
 )
 
+let crashlyticsScript = TargetScript.post(
+    script: """
+    ROOT_DIR=$(git rev-parse --show-toplevel)
+    "${ROOT_DIR}/Tuist/.build/checkouts/firebase-ios-sdk/Crashlytics/run"
+    """,
+    name: "Firebase Crashlytics dSYM Upload",
+    inputPaths: [
+        "${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}",
+        "${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${PRODUCT_NAME}",
+        "${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Info.plist",
+        "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist",
+        "$(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)"
+    ],
+    basedOnDependencyAnalysis: false
+)
+
 let project = Project(
     name: "todaktodot",
     options: .options(
@@ -80,7 +96,7 @@ let project = Project(
                 "Sources/App/LaunchScreen.storyboard",
             ],
             entitlements: "todaktodot.entitlements",
-            scripts: [googleServiceInfoScript],
+            scripts: [googleServiceInfoScript, crashlyticsScript],
             dependencies: [
                 .external(name: "Alamofire"),
                 .external(name: "Then"),
@@ -107,6 +123,7 @@ let project = Project(
                     "VERSIONING_SYSTEM": "apple-generic",
                     "CURRENT_PROJECT_VERSION": "1",
                     "MARKETING_VERSION": "1.0.0",
+                    "DEBUG_INFORMATION_FORMAT": "dwarf-with-dsym",
                 ],
                 configurations: [
                     .debug(name: "Debug", xcconfig: "Config/Debug.xcconfig"),
