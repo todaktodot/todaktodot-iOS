@@ -8,6 +8,7 @@
 import Foundation
 import ReactorKit
 import RxSwift
+import NetworkKit
 
 final class HistoryCardDetailReactor: Reactor {
     
@@ -144,7 +145,10 @@ final class HistoryCardDetailReactor: Reactor {
                         case .success:
                             return self.pollFeedback(coupleCardId: card.coupleCardId, fallback: .error)
                         case .failure(let error):
-                            Self.sendWebhook(card: card)
+                            let afErr = error as? CustomAFError
+                            let code = afErr?.statusCode.map { "\($0)" } ?? "unknown"
+                            let msg = afErr?.message ?? error.localizedDescription
+                            Self.sendWebhook(card: card, reason: "API 호출 실패", statusCode: code, message: msg)
                             return .just(.setFeedbackState(.error))
                         }
                     }
@@ -164,17 +168,24 @@ final class HistoryCardDetailReactor: Reactor {
                             if let feedback = card.feedback {
                                 return .just(.setFeedbackState(.loaded(feedback)))
                             }
-                            if case .error = fallback { Self.sendWebhook(card: self.currentState.card) }
+                            if case .error = fallback {
+                                Self.sendWebhook(card: self.currentState.card, reason: "마지막 조회, 피드백 빈값")
+                            }
                             return .just(.setFeedbackState(fallback))
                         case .failure(let error):
-                            if case .error = fallback { Self.sendWebhook(card: self.currentState.card) }
+                            if case .error = fallback {
+                                let afErr = error as? CustomAFError
+                                let code = afErr?.statusCode.map { "\($0)" } ?? "unknown"
+                                let msg = afErr?.message ?? error.localizedDescription
+                                Self.sendWebhook(card: self.currentState.card, reason: "API 실패", statusCode: code, message: msg)
+                            }
                             return .just(.setFeedbackState(fallback))
                         }
                     }
             }
     }
     
-    private static func sendWebhook(card: QuestionCard) {
+    private static func sendWebhook(card: QuestionCard, reason: String, statusCode: String = "", message: String = "") {
         let date = card.date.toYYYYMMDD()
         guard !hasAction("webhook", for: date) else { return }
         markAction("webhook", for: date)
@@ -190,8 +201,11 @@ final class HistoryCardDetailReactor: Reactor {
                 "timestamp": ISO8601DateFormatter().string(from: Date()),
                 "footer": ["text": "🍎 iOS"],
                 "fields": [
-                    ["name": "coupleCardId", "value": "\(card.coupleCardId)", "inline": false],
-                    ["name": "coupleId", "value": "\(UserdefaultKey.coupleId ?? -1)", "inline": false]
+                    ["name": "원인", "value": "\(reason)", "inline": false],
+                    ["name": "요청 API", "value": "/api/feedback/generate", "inline": false],
+                    ["name": "coupleId", "value": "\(UserdefaultKey.coupleId ?? -1)", "inline": false],
+                    ["name": "request body", "value": "```json\n{\n  \"coupleCardId\": \(card.coupleCardId),\n  \"cardId\": \(card.id),\n  \"issuedDate\": \"\(date)\"\n}\n```", "inline": false],
+                    ["name": "response", "value": "```json\n{\n  \"statusCode\": \(statusCode),\n  \"message\": \"\(message)\"\n}\n```", "inline": false],
                 ]
             ]]
         ]

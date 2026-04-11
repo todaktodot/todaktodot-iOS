@@ -67,6 +67,7 @@ let project = Project(
                     "KAKAO_APP_KEY": "$(KAKAO_APP_KEY)",
                     "TODAKTODOT_API": "$(TODAKTODOT_API)",
                     "TODAKTODOT_DEV_API": "$(TODAKTODOT_DEV_API)",
+                    "DISCORD_WEBHOOK_URL": "$(DISCORD_WEBHOOK_URL)",
                     "NSAppTransportSecurity": [
                         "NSAllowsArbitraryLoads": true
                     ],
