@@ -26,6 +26,7 @@ final class HomeViewController: BaseViewController, View {
     private var firstAnimation = true
     private var currentAnswerStatus: AnswerStatus?
     private var hasShownCardTypeTooltip = false
+    private var liftedCardView: UIView?
     private let mainCard = UIView().then {
         $0.backgroundColor = .white
         $0.layer.cornerRadius = 20
@@ -192,6 +193,9 @@ final class HomeViewController: BaseViewController, View {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        if let status = currentAnswerStatus {
+            updateMainCard(for: status)
+        }
         fetchHistoryCards()
     }
     
@@ -336,8 +340,17 @@ final class HomeViewController: BaseViewController, View {
         
         arrowButton.rx.tap
             .do(onNext: { print("🔘 Arrow button tap detected!") })
-            .subscribe(onNext: { [weak self] in
+            .withLatestFrom(reactor.state.map { $0.answerStatus })
+            .subscribe(onNext: { [weak self] status in
                 guard let self = self else { return }
+                
+                if self.isAnswerSubmissionUnavailable(for: status) {
+                    self.updateMainCard(for: status)
+                    self.showAnswerUnavailableAlert()
+                    self.fetchHistoryCards()
+                    return
+                }
+                
                 let cardSystemDate = CardService.shared.getCardSystemDate()
                 let todayCard = self.historyCards.first { Calendar.current.isDate($0.date, inSameDayAs: cardSystemDate) }
                 
@@ -437,6 +450,9 @@ final class HomeViewController: BaseViewController, View {
     }
     
     @objc private func appWillEnterForeground() {
+        if let status = currentAnswerStatus {
+            updateMainCard(for: status)
+        }
         fetchHistoryCards()
     }
     
@@ -450,6 +466,13 @@ final class HomeViewController: BaseViewController, View {
             pokeButton.backgroundColor = TodotColors.Button.purpleButton1
             pokeButton.isEnabled = true
         }
+    }
+    
+    private func isAnswerSubmissionUnavailable(for status: AnswerStatus) -> Bool {
+        let hour = Calendar.current.component(.hour, from: Date())
+        let isClosedHours = hour >= 4 && hour < 8
+        let hasNotAnswered = status == .bothUnanswered || status == .partnerAnswered
+        return isClosedHours && hasNotAnswered
     }
     
     override func viewDidLayoutSubviews() {
@@ -482,7 +505,7 @@ extension HomeViewController {
         let descParagraphStyle = NSMutableParagraphStyle()
         descParagraphStyle.lineHeightMultiple = 1.5
         descriptionLabel.attributedText = NSAttributedString(
-            string: "오전 8시 기준으로 질문이 바뀌니 8시가 지나기\n전에 답해보세요.",
+            string: "매일 08시 업데이트· 다음날 04시 작성 마감\n04시~ 08시 사이에는 답변할 수 없어요",
             attributes: [.paragraphStyle: descParagraphStyle]
         )
         
@@ -635,25 +658,30 @@ extension HomeViewController {
         let applyUpdate = { [self] in
             let paragraphStyle = NSMutableParagraphStyle()
             paragraphStyle.lineHeightMultiple = 1.5
+            let isAnswerUnavailable = isAnswerSubmissionUnavailable(for: status)
             
             pokeButton.flex.isIncludedInLayout(false)
             
             switch status {
             case .bothUnanswered:
                 titleLabel.attributedText = NSAttributedString(
-                    string: "오늘의 질문이 도착했어요\n먼저 답해볼까요?",
+                    string: isAnswerUnavailable
+                        ? "지금은 답변할 수 없어요\n오전 8시에 새 질문이 도착해요"
+                        : "오늘의 질문이 도착했어요\n먼저 답해볼까요?",
                     attributes: [.paragraphStyle: paragraphStyle]
                 )
                 pokeButton.isHidden = true
-                arrowButton.isHidden = false
+                arrowButton.isHidden = isAnswerUnavailable
                 
             case .partnerAnswered:
                 titleLabel.attributedText = NSAttributedString(
-                    string: "연인이 벌써 답했어요!\n내가 답하면 바로\n확인할 수 있어요",
+                    string: isAnswerUnavailable
+                        ? "답변할 수 없어요\n오전 8시에 새 질문이 도착해요"
+                        : "연인이 벌써 답했어요!\n내가 답하면 바로\n확인할 수 있어요",
                     attributes: [.paragraphStyle: paragraphStyle]
                 )
                 pokeButton.isHidden = true
-                arrowButton.isHidden = false
+                arrowButton.isHidden = isAnswerUnavailable
                 
             case .myAnswered:
                 titleLabel.attributedText = NSAttributedString(
@@ -891,6 +919,27 @@ extension HomeViewController {
         weekCardsContainer.flex.layout()
         weekCardsContainer.pin.width(view.frame.width - 40)
         
+        let longPress = UILongPressGestureRecognizer(target: self, action: #selector(handleCardLongPress(_:)))
+        longPress.minimumPressDuration = 0.3
+        weekCardsContainer.addGestureRecognizer(longPress)
+    }
+    
+    private func weekCardTapped(from view: UIView) {
+        guard let card = historyCards.first(where: { $0.id == view.tag }) else { return }
+        let isToday = Calendar.current.isDate(card.date, inSameDayAs: CardService.shared.getCardSystemDate())
+        if isToday {
+            if card.user1Answered && card.user2Answered {
+                coordinator?.showHistoryCardDetail(card: card)
+            } else {
+                showNonAnsweredAlert()
+            }
+        } else {
+            if !card.user1Answered && !card.user2Answered {
+                showNonAnsweredAlert()
+            } else {
+                coordinator?.showHistoryCardDetail(card: card)
+            }
+        }
     }
     
     func cardAmimation() {
@@ -1072,6 +1121,16 @@ extension HomeViewController {
         )
     }
     
+    private func showAnswerUnavailableAlert() {
+        showAlert(
+            icon: UIImage(resource: .unsmile),
+            title: "지금은 답변할 수 없어요\n오전 8시에 새 질문이 도착해요",
+            description: nil,
+            primaryButtonTitle: "확인",
+            primaryButtonAction: {}
+        )
+    }
+    
     private func showWeeklyCardsFetchFailedAlert() {
         showAlert(
             icon: UIImage(resource: .unsmile),
@@ -1104,5 +1163,50 @@ extension HomeViewController {
 extension HomeViewController: BaseViewControllerDelegate {
     func navigateToMyPage() {
         coordinator?.navigateToMyPage(self.navigationController, tabBarCoordinator: coordinator?.tabBarCoordinator)
+    }
+}
+
+extension HomeViewController {
+    @objc private func handleCardLongPress(_ gesture: UILongPressGestureRecognizer) {
+        let location = gesture.location(in: weekCardsContainer)
+
+        switch gesture.state {
+        case .began, .changed:
+            let target = weekCardsContainer.subviews.reversed().first { view in
+                let touchRect = CGRect(x: view.frame.minX, y: view.frame.minY, width: view.frame.width, height: 83)
+                return touchRect.contains(location)
+            }
+
+            if target !== liftedCardView {
+                if let prev = liftedCardView {
+                    UIView.animate(withDuration: 0.25, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.3) {
+                        prev.transform = .identity
+                        prev.layer.shadowOpacity = 0.08
+                    }
+                }
+                liftedCardView = target
+                if let card = target {
+                    UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5) {
+                        card.transform = CGAffineTransform(translationX: 0, y: -12).scaledBy(x: 1.02, y: 1.02)
+                        card.layer.shadowOpacity = 0.18
+                    }
+                }
+            }
+
+        case .ended, .cancelled:
+            if let card = liftedCardView {
+                UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.3) {
+                    card.transform = .identity
+                    card.layer.shadowOpacity = 0.08
+                }
+                if gesture.state == .ended, let tapped = liftedCardView {
+                    weekCardTapped(from: tapped)
+                }
+            }
+            liftedCardView = nil
+
+        default:
+            break
+        }
     }
 }

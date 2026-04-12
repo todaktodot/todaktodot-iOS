@@ -10,7 +10,8 @@ internal import Alamofire
 
 public struct CustomAFError: Error {
     let underlyingError: AFError
-    let message: String
+    public let message: String
+    public let statusCode: Int?
     
     public var isAlreadyCouple: Bool {
         return message == APIErrorMessages.aleardyCouple.rawValue
