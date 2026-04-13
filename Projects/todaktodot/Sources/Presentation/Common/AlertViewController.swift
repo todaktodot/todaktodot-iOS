@@ -33,6 +33,10 @@ import PinLayout
  )
  */
 
+enum AppUpdateType {
+    case force, optional, none
+}
+
 final class AlertViewController: UIViewController {
     
     struct Configuration {
@@ -44,6 +48,7 @@ final class AlertViewController: UIViewController {
         let primaryButtonAction: () -> Void
         let secondaryButtonTitle: String?
         let secondaryButtonAction: (() -> Void)?
+        let isUpdateAlert: AppUpdateType?
     }
     
     private let dimmedView = UIView()
@@ -54,6 +59,18 @@ final class AlertViewController: UIViewController {
     private let buttonContainer = UIView()
     private let primaryButton = UIButton()
     private let secondaryButton = UIButton()
+    private let skipTodayButton = UIButton(type: .system).then {
+        let attributedString = NSAttributedString(
+            string: "오늘 하루 다시 보지 않기",
+            attributes: [
+                .underlineStyle: NSUnderlineStyle.single.rawValue,
+                .foregroundColor: UIColor.grayScale600,
+                .font: UIFont.pretenRegular(14)
+            ]
+        )
+        
+        $0.setAttributedTitle(attributedString, for: .normal)
+    }
     
     private let config: Configuration
     
@@ -62,6 +79,10 @@ final class AlertViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
         modalPresentationStyle = .overFullScreen
         modalTransitionStyle = .crossDissolve
+        
+        if config.isUpdateAlert == .optional {
+            skipTodayButton.addTarget(self, action: #selector(skipTodayButtonTapped), for: .touchUpInside)
+        }
     }
     
     required init?(coder: NSCoder) {
@@ -208,6 +229,12 @@ final class AlertViewController: UIViewController {
                         buttonFlex.addItem(primaryButton).height(48)
                     }
                 }
+                
+                if config.isUpdateAlert == .optional {
+                    flex.addItem(skipTodayButton)
+                        .marginTop(16)
+                        .alignSelf(.center)
+                }
             }
     }
     
@@ -233,9 +260,13 @@ final class AlertViewController: UIViewController {
     }
     
     @objc private func primaryButtonTapped() {
-        animateOut { [weak self] in
-            self?.dismiss(animated: false) {
-                self?.config.primaryButtonAction()
+        if let isUpdate = self.config.isUpdateAlert, isUpdate == .force {
+            self.config.primaryButtonAction()
+        } else {
+            animateOut { [weak self] in
+                self?.dismiss(animated: false) {
+                    self?.config.primaryButtonAction()
+                }
             }
         }
     }
@@ -244,6 +275,14 @@ final class AlertViewController: UIViewController {
         animateOut { [weak self] in
             self?.dismiss(animated: false) {
                 self?.config.secondaryButtonAction?()
+            }
+        }
+    }
+    
+    @objc private func skipTodayButtonTapped() {
+        animateOut { [weak self] in
+            self?.dismiss(animated: false) {
+                UserdefaultKey.skipUpdateAlertToday = Date()
             }
         }
     }
@@ -269,7 +308,8 @@ extension UIViewController {
         primaryButtonTitle: String,
         primaryButtonAction: @escaping () -> Void,
         secondaryButtonTitle: String? = nil,
-        secondaryButtonAction: (() -> Void)? = nil
+        secondaryButtonAction: (() -> Void)? = nil,
+        isUpdate: AppUpdateType? = nil
     ) {
         let config = AlertViewController.Configuration(
             icon: icon,
@@ -279,7 +319,8 @@ extension UIViewController {
             primaryButtonTitle: primaryButtonTitle,
             primaryButtonAction: primaryButtonAction,
             secondaryButtonTitle: secondaryButtonTitle,
-            secondaryButtonAction: secondaryButtonAction
+            secondaryButtonAction: secondaryButtonAction,
+            isUpdateAlert: isUpdate
         )
         
         let alertVC = AlertViewController(config: config)

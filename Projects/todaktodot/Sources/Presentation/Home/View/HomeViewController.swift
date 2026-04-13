@@ -91,7 +91,7 @@ final class HomeViewController: BaseViewController, View {
         $0.textColor = .white
         $0.textAlignment = .center
     }
-
+    
     private let arrowButton = UIButton().then {
         $0.backgroundColor = TodotColors.Button.purpleButton1
         $0.layer.cornerRadius = 24
@@ -131,12 +131,12 @@ final class HomeViewController: BaseViewController, View {
         $0.isHidden = true
         $0.clipsToBounds = false
     }
-
+    
     private let tooltipImageView = UIImageView().then {
         $0.image = UIImage(named: "tooltip")
         $0.contentMode = .scaleToFill
     }
-
+    
     private let tooltipLabel = TDLabel().then {
         $0.text = "방금 완성된 오늘의 대화예요!\n눌러서 확인해보세요 🙂"
         $0.font = .pretenMedium(14)
@@ -163,8 +163,8 @@ final class HomeViewController: BaseViewController, View {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-// 테스트용 배치
-// reactor?.action.onNext(.assignCards)
+        // 테스트용 배치
+        // reactor?.action.onNext(.assignCards)
         setupUI()
         showMainCardSkeleton()
         fetchAllCards()
@@ -179,7 +179,7 @@ final class HomeViewController: BaseViewController, View {
     
     private func fetchAllCards() {
         let savedTodayCards = CardService.shared.getTodayCards()
-
+        
         if let lastWeeklyDate = UserdefaultKey.lastWeeklyCardDate,
            lastWeeklyDate >= Date(),
            !savedTodayCards.isEmpty {
@@ -268,14 +268,14 @@ final class HomeViewController: BaseViewController, View {
             .disposed(by: disposeBag)
         
         let isPokedStream = reactor.state.map { $0.isPoked }.distinctUntilChanged().share(replay: 1)
-
+        
         isPokedStream
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] isPoked in
                 self?.updatePokeButton(isPoked: isPoked)
             })
             .disposed(by: disposeBag)
-
+        
         reactor.pulse(\.$didPokeSuccess)
             .filter { $0 }
             .observe(on: MainScheduler.instance)
@@ -415,17 +415,17 @@ final class HomeViewController: BaseViewController, View {
     private func fetchHistoryCards() {
         /// 월요일부터 오늘까지 (8시 기준)
         var calendar = Calendar.current
-            calendar.firstWeekday = 2
-            
-            let today = CardService.shared.getCardSystemDate()
-            let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)
-            guard let startOfWeek = calendar.date(from: components) else { return }
-            
-            let startDate = startOfWeek.toYYYYMMDD()
-            let endDate = today.toYYYYMMDD()
-            
-            print("📅 조회 범위: \(startDate) ~ \(endDate)")
-            reactor?.action.onNext(.fetchHistoryCards(startDate: startDate, endDate: endDate))
+        calendar.firstWeekday = 2
+        
+        let today = CardService.shared.getCardSystemDate()
+        let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)
+        guard let startOfWeek = calendar.date(from: components) else { return }
+        
+        let startDate = startOfWeek.toYYYYMMDD()
+        let endDate = today.toYYYYMMDD()
+        
+        print("📅 조회 범위: \(startDate) ~ \(endDate)")
+        reactor?.action.onNext(.fetchHistoryCards(startDate: startDate, endDate: endDate))
     }
     
     
@@ -454,6 +454,7 @@ final class HomeViewController: BaseViewController, View {
             updateMainCard(for: status)
         }
         fetchHistoryCards()
+        checkNewVersion()
     }
     
     private func updatePokeButton(isPoked: Bool) {
@@ -666,8 +667,8 @@ extension HomeViewController {
             case .bothUnanswered:
                 titleLabel.attributedText = NSAttributedString(
                     string: isAnswerUnavailable
-                        ? "지금은 답변할 수 없어요\n오전 8시에 새 질문이 도착해요"
-                        : "오늘의 질문이 도착했어요\n먼저 답해볼까요?",
+                    ? "지금은 답변할 수 없어요\n오전 8시에 새 질문이 도착해요"
+                    : "오늘의 질문이 도착했어요\n먼저 답해볼까요?",
                     attributes: [.paragraphStyle: paragraphStyle]
                 )
                 pokeButton.isHidden = true
@@ -676,8 +677,8 @@ extension HomeViewController {
             case .partnerAnswered:
                 titleLabel.attributedText = NSAttributedString(
                     string: isAnswerUnavailable
-                        ? "답변할 수 없어요\n오전 8시에 새 질문이 도착해요"
-                        : "연인이 벌써 답했어요!\n내가 답하면 바로\n확인할 수 있어요",
+                    ? "답변할 수 없어요\n오전 8시에 새 질문이 도착해요"
+                    : "연인이 벌써 답했어요!\n내가 답하면 바로\n확인할 수 있어요",
                     attributes: [.paragraphStyle: paragraphStyle]
                 )
                 pokeButton.isHidden = true
@@ -735,7 +736,7 @@ extension HomeViewController {
         
         chip1.updateTitle("\(firstCard.mode.emoji)" + " " + "\(firstCard.mode.displayName)")
         chip2.updateTitle("\(firstCard.subject.emoji)" + " " + "\(firstCard.subject.displayName)")
-//        firstCard.type.
+        //        firstCard.type.
         chip1.flex.width(chip1.intrinsicContentSize.width)
         chip2.flex.width(chip2.intrinsicContentSize.width)
         chip1.superview?.flex.layout(mode: .adjustWidth)
@@ -789,7 +790,7 @@ extension HomeViewController {
         
         hideMainCardSkeleton()
     }
-       
+    
     private func updateButtonForMyAnswered(status: AnswerStatus, isCoupleConnected: Bool) {
         guard status == .myAnswered else { return }
         
@@ -805,6 +806,37 @@ extension HomeViewController {
                 pokeButton.setImage(resizedImage, for: .normal)
                 pokeButton.imageEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 8)
                 pokeButton.titleEdgeInsets = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 0)
+            }
+        }
+    }
+    
+    private func checkNewVersion() {
+        let shouldShowUpdateAlert: Bool = {
+            guard let date = UserdefaultKey.skipUpdateAlertToday else {
+                return true
+            }
+            return !Calendar.current.isDateInToday(date)
+        }()
+
+        guard shouldShowUpdateAlert else { return }
+        
+        UpdateManager.shared.fetch {
+            let checkUpdate = UpdateManager.shared.checkUpdate()
+            let type = checkUpdate.type
+            let url = checkUpdate.url
+            
+            switch type {
+            case .force:
+                let forceUpdateViewController = ForceUpdateViewController(url: url)
+                self.coordinator?.tabBarCoordinator?.navigationController.setViewControllers([forceUpdateViewController], animated: false)
+            case .optional:
+                self.showAlert(icon: UIImage(resource: .bell), title: "새로운 버전이 출시됐어요!", description: "지금 업데이트하면 더욱 빠르고 편리하게\n서비스를 이용할 수 있어요", primaryButtonTitle: "업데이트 하기", primaryButtonAction: {
+                    if let url {
+                        UIApplication.shared.open(url)
+                    }
+                }, secondaryButtonTitle: "나중에 할게요", isUpdate: .optional)
+            case .none:
+                break
             }
         }
     }
@@ -968,7 +1000,7 @@ extension HomeViewController {
         let calendar = Calendar.current
         let cardSystemDate = CardService.shared.getCardSystemDate()
         let isToday = calendar.isDate(card.date, inSameDayAs: cardSystemDate)
-    
+        
         if isToday {
             cardView.backgroundColor = UIColor.mainPurple
         } else {
@@ -1000,9 +1032,9 @@ extension HomeViewController {
         dayLabel.textColor = isToday ? .white : .grayScale900
         
         let topicLabel = TDLabel()
-        let topicText = card.type != .none 
-            ? "\(card.mode.displayName) · \(card.subject.displayName) · \(card.type.displayName)"
-            : "\(card.mode.displayName) · \(card.subject.displayName)"
+        let topicText = card.type != .none
+        ? "\(card.mode.displayName) · \(card.subject.displayName) · \(card.type.displayName)"
+        : "\(card.mode.displayName) · \(card.subject.displayName)"
         topicLabel.text = topicText
         topicLabel.font = .pretenRegular(14)
         topicLabel.textColor = isToday ? .white : .grayScale800
@@ -1169,14 +1201,14 @@ extension HomeViewController: BaseViewControllerDelegate {
 extension HomeViewController {
     @objc private func handleCardLongPress(_ gesture: UILongPressGestureRecognizer) {
         let location = gesture.location(in: weekCardsContainer)
-
+        
         switch gesture.state {
         case .began, .changed:
             let target = weekCardsContainer.subviews.reversed().first { view in
                 let touchRect = CGRect(x: view.frame.minX, y: view.frame.minY, width: view.frame.width, height: 83)
                 return touchRect.contains(location)
             }
-
+            
             if target !== liftedCardView {
                 if let prev = liftedCardView {
                     UIView.animate(withDuration: 0.25, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.3) {
@@ -1192,7 +1224,7 @@ extension HomeViewController {
                     }
                 }
             }
-
+            
         case .ended, .cancelled:
             if let card = liftedCardView {
                 UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.3) {
@@ -1204,7 +1236,7 @@ extension HomeViewController {
                 }
             }
             liftedCardView = nil
-
+            
         default:
             break
         }
