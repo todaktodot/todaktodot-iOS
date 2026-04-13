@@ -10,6 +10,7 @@ import FlexLayout
 import PinLayout
 import Then
 import RxSwift
+import KakaoSDKTalk
 
 final class SettingSectionView: UIView {
     private var disposeBag = DisposeBag()
@@ -24,6 +25,10 @@ final class SettingSectionView: UIView {
         $0.text = "v \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0")"
         $0.font = .pretenRegular(16)
         $0.textColor = .grayScale400
+    }
+    
+    private let feedbackButton = ModalButton().then {
+        $0.setTitle(title: "피드백 보내기")
     }
     
     let infoNotiSwitch = CustomSwitch(title: "정보성 알림")
@@ -44,6 +49,7 @@ final class SettingSectionView: UIView {
         backgroundColor = .white
         layer.cornerRadius = 16
         setupUI()
+        feedbackButton.addTarget(self, action: #selector(feedbackTap(_:)), for: .touchUpInside)
     }
 
     required init?(coder: NSCoder) {
@@ -63,6 +69,13 @@ final class SettingSectionView: UIView {
             .define {
                 
                 $0.addItem(serviceTermButton)
+                    .height(rowHeight)
+
+                $0.addItem(divider())
+                    .height(1)
+                    .marginHorizontal(-20)
+                
+                $0.addItem(feedbackButton)
                     .height(rowHeight)
 
                 $0.addItem(divider())
@@ -97,5 +110,10 @@ final class SettingSectionView: UIView {
                         $0.addItem(versionValueLabel)
                     }
             }
+    }
+    
+    @objc private func feedbackTap(_ sender: UIButton) {
+        TalkApi.shared.chatChannel(channelPublicId: "_kSidX") { _ in
+        }
     }
 }
