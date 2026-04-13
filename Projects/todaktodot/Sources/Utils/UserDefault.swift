@@ -73,6 +73,9 @@ enum UserdefaultKey {
     @UserDefault(key: "lastPokeDate", defaultValue: nil)
     static var lastPokeDate: String?
     
+    @UserDefault(key: "skipUpdateAlertToday", defaultValue: nil)
+    static var skipUpdateAlertToday: Date?
+    
     // MARK: - AI 피드백 폴링/재생성 이력
     // key: dailyweek_{lastWeeklyCardDate}, value: { "2026-04-05": ["polled", "regenerated"] }
     @UserDefault(key: "feedbackActionHistory", defaultValue: [:])
