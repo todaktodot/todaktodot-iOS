@@ -76,7 +76,11 @@ final class AIReportViewController: BaseViewController, View {
         setupViews()
         setupFlexLayout()
         
-        reactor?.action.onNext(.fetchReportIsCreated)
+        if UserdefaultKey.coupleType != .solo {
+            reactor?.action.onNext(.fetchReportIsCreated)
+        } else {
+            switchSegment(segment: .lastWeek)
+        }
         reactor?.action.onNext(.fetchStorageListData)
     }
     
