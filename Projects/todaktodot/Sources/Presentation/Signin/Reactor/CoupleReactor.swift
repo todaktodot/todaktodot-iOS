@@ -75,7 +75,7 @@ final class CoupleReactor: Reactor {
         case .tapConnectButton(let code):
             return coupleUseCase.connectCouple(code: code)
                 .flatMap { _ -> Observable<Mutation> in
-                    return self.coupleUseCase.assignCards(startDate: CardService.shared.getCardSystemDate().toYYYYMMDD(), endDate: self.calNextSunday())
+                    return self.assignCards()
                         .map { .setCoupleConnectSuccess($0) }
                         .catch { .just(.setError($0)) }
                 }
@@ -100,7 +100,7 @@ final class CoupleReactor: Reactor {
         case .tapSoloStartButton:
             return coupleUseCase.soloStart()
                 .flatMap { _ -> Observable<Mutation> in
-                    return self.coupleUseCase.assignCards(startDate: CardService.shared.getCardSystemDate().toYYYYMMDD(), endDate: self.calNextSunday())
+                    return self.assignCards()
                         .map { .setSoloStart($0) }
                         .catch { .just(.setError($0)) }
                 }
@@ -151,15 +151,39 @@ final class CoupleReactor: Reactor {
         return newState
     }
     
-    func calNextSunday() -> String {
-        let calendar = Calendar.current
-        let startOfToday = calendar.startOfDay(for: Date())
-        let targetSunday = calendar.nextDate(
-            after: startOfToday.addingTimeInterval(-1),
-            matching: DateComponents(weekday: 1),
-            matchingPolicy: .nextTime
-        )
-        let endDate = targetSunday ?? Date()
-        return endDate.toYYYYMMDD()
+    private func assignCards() -> Observable<Bool> {
+        let now = Date()
+        
+        var calendar = Calendar.current
+        
+        if let timeZone = TimeZone(identifier: "Asia/Seoul") {
+            calendar.timeZone = timeZone
+        }
+        
+        let hour = calendar.component(.hour, from: now)
+        
+        guard let yesterdayDate = calendar.date(byAdding: .day, value: -1, to: now),
+              let tomorrowDate = calendar.date(byAdding: .day, value: 1, to: now) else {
+            assertionFailure("Date 계산 실패")
+            return self.coupleUseCase.assignCards(
+                startDate: now.toYYYYMMDD(),
+                endDate: now.toYYYYMMDD()
+            )
+        }
+        
+        switch hour {
+        case 0..<4:
+            return self.coupleUseCase.assignCards(
+                startDate: yesterdayDate.toYYYYMMDD(),
+                endDate: tomorrowDate.toYYYYMMDD()
+            )
+        case 4..<8:
+            return .just(true)
+        default:
+            return self.coupleUseCase.assignCards(
+                startDate: now.toYYYYMMDD(),
+                endDate: tomorrowDate.toYYYYMMDD()
+            )
+        }
     }
 }
