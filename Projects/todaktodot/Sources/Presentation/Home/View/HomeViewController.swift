@@ -685,8 +685,11 @@ extension HomeViewController {
                 arrowButton.isHidden = isAnswerUnavailable
                 
             case .myAnswered:
+                let isCoupleConnected = reactor?.currentState.isCoupleConnected ?? false
                 titleLabel.attributedText = NSAttributedString(
-                    string: "답변 완료!\n연인이 답하기 전까지\n확인할 수 없어요",
+                    string: isCoupleConnected
+                    ? "답변 완료!\n연인이 답하기 전까지\n확인할 수 없어요"
+                    : "답변 완료!\n연인과 연결되지 않아\n확인할 수 없어요",
                     attributes: [.paragraphStyle: paragraphStyle]
                 )
                 pokeButton.isHidden = false
