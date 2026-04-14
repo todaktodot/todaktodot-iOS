@@ -172,11 +172,14 @@ final class SigninViewController: UIViewController, View {
             .observe(on: MainScheduler.asyncInstance)
             .subscribe(onNext: { [weak self] info in
                 guard let self = self else { return }
-                
-                if info.createdCoupleInfo && info.createdMyNickname {
+                if info.coupleType == .solo {
                     self.coordinator?.navigateToMain()
                 } else {
-                    self.coordinator?.showCoupleConnect()
+                    if info.createdCoupleInfo && info.createdMyNickname {
+                        self.coordinator?.navigateToMain()
+                    } else {
+                        self.coordinator?.showCoupleConnect()
+                    }
                 }
             })
             .disposed(by: disposeBag)

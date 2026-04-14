@@ -22,10 +22,21 @@ final class AppCoordinator: Coordinator {
     }
     
     func start() {
-        if isLoggedIn() {
-            showMainFlow()
-        } else {
-            showSigninFlow()
+        UpdateManager.shared.fetch {
+            let checkUpdate = UpdateManager.shared.checkUpdate()
+            let type = checkUpdate.type
+            let url = checkUpdate.url
+            
+            switch type {
+            case .force:
+                self.showUpdate(url: url)
+            case .optional, .none:
+                if self.isLoggedIn() {
+                    self.showMainFlow()
+                } else {
+                    self.showSigninFlow()
+                }
+            }
         }
     }
     
@@ -50,6 +61,11 @@ final class AppCoordinator: Coordinator {
         addChild(tabBarCoordinator)
         currentCoordinator = tabBarCoordinator
         tabBarCoordinator.start()
+    }
+    
+    private func showUpdate(url: URL?) {
+        let forceUpdateViewController = ForceUpdateViewController(url: url)
+        navigationController.setViewControllers([forceUpdateViewController], animated: true)
     }
     
     private func removeCurrentCoordinator() {
