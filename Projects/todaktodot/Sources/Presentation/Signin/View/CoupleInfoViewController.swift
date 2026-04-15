@@ -32,11 +32,6 @@ final class CoupleInfoViewController: UIViewController, View {
         $0.image = UIImage(resource: .connectBackground)
     }
     
-    private let scrollView = UIScrollView().then {
-        $0.contentInset.bottom = 120
-        $0.showsVerticalScrollIndicator = false
-    }
-    
     private let titleLabel = TDLabel().then {
         $0.text = "지금 우리는?"
         $0.font = .pretenSemiBold(28)
@@ -98,8 +93,7 @@ final class CoupleInfoViewController: UIViewController, View {
     
     private func setupViews() {
         view.addSubview(backgroundView)
-        view.addSubview(scrollView)
-        scrollView.addSubview(contentsView)
+        view.addSubview(contentsView)
         view.addSubview(startButton)
     }
     
@@ -128,21 +122,16 @@ final class CoupleInfoViewController: UIViewController, View {
     private func layoutViews() {
         backgroundView.pin
             .all()
-
-        scrollView.pin
-            .all()
-
+        
         contentsView.pin
-            .top()
-            .horizontally()
-
+            .all()
+        
         startButton.pin
             .horizontally(20)
             .bottom(48)
             .height(52)
-
-        contentsView.flex.layout(mode: .adjustHeight)
-        scrollView.contentSize = contentsView.frame.size
+        
+        contentsView.flex.layout()
     }
     
     func bind(reactor: CoupleReactor) {
