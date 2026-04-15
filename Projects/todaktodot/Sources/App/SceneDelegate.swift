@@ -18,6 +18,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         guard let windowScene = (scene as? UIWindowScene) else { return }
         let navigationController = UINavigationController()
+        navigationController.view.backgroundColor = .mainPurple
         let appCoordinator = AppCoordinator(navigationController: navigationController)
         self.appCoordinator = appCoordinator
         
