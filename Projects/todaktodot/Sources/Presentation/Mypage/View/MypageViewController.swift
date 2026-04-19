@@ -18,6 +18,7 @@ final class MypageViewController: CustomBackViewController, View {
     var disposeBag = DisposeBag()
     weak var coordinator: MypageCoordinator?
     private var isCouple = PublishRelay<Bool>()
+    private var coupleInfo: CoupleInfo?
     
     private let contentView = UIView()
     private let scrollView = UIScrollView().then {
@@ -261,6 +262,7 @@ final class MypageViewController: CustomBackViewController, View {
             .subscribe(onNext: { [weak self] info in
                 guard let self = self else { return }
                 
+                coupleInfo = info.coupleInfo
                 setMypageInfo(info)
                 isCouple.accept(info.isCouple)
                 settingSectionView.infoNotiSwitch.setSwitch(isOn: info.infoAgree)
@@ -393,7 +395,7 @@ final class MypageViewController: CustomBackViewController, View {
         
         ourInfoView.settingButton.rx.tap
             .subscribe(onNext: { [weak self] in
-                self?.coordinator?.showCoupleInfo()
+                self?.coordinator?.showCoupleInfo(info: self?.coupleInfo)
             })
             .disposed(by: disposeBag)
         
@@ -459,6 +461,7 @@ final class MypageViewController: CustomBackViewController, View {
         }
         coordinator?.onCoupleInfoUpdated = { [weak self] info in
             self?.ourInfoView.setOurInfo(info: info)
+            self?.coupleInfo = info
         }
         
         contentView.flex.layout()

@@ -76,13 +76,13 @@ final class MypageCoordinator: Coordinator {
         signinCoordinator.showNickname(flowType: .edit)
     }
     
-    func showCoupleInfo() {
+    func showCoupleInfo(info: CoupleInfo?) {
         let signinCoordinator = SigninCoordinator(navigationController: navigationController)
         addChild(signinCoordinator)
         signinCoordinator.onCoupleInfoUpdated = { [weak self] info in
             self?.onCoupleInfoUpdated?(info)
         }
-        signinCoordinator.showCoupleInfo(flowType: .editUser)
+        signinCoordinator.showCoupleInfo(flowType: .editUser, info: info)
     }
     
     func showCoupleConnect() {

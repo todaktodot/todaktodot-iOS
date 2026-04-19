@@ -64,13 +64,13 @@ final class SigninCoordinator: Coordinator {
         }
     }
     
-    func showCoupleInfo(flowType: CoupleInfoFlowType = .newUser) {
+    func showCoupleInfo(flowType: CoupleInfoFlowType = .newUser, info: CoupleInfo? = nil) {
         let useCase = CoupleUseCase(
             repository: CoupleRepositoryImpl(
                 networkManager: networkManager
                 )
         )
-        let coupleInfoViewController = CoupleInfoViewController(flowType: flowType)
+        let coupleInfoViewController = CoupleInfoViewController(flowType: flowType, info: info)
         coupleInfoViewController.coordinator = self
         coupleInfoViewController.reactor = CoupleReactor(coupleUseCase: useCase)
         navigationController.pushViewController(coupleInfoViewController, animated: true)

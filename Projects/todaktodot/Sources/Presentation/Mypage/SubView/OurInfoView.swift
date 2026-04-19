@@ -113,9 +113,9 @@ final class OurInfoView: UIView {
     }
     
     func setOurInfo(info: CoupleInfo) {
-        firstMetDate.text = info.firstMetDate
+        firstMetDate.text = info.firstMetDate.toKRFomatter()
         sinceMetDate.text = info.sinceMetDate
-        stage.text = info.stage
+        stage.text = CoupleStage(rawValue: info.stage)?.title ?? ""
         
         firstMetDate.flex.markDirty()
         sinceMetDate.flex.markDirty()

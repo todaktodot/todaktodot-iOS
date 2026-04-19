@@ -1,5 +1,5 @@
 //
-//  SelectedButtonView.swift
+//  CoupleStepSelectView.swift
 //  todaktodot
 //
 //  Created by 임대진 on 12/12/25.
@@ -53,6 +53,12 @@ final class CoupleStepSelectView: UIView {
     }
 
     required init?(coder: NSCoder) { fatalError() }
+    
+    func setSelected(stage: CoupleStage) {
+        guard let index = CoupleStage.allCases.firstIndex(of: stage) else { return }
+        updateUI(index)
+        isSelected.accept(stage)
+    }
 
     private func setupUI() {
         addSubview(root)
@@ -77,8 +83,9 @@ final class CoupleStepSelectView: UIView {
 
         mergedTap
             .subscribe(onNext: { [weak self] index in
-                self?.updateUI(index)
-                self?.isSelected.accept(CoupleStage.allCases[index])
+                guard let self else { return }
+                let stage = CoupleStage.allCases[index]
+                self.setSelected(stage: stage)
             })
             .disposed(by: disposeBag)
     }
