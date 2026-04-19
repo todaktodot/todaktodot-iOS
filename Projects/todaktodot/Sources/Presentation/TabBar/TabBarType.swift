@@ -23,18 +23,27 @@ enum TabBarType: Int, CaseIterable {
     var icon: UIImage? {
         switch self {
         case .home:
-            return UIImage(systemName: "house")
+            return UIImage(named: "home")?.withRenderingMode(.alwaysTemplate)
         case .aiReport:
-            return UIImage(systemName: "sparkles")
+            return UIImage(named: "sparkle")?.withRenderingMode(.alwaysTemplate)
         }
     }
     
     var selectedIcon: UIImage? {
         switch self {
         case .home:
-            return UIImage(systemName: "house.fill")
+            return UIImage(named: "home")?.withRenderingMode(.alwaysTemplate)
         case .aiReport:
-            return UIImage(systemName: "sparkles")
+            return UIImage(named: "sparkle")?.withRenderingMode(.alwaysTemplate)
+        }
+    }
+    
+    var iconSize: CGSize {
+        switch self {
+        case .home:
+            return CGSize(width: 16.33, height: 16.33 * (72.0 / 66.0))
+        case .aiReport:
+            return CGSize(width: 23.22, height: 23.22)
         }
     }
 }
