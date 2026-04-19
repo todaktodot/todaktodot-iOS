@@ -79,8 +79,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
     
     /// 네비게이션 루트뷰 변경
-    func changeNavigationRootView(_ viewController: UIViewController, animated: Bool) {
+    func changeNavigationRootView(animated: Bool) {
         guard let window = self.window else { return }
+        let navigationController = UINavigationController()
+        navigationController.view.backgroundColor = .mainPurple
+        let appCoordinator = AppCoordinator(navigationController: navigationController)
+        self.appCoordinator = appCoordinator
         
         if animated {
             let transition = CATransition()
@@ -89,8 +93,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             transition.subtype = CATransitionSubtype.fromRight
             window.layer.add(transition, forKey: kCATransition)
         }
-        let navigationController = UINavigationController(rootViewController: viewController)
+        
         window.rootViewController = navigationController
         window.makeKeyAndVisible()
+        
+        appCoordinator.start()
     }
 }

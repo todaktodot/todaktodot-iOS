@@ -37,10 +37,7 @@ final class TabBarCoordinator: Coordinator {
     }
     
     func showSignin() {
-        let signinCoordinator = SigninCoordinator(navigationController: navigationController)
-        signinCoordinator.parentCoordinator = self
-        addChild(signinCoordinator)
-        signinCoordinator.start()
+        (UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate)?.changeNavigationRootView(animated: true)
     }
     
     private func setupChildCoordinators(tabBarController: MainTabBarController) {
