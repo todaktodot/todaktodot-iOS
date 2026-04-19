@@ -27,7 +27,7 @@ final class MaskingLabel: UILabel {
     private var cachedPositions: [CGPoint] = []
     private var lastLayoutSize: CGSize = .zero
     
-    private let letterSpacing: CGFloat = 1.26
+    private let letterSpacing: CGFloat = 1
     
     override var text: String? {
         didSet {
