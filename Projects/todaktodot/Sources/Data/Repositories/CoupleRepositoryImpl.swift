@@ -39,7 +39,10 @@ final class CoupleRepositoryImpl: CoupleRepository {
         )
 
         return networkManager.request(with: endpoint)
-            .map { _ in true }
+            .map { _ in
+                UserdefaultKey.isInitialLogin = true
+                return true
+            }
     }
     
     func updateNickname(nickname: String) -> Observable<String> {
@@ -101,6 +104,7 @@ final class CoupleRepositoryImpl: CoupleRepository {
             .map {
                 UserdefaultKey.coupleId = $0.coupleId
                 UserdefaultKey.coupleType = .solo
+                UserdefaultKey.isInitialLogin = true
                 return true
             }
     }

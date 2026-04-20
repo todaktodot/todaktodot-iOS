@@ -32,8 +32,8 @@ final class MypageCoordinator: Coordinator {
         navigationController.pushViewController(vc, animated: true)
     }
     
-    func showSigninFlow() {
-        tabBarCoordinator?.showSignin()
+    func showSigninFlow(alertType: LogoutType) {
+        (UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate)?.changeNavigationRootView(animated: true, alertType: alertType)
     }
     
     func showTerms() {
@@ -66,23 +66,23 @@ final class MypageCoordinator: Coordinator {
         navigationController.present(webVC, animated: true, completion: nil)
     }
     
-    func showNickname() {
+    func showNickname(nickname: String? = nil) {
         let signinCoordinator = SigninCoordinator(navigationController: navigationController)
         signinCoordinator.parentCoordinator = tabBarCoordinator
         addChild(signinCoordinator)
         signinCoordinator.onNicknameUpdated = { [weak self] nickname in
             self?.onNicknameUpdated?(nickname)
         }
-        signinCoordinator.showNickname(flowType: .edit)
+        signinCoordinator.showNickname(flowType: .edit, nickname: nickname)
     }
     
-    func showCoupleInfo() {
+    func showCoupleInfo(info: CoupleInfo?) {
         let signinCoordinator = SigninCoordinator(navigationController: navigationController)
         addChild(signinCoordinator)
         signinCoordinator.onCoupleInfoUpdated = { [weak self] info in
             self?.onCoupleInfoUpdated?(info)
         }
-        signinCoordinator.showCoupleInfo(flowType: .editUser)
+        signinCoordinator.showCoupleInfo(flowType: .editUser, info: info)
     }
     
     func showCoupleConnect() {

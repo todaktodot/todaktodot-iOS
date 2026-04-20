@@ -23,6 +23,7 @@ final class CoupleInfoViewController: UIViewController, View {
     var disposeBag = DisposeBag()
     weak var coordinator: SigninCoordinator?
     
+    private var coupleInfo: CoupleInfo?
     private var isDone = BehaviorRelay<Bool>(value: false)
     private let isDateSelected = BehaviorRelay<String?>(value: nil)
     private let isRelationSelected = BehaviorRelay<CoupleStage?>(value: nil)
@@ -69,8 +70,13 @@ final class CoupleInfoViewController: UIViewController, View {
     
     private let coupleStepSelectView = CoupleStepSelectView()
     
-    init(flowType: CoupleInfoFlowType) {
+    init(flowType: CoupleInfoFlowType, info: CoupleInfo? = nil) {
         self.flowType = flowType
+        
+        if let info, let stage = CoupleStage(rawValue: info.stage) {
+            coupleStepSelectView.setSelected(stage: stage)
+            datePickerView.setDate(info.firstMetDate)
+        }
         
         super.init(nibName: nil, bundle: nil)
     }

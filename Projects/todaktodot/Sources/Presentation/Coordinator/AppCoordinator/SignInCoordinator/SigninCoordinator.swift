@@ -48,13 +48,13 @@ final class SigninCoordinator: Coordinator {
         navigationController.pushViewController(coupleConnectViewController, animated: true)
     }
     
-    func showNickname(flowType: ConnectFlowType? = nil) {
+    func showNickname(flowType: ConnectFlowType? = nil, nickname: String? = nil) {
         let useCase = CoupleUseCase(
             repository: CoupleRepositoryImpl(
                 networkManager: networkManager
                 )
         )
-        let nicknameViewController = NicknameViewController(flowType: flowType)
+        let nicknameViewController = NicknameViewController(flowType: flowType, nickname: nickname)
         nicknameViewController.coordinator = self
         nicknameViewController.reactor = CoupleReactor(coupleUseCase: useCase)
         if flowType == nil {
@@ -64,13 +64,13 @@ final class SigninCoordinator: Coordinator {
         }
     }
     
-    func showCoupleInfo(flowType: CoupleInfoFlowType = .newUser) {
+    func showCoupleInfo(flowType: CoupleInfoFlowType = .newUser, info: CoupleInfo? = nil) {
         let useCase = CoupleUseCase(
             repository: CoupleRepositoryImpl(
                 networkManager: networkManager
                 )
         )
-        let coupleInfoViewController = CoupleInfoViewController(flowType: flowType)
+        let coupleInfoViewController = CoupleInfoViewController(flowType: flowType, info: info)
         coupleInfoViewController.coordinator = self
         coupleInfoViewController.reactor = CoupleReactor(coupleUseCase: useCase)
         navigationController.pushViewController(coupleInfoViewController, animated: true)

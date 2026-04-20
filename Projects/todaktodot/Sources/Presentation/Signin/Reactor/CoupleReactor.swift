@@ -98,18 +98,22 @@ final class CoupleReactor: Reactor {
             return .just(.setIsJoined(UserdefaultKey.joined))
             
         case .tapSoloStartButton:
-            return coupleUseCase.soloStart()
-                .flatMap { _ -> Observable<Mutation> in
-                    return self.assignCards()
-                        .map { .setSoloStart($0) }
-                        .catch { .just(.setError($0)) }
-                }
-                .catch {
-                    if let afError = $0.asCustomAFError, afError.isAleardySolo {
-                        return .just(.setSoloStart(true))
+            if UserdefaultKey.coupleType == .solo {
+                return .just(.setSoloStart(true))
+            } else {
+                return coupleUseCase.soloStart()
+                    .flatMap { _ -> Observable<Mutation> in
+                        return self.assignCards()
+                            .map { .setSoloStart($0) }
+                            .catch { .just(.setError($0)) }
                     }
-                    return .just(.setError($0))
-                }
+                    .catch {
+                        if let afError = $0.asCustomAFError, afError.isAleardySolo {
+                            return .just(.setSoloStart(true))
+                        }
+                        return .just(.setError($0))
+                    }
+            }
         }
     }
     

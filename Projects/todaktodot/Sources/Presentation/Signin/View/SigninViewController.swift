@@ -181,6 +181,7 @@ final class SigninViewController: UIViewController, View {
                         self.coordinator?.showCoupleConnect()
                     }
                 }
+                UserdefaultKey.isKakaoLoginInProgress = false
             })
             .disposed(by: disposeBag)
         

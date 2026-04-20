@@ -18,6 +18,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         guard let windowScene = (scene as? UIWindowScene) else { return }
         let navigationController = UINavigationController()
+        navigationController.view.backgroundColor = .mainPurple
         let appCoordinator = AppCoordinator(navigationController: navigationController)
         self.appCoordinator = appCoordinator
         
@@ -58,6 +59,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
     func sceneWillEnterForeground(_ scene: UIScene) {
 //        AnalyticsService().screenEvent(ScreenName: .splash)
+        NotificationCenter.default.post(name: .sceneWillEnterForeground, object: nil)
     }
 
     // 사용법 :
@@ -77,9 +79,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.makeKeyAndVisible()
     }
     
-    /// 네비게이션 루트뷰 변경
-    func changeNavigationRootView(_ viewController: UIViewController, animated: Bool) {
+    func changeNavigationRootView(animated: Bool, alertType: LogoutType) {
         guard let window = self.window else { return }
+        let navigationController = UINavigationController()
+        navigationController.view.backgroundColor = .mainPurple
+        let appCoordinator = AppCoordinator(navigationController: navigationController)
+        self.appCoordinator = appCoordinator
         
         if animated {
             let transition = CATransition()
@@ -88,8 +93,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             transition.subtype = CATransitionSubtype.fromRight
             window.layer.add(transition, forKey: kCATransition)
         }
-        let navigationController = UINavigationController(rootViewController: viewController)
+        
         window.rootViewController = navigationController
         window.makeKeyAndVisible()
+        
+        appCoordinator.restart(alertType: alertType)
     }
 }
