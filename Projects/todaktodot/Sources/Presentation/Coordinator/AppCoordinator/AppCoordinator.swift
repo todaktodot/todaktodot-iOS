@@ -37,6 +37,7 @@ final class AppCoordinator: Coordinator {
                     self.showSigninFlow()
                 }
             }
+            self.navigationController.view.backgroundColor = .white
         }
     }
     
