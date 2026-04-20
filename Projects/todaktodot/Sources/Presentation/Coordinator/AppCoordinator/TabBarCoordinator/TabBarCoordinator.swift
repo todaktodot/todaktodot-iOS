@@ -80,7 +80,14 @@ final class HomeCoordinator: Coordinator {
     }
     
     func start() {
-        let reactor = HomeReactor(cardUseCase: cardUseCase)
+        let authRepository = AuthRepositoryImpl(
+            kakaoAuthProvider: KakaoAuthProvider(),
+            googleAuthProvider: GoogleAuthProvider(),
+            appleAuthProvider: AppleAuthProvider(),
+            networkManager: networkManager
+        )
+        let loginUseCase = LoginUseCase(repository: authRepository)
+        let reactor = HomeReactor(cardUseCase: cardUseCase, loginUseCase: loginUseCase)
         let homeViewController = HomeViewController(reactor: reactor)
         homeViewController.coordinator = self
         homeViewController.view.backgroundColor = TodotColors.Background.primary

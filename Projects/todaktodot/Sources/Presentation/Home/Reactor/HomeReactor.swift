@@ -19,9 +19,11 @@ enum AnswerStatus {
 final class HomeReactor: Reactor {
     
     private let cardUseCase: CardUseCase
+    private let loginUseCase: LoginUseCase
     
-    init(cardUseCase: CardUseCase) {
+    init(cardUseCase: CardUseCase, loginUseCase: LoginUseCase) {
         self.cardUseCase = cardUseCase
+        self.loginUseCase = loginUseCase
     }
     
     enum Action {
@@ -37,6 +39,7 @@ final class HomeReactor: Reactor {
         case loadTodayCards
         case assignCards
         case notiAgree
+        case checkCoupleConnection
     }
     
     enum Mutation {
@@ -143,13 +146,17 @@ final class HomeReactor: Reactor {
                             .just(.setShowTooltip(shouldShow)),
                             .just(.setPoked(isPoked))
                         ])
-                    case .failure(let error):
-                        let mockCards = MockCardData.historyCards
-                        let today = Date()
-                        let calendar = Calendar.current
-                        let todayCards = mockCards.filter { calendar.isDate($0.date, inSameDayAs: today) }
-                        let status = todayCards.isEmpty ? .bothUnanswered : self.determineAnswerStatus(from: todayCards)
-                        return .just(.setHistoryCardsWithStatus(mockCards, status))
+                    case .failure:
+                        return self.loginUseCase.fetchUserInfo()
+                            .flatMap { userInfo -> Observable<Mutation> in
+                                if userInfo.coupleType != .connected {
+                                    NotificationCenter.default.post(name: .logoutRequired, object: nil)
+                                }
+                                return .just(.setHistoryCardsWithStatus([], .bothUnanswered))
+                            }
+                            .catch { _ in
+                                .just(.setHistoryCardsWithStatus([], .bothUnanswered))
+                            }
                     }
                 }
             
@@ -211,6 +218,13 @@ final class HomeReactor: Reactor {
                 .catch { error in
                     return .just(.setError(error))
                 }
+        case .checkCoupleConnection:
+            guard currentState.isCoupleConnected == false else { return .empty() }
+            return loginUseCase.fetchUserInfo()
+                .flatMap { userInfo -> Observable<Mutation> in
+                    return .just(.setCoupleConnected(userInfo.coupleType == .connected))
+                }
+                .catch { _ in .empty() }
         }
     }
     
