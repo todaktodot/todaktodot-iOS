@@ -24,6 +24,8 @@ final class CoupleDatePickerView: UIView {
         $0.textColor = .grayScale900
         $0.tintColor = .clear
         $0.font = .pretenMedium(16)
+        $0.autocorrectionType = .no
+        $0.spellCheckingType = .no
     }
 
     private let disposeBag = DisposeBag()
@@ -40,31 +42,24 @@ final class CoupleDatePickerView: UIView {
         $0.datePickerMode = .date
         $0.preferredDatePickerStyle = .inline
         $0.backgroundColor = .white
+        $0.maximumDate = Date()
     }
 
     private let doneButton = UIButton(type: .system).then {
         $0.setTitle("확인", for: .normal)
         $0.tintColor = .black
         $0.titleLabel?.font = .pretenMedium(16)
+        $0.isHidden = true
     }
 
     init() {
         super.init(frame: .zero)
         setup()
-        bind()
+        bindAction()
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-
-    private func setup() {
-        dateTextField.inputView = pickerContainer
-        
-        addSubview(IconView)
-        addSubview(dateTextField)
-        pickerContainer.addSubview(doneButton)
-        pickerContainer.addSubview(datePicker)
     }
     
     override func layoutSubviews() {
@@ -83,16 +78,38 @@ final class CoupleDatePickerView: UIView {
 
         datePicker.frame = CGRect(x: 0, y: 44, width: width, height: height - 44)
     }
+    
+    func setDate(_ dateString: String) {
+        guard let date = dateString.toDate() else { return }
+        
+        datePicker.setDate(date, animated: false)
+        dateTextField.text = dateString
+        IconView.image = UIImage(resource: .check)
+        isDateSelected.accept(dateString)
+    }
 
-    private func bind() {
+    private func setup() {
+        dateTextField.inputView = pickerContainer
+        
+        addSubview(IconView)
+        addSubview(dateTextField)
+        pickerContainer.addSubview(doneButton)
+        pickerContainer.addSubview(datePicker)
+    }
+
+    private func bindAction() {
+        datePicker.addTarget(self, action: #selector(dateChanged), for: .valueChanged)
+        
         doneButton.rx.tap
             .subscribe(onNext: { [weak self] in
                 guard let self else { return }
                 let formatter = DateFormatter()
                 formatter.dateFormat = "yyyy-MM-dd"
                 IconView.image = UIImage(resource: .check)
-                dateTextField.text = formatter.string(from: datePicker.date)
+                let selected = formatter.string(from: datePicker.date)
+                self.setDate(selected)
                 dateTextField.resignFirstResponder()
+                doneButton.isHidden = true
             })
             .disposed(by: disposeBag)
         
@@ -102,5 +119,9 @@ final class CoupleDatePickerView: UIView {
                 self?.isDateSelected.accept(text)
             })
             .disposed(by: disposeBag)
+    }
+    
+    @objc private func dateChanged() {
+        doneButton.isHidden = false
     }
 }

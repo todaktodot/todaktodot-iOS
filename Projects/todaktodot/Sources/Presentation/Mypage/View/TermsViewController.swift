@@ -20,9 +20,6 @@ final class TermsViewController: CustomBackViewController {
         $0.layer.cornerRadius = 16
     }
     
-    private let backgroundView = UIImageView().then {
-        $0.image = UIImage(resource: .mypageSubBackground)
-    }
     private let personalTermButton = ModalButton().then {
         $0.setTitle(title: "개인정보 수집 및 이용")
     }
@@ -43,7 +40,7 @@ final class TermsViewController: CustomBackViewController {
         super.viewDidLoad()
         self.delegate = self
         title = "서비스 이용약관"
-        
+        view.backgroundColor = .lightPurple
         setupViews()
         setupFlexLayout()
         bindActions()
@@ -55,7 +52,6 @@ final class TermsViewController: CustomBackViewController {
     }
     
     private func setupViews() {
-        view.addSubview(backgroundView)
         view.addSubview(contentView)
     }
     
@@ -96,9 +92,6 @@ final class TermsViewController: CustomBackViewController {
     }
     
     private func layoutViews() {
-        backgroundView.pin
-            .all()
-        
         contentView.pin
             .top(view.pin.safeArea)
             .horizontally()

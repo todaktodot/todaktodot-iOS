@@ -456,7 +456,6 @@ final class HomeViewController: BaseViewController, View {
             updateMainCard(for: status)
         }
         fetchHistoryCards()
-        checkNewVersion()
     }
     
     private func updatePokeButton(isPoked: Bool) {
@@ -811,37 +810,6 @@ extension HomeViewController {
                 pokeButton.setImage(resizedImage, for: .normal)
                 pokeButton.imageEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 8)
                 pokeButton.titleEdgeInsets = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 0)
-            }
-        }
-    }
-    
-    private func checkNewVersion() {
-        let shouldShowUpdateAlert: Bool = {
-            guard let date = UserdefaultKey.skipUpdateAlertToday else {
-                return true
-            }
-            return !Calendar.current.isDateInToday(date)
-        }()
-
-        guard shouldShowUpdateAlert else { return }
-        
-        UpdateManager.shared.fetch {
-            let checkUpdate = UpdateManager.shared.checkUpdate()
-            let type = checkUpdate.type
-            let url = checkUpdate.url
-            
-            switch type {
-            case .force:
-                let forceUpdateViewController = ForceUpdateViewController(url: url)
-                self.coordinator?.tabBarCoordinator?.navigationController.setViewControllers([forceUpdateViewController], animated: false)
-            case .optional:
-                self.showAlert(icon: UIImage(resource: .bell), title: "새로운 버전이 출시됐어요!", description: "지금 업데이트하면 더욱 빠르고 편리하게\n서비스를 이용할 수 있어요", primaryButtonTitle: "업데이트 하기", primaryButtonAction: {
-                    if let url {
-                        UIApplication.shared.open(url)
-                    }
-                }, secondaryButtonTitle: "나중에 할게요", isUpdate: .optional)
-            case .none:
-                break
             }
         }
     }

@@ -14,18 +14,37 @@ import RxRelay
 import UserNotifications
 import ReactorKit
 
+enum LogoutType {
+    case logout, disconnect, withdrawal
+}
+
 final class MypageViewController: CustomBackViewController, View {
     var disposeBag = DisposeBag()
     weak var coordinator: MypageCoordinator?
     private var isCouple = PublishRelay<Bool>()
+    private var coupleInfo: CoupleInfo?
+    private var splitY: CGFloat = 226
     
     private let contentView = UIView()
-    private let scrollView = UIScrollView().then {
-        $0.showsVerticalScrollIndicator = false
+    
+    private let topBackgroundView = UIView().then {
+        $0.backgroundColor = .subPurple
     }
     
-    private let backgroundView = UIImageView().then {
-        $0.image = UIImage(resource: .mypageSubBackground)
+    private let bottomBackgroundView = UIView().then {
+        $0.backgroundColor = .lightPurple
+    }
+    
+    private let topContentBackgroundView = UIView().then {
+        $0.backgroundColor = .subPurple
+    }
+    
+    private let bottomContentBackgroundView = UIView().then {
+        $0.backgroundColor = .lightPurple
+    }
+    
+    private let scrollView = UIScrollView().then {
+        $0.showsVerticalScrollIndicator = false
     }
     
     private let myImageView = UIImageView().then {
@@ -63,7 +82,7 @@ final class MypageViewController: CustomBackViewController, View {
         $0.numberOfLines = 2
     }
     
-    private let partherNinameLabel = TDLabel().then {
+    private let partherNicknameLabel = TDLabel().then {
         $0.font = .pretenSemiBold(18)
         $0.textColor = .grayScale900
         $0.textAlignment = .center
@@ -125,13 +144,17 @@ final class MypageViewController: CustomBackViewController, View {
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        layoutViews()
     }
     
     private func setupViews() {
-        view.addSubview(backgroundView)
+        view.addSubview(topBackgroundView)
+        view.addSubview(bottomBackgroundView)
         view.addSubview(scrollView)
         view.addSubview(indicatorView)
+        
+        scrollView.addSubview(topContentBackgroundView)
+        scrollView.addSubview(bottomContentBackgroundView)
+        
         scrollView.addSubview(heartImageView)
         scrollView.addSubview(contentView)
     }
@@ -197,7 +220,7 @@ final class MypageViewController: CustomBackViewController, View {
                         .alignItems(.center)
                         .define {
                             $0.addItem(partnerImageView)
-                            $0.addItem(partherNinameLabel)
+                            $0.addItem(partherNicknameLabel)
                                 .marginTop(4)
                         }
                 }
@@ -208,8 +231,15 @@ final class MypageViewController: CustomBackViewController, View {
     }
     
     private func layoutViews() {
-        backgroundView.pin
-            .all()
+        topBackgroundView.pin
+            .top()
+            .horizontally()
+            .height(50%)
+        
+        bottomBackgroundView.pin
+            .horizontally()
+            .bottom()
+            .height(50%)
         
         scrollView.pin
             .top(view.pin.safeArea.top)
@@ -230,6 +260,11 @@ final class MypageViewController: CustomBackViewController, View {
             .width(64)
         
         contentView.flex.layout(mode: .adjustHeight)
+        
+        updateSplitY()
+        topContentBackgroundView.frame = CGRect(x: 0, y: 0, width: contentView.bounds.width, height: splitY)
+        bottomContentBackgroundView.frame = CGRect(x: 0, y: splitY, width: contentView.bounds.width, height: contentView.bounds.height - splitY)
+        
         scrollView.contentSize = contentView.frame.size
     }
     
@@ -261,11 +296,13 @@ final class MypageViewController: CustomBackViewController, View {
             .subscribe(onNext: { [weak self] info in
                 guard let self = self else { return }
                 
+                coupleInfo = info.coupleInfo
                 setMypageInfo(info)
                 isCouple.accept(info.isCouple)
                 settingSectionView.infoNotiSwitch.setSwitch(isOn: info.infoAgree)
                 settingSectionView.advertiesmentNotiSwitch.setSwitch(isOn: info.advertAgree)
                 settingSectionView.marketingNotiSwitch.setSwitch(isOn: info.marketingAgree)
+                layoutViews()
             })
             .disposed(by: disposeBag)
         
@@ -275,10 +312,8 @@ final class MypageViewController: CustomBackViewController, View {
             .distinctUntilChanged()
             .subscribe(onNext: { [weak self] state in
                 guard let self = self else { return }
-                self.showAlert(icon: UIImage(resource: .check), title: "정상적으로 로그아웃 되었어요", primaryButtonTitle: "확인", primaryButtonAction: {
-                    UserdefaultKey.isLoggedIn = false
-                })
-                self.coordinator?.showSigninFlow()
+                UserdefaultKey.isLoggedIn = false
+                self.coordinator?.showSigninFlow(alertType: .logout)
             })
             .disposed(by: disposeBag)
         
@@ -288,9 +323,8 @@ final class MypageViewController: CustomBackViewController, View {
             .distinctUntilChanged()
             .subscribe(onNext: { [weak self] state in
                 guard let self = self else { return }
-                self.showAlert(icon: UIImage(resource: .check), title: "정상적으로 커플 연결이 해제됐어요\n다시 로그인이 필요해요", primaryButtonTitle: "확인", primaryButtonAction: {})
-                self.coordinator?.showSigninFlow()
                 UserdefaultKey.resetUserDefaults()
+                self.coordinator?.showSigninFlow(alertType: .disconnect)
             })
             .disposed(by: disposeBag)
         
@@ -300,9 +334,8 @@ final class MypageViewController: CustomBackViewController, View {
             .distinctUntilChanged()
             .subscribe(onNext: { [weak self] state in
                 guard let self = self else { return }
-                self.showAlert(icon: UIImage(resource: .check), title: "정상적으로 탈퇴 되었어요", primaryButtonTitle: "확인", primaryButtonAction: {})
                 UserdefaultKey.resetUserDefaults()
-                self.coordinator?.showSigninFlow()
+                self.coordinator?.showSigninFlow(alertType: .withdrawal)
             })
             .disposed(by: disposeBag)
         
@@ -345,7 +378,13 @@ final class MypageViewController: CustomBackViewController, View {
                 if !$0 { heartImageView.removeFromSuperview() }
                 profileView.flex.display($0 ? .flex : .none)
                 notYetConnectedView.flex.display($0 ? .none : .flex)
-                backgroundView.image = UIImage(resource: $0 ? .mypageBackground : .mypageSubBackground)
+                
+                if !$0 {
+                    [topBackgroundView, bottomBackgroundView, topContentBackgroundView, bottomContentBackgroundView].forEach {
+                        $0.removeFromSuperview()
+                    }
+                    view.backgroundColor = .lightPurple
+                }
                 
                 contentView.flex.layout(mode: .adjustHeight)
                 scrollView.contentSize = contentView.frame.size
@@ -388,13 +427,13 @@ final class MypageViewController: CustomBackViewController, View {
         
         nicknameEditButton.rx.tap
             .subscribe(onNext: { [weak self] in
-                self?.coordinator?.showNickname()
+                self?.coordinator?.showNickname(nickname: self?.myNicknameLabel.text ?? nil)
             })
             .disposed(by: disposeBag)
         
         ourInfoView.settingButton.rx.tap
             .subscribe(onNext: { [weak self] in
-                self?.coordinator?.showCoupleInfo()
+                self?.coordinator?.showCoupleInfo(info: self?.coupleInfo)
             })
             .disposed(by: disposeBag)
         
@@ -444,25 +483,39 @@ final class MypageViewController: CustomBackViewController, View {
     
     private func setMypageInfo(_ info: MypageInfo) {
         myNicknameLabel.text = info.myNickname
-        partherNinameLabel.text = info.partnerNickname
+        partherNicknameLabel.text = info.partnerNickname
         ourInfoView.setOurInfo(info: info.coupleInfo)
         
         myNicknameLabel.flex.markDirty()
-        partherNinameLabel.flex.markDirty()
+        partherNicknameLabel.flex.markDirty()
         
         contentView.flex.layout()
     }
     
     private func updateNicknameOrCoupleInfo() {
         coordinator?.onNicknameUpdated = { [weak self] newNickname in
-            self?.myNicknameLabel.text = newNickname
-            self?.myNicknameLabel.flex.markDirty()
+            guard let self = self else { return }
+            myNicknameLabel.text = newNickname
+            myNicknameLabel.flex.markDirty()
+            
+            updateSplitY()
+            layoutViews()
         }
+        
         coordinator?.onCoupleInfoUpdated = { [weak self] info in
             self?.ourInfoView.setOurInfo(info: info)
+            self?.coupleInfo = info
         }
         
         contentView.flex.layout()
+    }
+    
+    private func updateSplitY() {
+        if let name = myNicknameLabel.text, name.count > 8 {
+            splitY = 226 + 28
+        } else {
+            splitY = 226
+        }
     }
 }
 

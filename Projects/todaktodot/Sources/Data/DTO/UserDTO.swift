@@ -59,9 +59,9 @@ extension UserDTO {
             partnerNickname: coupleDetailInfo?.anotherNickname,
             isCouple: CoupleType(rawValue: coupleType?.uppercased() ?? "") == .connected,
             coupleInfo: CoupleInfo(
-                firstMetDate: dateToKR(coupleDetailInfo?.firstMetDt) ?? "",
+                firstMetDate: coupleDetailInfo?.firstMetDt ?? "",
                 sinceMetDate: coupleDetailInfo?.sinceMetDt ?? "",
-                stage: CoupleStage(rawValue: coupleDetailInfo?.relationshipStage ?? "")?.title ?? ""
+                stage: coupleDetailInfo?.relationshipStage ?? ""
             ),
             infoAgree: infoAlarmYN == "Y",
             advertAgree: adAlarmYN == "Y",
@@ -83,18 +83,6 @@ extension UserDTO {
                 anotherUserNickname: $0.anotherNickname ?? ""
             )
         }
-    }
-    
-    func dateToKR(_ dateString: String?) -> String? {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.locale = Locale(identifier: "ko_KR")
-        
-        guard let dateString = dateString, let date = formatter.date(from: dateString) else { return nil }
-
-        formatter.dateFormat = "yyyy년 M월 d일"
-
-        return formatter.string(from: date)
     }
 }
 

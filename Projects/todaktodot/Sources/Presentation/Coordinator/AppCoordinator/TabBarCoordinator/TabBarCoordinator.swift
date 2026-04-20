@@ -36,13 +36,6 @@ final class TabBarCoordinator: Coordinator {
         signinCoordinator.showCoupleConnect()
     }
     
-    func showSignin() {
-        let signinCoordinator = SigninCoordinator(navigationController: navigationController)
-        signinCoordinator.parentCoordinator = self
-        addChild(signinCoordinator)
-        signinCoordinator.start()
-    }
-    
     private func setupChildCoordinators(tabBarController: MainTabBarController) {
         var viewControllers: [UIViewController] = []
         

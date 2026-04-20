@@ -21,7 +21,7 @@ extension CoupleInfoDTO {
         CoupleInfo(
             firstMetDate: firstMetDt,
             sinceMetDate: durationFrom(firstMetDt),
-            stage: CoupleStage(rawValue: relationshipStage)?.title ?? ""
+            stage: relationshipStage
             )
     }
     

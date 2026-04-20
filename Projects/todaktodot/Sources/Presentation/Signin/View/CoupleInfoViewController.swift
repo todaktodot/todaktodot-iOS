@@ -23,6 +23,7 @@ final class CoupleInfoViewController: UIViewController, View {
     var disposeBag = DisposeBag()
     weak var coordinator: SigninCoordinator?
     
+    private var coupleInfo: CoupleInfo?
     private var isDone = BehaviorRelay<Bool>(value: false)
     private let isDateSelected = BehaviorRelay<String?>(value: nil)
     private let isRelationSelected = BehaviorRelay<CoupleStage?>(value: nil)
@@ -30,6 +31,11 @@ final class CoupleInfoViewController: UIViewController, View {
     private let flowType: CoupleInfoFlowType
     private let backgroundView = UIImageView().then {
         $0.image = UIImage(resource: .connectBackground)
+    }
+    
+    private let scrollView = UIScrollView().then {
+        $0.contentInset.bottom = 120
+        $0.showsVerticalScrollIndicator = false
     }
     
     private let titleLabel = TDLabel().then {
@@ -64,8 +70,13 @@ final class CoupleInfoViewController: UIViewController, View {
     
     private let coupleStepSelectView = CoupleStepSelectView()
     
-    init(flowType: CoupleInfoFlowType) {
+    init(flowType: CoupleInfoFlowType, info: CoupleInfo? = nil) {
         self.flowType = flowType
+        
+        if let info, let stage = CoupleStage(rawValue: info.stage) {
+            coupleStepSelectView.setSelected(stage: stage)
+            datePickerView.setDate(info.firstMetDate)
+        }
         
         super.init(nibName: nil, bundle: nil)
     }
@@ -93,7 +104,8 @@ final class CoupleInfoViewController: UIViewController, View {
     
     private func setupViews() {
         view.addSubview(backgroundView)
-        view.addSubview(contentsView)
+        view.addSubview(scrollView)
+        scrollView.addSubview(contentsView)
         view.addSubview(startButton)
     }
     
@@ -122,16 +134,21 @@ final class CoupleInfoViewController: UIViewController, View {
     private func layoutViews() {
         backgroundView.pin
             .all()
-        
-        contentsView.pin
+
+        scrollView.pin
             .all()
-        
+
+        contentsView.pin
+            .top()
+            .horizontally()
+
         startButton.pin
             .horizontally(20)
             .bottom(48)
             .height(52)
-        
-        contentsView.flex.layout()
+
+        contentsView.flex.layout(mode: .adjustHeight)
+        scrollView.contentSize = contentsView.frame.size
     }
     
     func bind(reactor: CoupleReactor) {
