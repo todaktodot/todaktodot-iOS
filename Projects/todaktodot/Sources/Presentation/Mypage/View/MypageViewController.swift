@@ -426,7 +426,7 @@ final class MypageViewController: CustomBackViewController, View {
         
         nicknameEditButton.rx.tap
             .subscribe(onNext: { [weak self] in
-                self?.coordinator?.showNickname()
+                self?.coordinator?.showNickname(nickname: self?.myNicknameLabel.text ?? nil)
             })
             .disposed(by: disposeBag)
         

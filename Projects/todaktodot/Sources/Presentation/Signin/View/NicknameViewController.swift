@@ -61,8 +61,11 @@ final class NicknameViewController: UIViewController, View {
         $0.isEnabled = false
     }
     
-    init(flowType: ConnectFlowType? = nil) {
+    init(flowType: ConnectFlowType? = nil, nickname: String? = nil) {
         self.flowType.accept(flowType)
+        if let nickname {
+            textFiled.text = nickname
+        }
         super.init(nibName: nil, bundle: nil)
         
         if flowType == nil {
@@ -86,6 +89,7 @@ final class NicknameViewController: UIViewController, View {
         hideKeyboardwhenTappedAround()
         setupViews()
         setupFlexLayout()
+        textFiled.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
         
         if flowType.value == .create || flowType.value == .join {
             AnalyticsService.log(.nicknameSetBegin)
@@ -172,6 +176,19 @@ final class NicknameViewController: UIViewController, View {
             })
             .disposed(by: disposeBag)
     }
+    
+    @objc private func textFieldDidChange(_ textField: UITextField) {
+        if textField.markedTextRange != nil {
+            return
+        }
+
+        guard let text = textField.text else { return }
+
+        if text.count > 10 {
+            let index = text.index(text.startIndex, offsetBy: 10)
+            textField.text = String(text[..<index])
+        }
+    }
 }
 
 extension NicknameViewController: UITextFieldDelegate {
@@ -185,32 +202,17 @@ extension NicknameViewController: UITextFieldDelegate {
         shouldChangeCharactersIn range: NSRange,
         replacementString string: String
     ) -> Bool {
-
+        if string.isEmpty { return true }
+        
+        let allowedPattern = "^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z]+$"
+        let isValidInput = string.range(of: allowedPattern, options: .regularExpression) != nil
+        
+        if !isValidInput { return false }
+        
         if textField.markedTextRange != nil {
             return true
         }
-
-        if string.isEmpty {
-            return true
-        }
         
-        let allowedPattern = "^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z]+$"
-        
-        let isValidInput = string.range(
-            of: allowedPattern,
-            options: .regularExpression
-        ) != nil
-
-        if !isValidInput {
-            return false
-        }
-
-        guard let currentText = textField.text,
-              let range = Range(range, in: currentText) else {
-            return false
-        }
-
-        let updatedText = currentText.replacingCharacters(in: range, with: string)
-        return updatedText.count <= 10
+        return true
     }
 }
