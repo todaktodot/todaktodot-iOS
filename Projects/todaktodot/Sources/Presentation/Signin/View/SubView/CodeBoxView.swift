@@ -9,8 +9,19 @@ import UIKit
 import Then
 import FlexLayout
 
+final class OTPTextField: UITextField {
+    var onDeleteBackward: (() -> Void)?
+    
+    override func deleteBackward() {
+        if text?.isEmpty ?? true {
+            onDeleteBackward?()
+        }
+        super.deleteBackward()
+    }
+}
+
 final class CodeBoxView: UIView {
-    private let charLabel = UILabel().then {
+    let textField = OTPTextField().then {
         $0.tintColor = .mainPurple
         $0.textColor = .mainPurple
         $0.textAlignment = .center
@@ -25,13 +36,13 @@ final class CodeBoxView: UIView {
         layer.borderColor = UIColor.grayScale200.cgColor
         
         flex.alignItems(.center).define {
-            $0.addItem(charLabel)
+            $0.addItem(textField)
                 .width(44)
                 .height(48)
         }
         
-        addSubview(charLabel)
-        charLabel.pin.all()
+        addSubview(textField)
+        textField.pin.all()
     }
     
     required init?(coder: NSCoder) {
@@ -40,11 +51,11 @@ final class CodeBoxView: UIView {
     
     func configure(char: Character?, isMyCode: Bool? = false) {
         if let char = char {
-            charLabel.text = String(char).uppercased()
+            textField.text = String(char).uppercased()
         } else {
-            charLabel.text = ""
+            textField.text = ""
         }
-        charLabel.flex.markDirty()
+        textField.flex.markDirty()
         
         if let isMyCode = isMyCode, isMyCode {
             backgroundColor = .lightPurple
