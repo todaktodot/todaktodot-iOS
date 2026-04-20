@@ -43,6 +43,7 @@ final class SigninReactor: Reactor {
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .tapKakaoButton:
+            UserdefaultKey.isKakaoLoginInProgress = true
             return socialLogin(type: .kakao)
             
         case .tapGoogleButton:

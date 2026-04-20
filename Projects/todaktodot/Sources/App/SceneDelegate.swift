@@ -59,6 +59,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
     func sceneWillEnterForeground(_ scene: UIScene) {
 //        AnalyticsService().screenEvent(ScreenName: .splash)
+        NotificationCenter.default.post(name: .sceneWillEnterForeground, object: nil)
     }
 
     // 사용법 :
@@ -78,8 +79,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.makeKeyAndVisible()
     }
     
-    /// 네비게이션 루트뷰 변경
-    func changeNavigationRootView(animated: Bool) {
+    func changeNavigationRootView(animated: Bool, alertType: LogoutType) {
         guard let window = self.window else { return }
         let navigationController = UINavigationController()
         navigationController.view.backgroundColor = .mainPurple
@@ -97,6 +97,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.rootViewController = navigationController
         window.makeKeyAndVisible()
         
-        appCoordinator.start()
+        appCoordinator.restart(alertType: alertType)
     }
 }

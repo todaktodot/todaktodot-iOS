@@ -14,6 +14,10 @@ import RxRelay
 import UserNotifications
 import ReactorKit
 
+enum LogoutType {
+    case logout, disconnect, withdrawal
+}
+
 final class MypageViewController: CustomBackViewController, View {
     var disposeBag = DisposeBag()
     weak var coordinator: MypageCoordinator?
@@ -308,9 +312,8 @@ final class MypageViewController: CustomBackViewController, View {
             .distinctUntilChanged()
             .subscribe(onNext: { [weak self] state in
                 guard let self = self else { return }
-                self.showAlert(icon: UIImage(resource: .check), title: "정상적으로 로그아웃 되었어요", primaryButtonTitle: "확인", primaryButtonAction: {})
                 UserdefaultKey.isLoggedIn = false
-                self.coordinator?.showSigninFlow()
+                self.coordinator?.showSigninFlow(alertType: .logout)
             })
             .disposed(by: disposeBag)
         
@@ -320,9 +323,8 @@ final class MypageViewController: CustomBackViewController, View {
             .distinctUntilChanged()
             .subscribe(onNext: { [weak self] state in
                 guard let self = self else { return }
-                self.showAlert(icon: UIImage(resource: .check), title: "정상적으로 커플 연결이 해제됐어요\n다시 로그인이 필요해요", primaryButtonTitle: "확인", primaryButtonAction: {})
                 UserdefaultKey.resetUserDefaults()
-                self.coordinator?.showSigninFlow()
+                self.coordinator?.showSigninFlow(alertType: .disconnect)
             })
             .disposed(by: disposeBag)
         
@@ -332,9 +334,8 @@ final class MypageViewController: CustomBackViewController, View {
             .distinctUntilChanged()
             .subscribe(onNext: { [weak self] state in
                 guard let self = self else { return }
-                self.showAlert(icon: UIImage(resource: .check), title: "정상적으로 탈퇴 되었어요", primaryButtonTitle: "확인", primaryButtonAction: {})
                 UserdefaultKey.resetUserDefaults()
-                self.coordinator?.showSigninFlow()
+                self.coordinator?.showSigninFlow(alertType: .withdrawal)
             })
             .disposed(by: disposeBag)
         

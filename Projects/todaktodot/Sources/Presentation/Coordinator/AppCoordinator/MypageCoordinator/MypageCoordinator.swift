@@ -32,8 +32,8 @@ final class MypageCoordinator: Coordinator {
         navigationController.pushViewController(vc, animated: true)
     }
     
-    func showSigninFlow() {
-        tabBarCoordinator?.showSignin()
+    func showSigninFlow(alertType: LogoutType) {
+        (UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate)?.changeNavigationRootView(animated: true, alertType: alertType)
     }
     
     func showTerms() {
