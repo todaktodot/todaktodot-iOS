@@ -193,6 +193,7 @@ final class HomeViewController: BaseViewController, View {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        reactor?.action.onNext(.checkCoupleConnection)
         if let status = currentAnswerStatus {
             updateMainCard(for: status)
         }
@@ -288,6 +289,7 @@ final class HomeViewController: BaseViewController, View {
         Observable.combineLatest(answerStatusStream, coupleConnectedStream)
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] status, isCoupleConnected in
+                self?.updateMainCard(for: status)
                 self?.updateButtonForMyAnswered(status: status, isCoupleConnected: isCoupleConnected)
             })
             .disposed(by: disposeBag)
