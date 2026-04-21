@@ -14,49 +14,30 @@ final class SigninCoordinator: Coordinator {
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
     weak var parentCoordinator: Coordinator?
-    private let networkManager = NetworkManager.shared // TODO: AppDIContainer 사용? 고민
+    private let container = AppDIContainer.shared
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
     }
     
     func start() {
-        let useCase = LoginUseCase(
-            repository: AuthRepositoryImpl(
-                kakaoAuthProvider: KakaoAuthProvider(),
-                googleAuthProvider: GoogleAuthProvider(),
-                appleAuthProvider: AppleAuthProvider(),
-                networkManager: networkManager
-            )
-        )
         let signinViewController = SigninViewController()
         signinViewController.coordinator = self
-        signinViewController.reactor = SigninReactor(loginUseCase: useCase)
+        signinViewController.reactor = container.makeSigninReactor()
         navigationController.setViewControllers([signinViewController], animated: true)
     }
     
     func showCoupleConnect() {
-        let useCase = CoupleUseCase(
-            repository: CoupleRepositoryImpl(
-                networkManager: networkManager
-                )
-        )
-        
         let coupleConnectViewController = CoupleConnectViewController()
         coupleConnectViewController.coordinator = self
-        coupleConnectViewController.reactor = CoupleReactor(coupleUseCase: useCase)
+        coupleConnectViewController.reactor = container.makeCoupleReactor()
         navigationController.pushViewController(coupleConnectViewController, animated: true)
     }
     
     func showNickname(flowType: ConnectFlowType? = nil, nickname: String? = nil) {
-        let useCase = CoupleUseCase(
-            repository: CoupleRepositoryImpl(
-                networkManager: networkManager
-                )
-        )
         let nicknameViewController = NicknameViewController(flowType: flowType, nickname: nickname)
         nicknameViewController.coordinator = self
-        nicknameViewController.reactor = CoupleReactor(coupleUseCase: useCase)
+        nicknameViewController.reactor = container.makeCoupleReactor()
         if flowType == nil {
             navigationController.setViewControllers([nicknameViewController], animated: true)
         } else {
@@ -65,25 +46,15 @@ final class SigninCoordinator: Coordinator {
     }
     
     func showCoupleInfo(flowType: CoupleInfoFlowType = .newUser, info: CoupleInfo? = nil) {
-        let useCase = CoupleUseCase(
-            repository: CoupleRepositoryImpl(
-                networkManager: networkManager
-                )
-        )
         let coupleInfoViewController = CoupleInfoViewController(flowType: flowType, info: info)
         coupleInfoViewController.coordinator = self
-        coupleInfoViewController.reactor = CoupleReactor(coupleUseCase: useCase)
+        coupleInfoViewController.reactor = container.makeCoupleReactor()
         navigationController.pushViewController(coupleInfoViewController, animated: true)
     }
     
     func showTermsModal() {
-        let useCase = CoupleUseCase(
-            repository: CoupleRepositoryImpl(
-                networkManager: networkManager
-                )
-        )
         let termsModalViewController = TermsModalViewController()
-        termsModalViewController.reactor = CoupleReactor(coupleUseCase: useCase)
+        termsModalViewController.reactor = container.makeCoupleReactor()
         termsModalViewController.modalPresentationStyle = .overFullScreen
         termsModalViewController.modalTransitionStyle = .crossDissolve
         navigationController.present(termsModalViewController, animated: true, completion: nil)

@@ -14,21 +14,16 @@ final class MypageCoordinator: Coordinator {
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
     weak var tabBarCoordinator: TabBarCoordinator?
-    private let networkManager = NetworkManager.shared
+    private let container = AppDIContainer.shared
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
     }
     
     func start() {
-        let useCase = MypageUsecase(
-            repository: MypageRepositoryImpl(
-                networkManager: networkManager
-                )
-        )
         let vc = MypageViewController()
         vc.coordinator = self
-        vc.reactor = MyPageReactor(mypageUsecase: useCase)
+        vc.reactor = container.makeMyPageReactor()
         navigationController.pushViewController(vc, animated: true)
     }
     
