@@ -17,6 +17,7 @@ final class CoupleConnectViewController: UIViewController, View {
     var disposeBag = DisposeBag()
     weak var coordinator: SigninCoordinator?
     
+    private var mycode: String? = nil
     private let background = UIImageView().then {
         $0.image = UIImage(resource: .connectBackground)
     }
@@ -94,7 +95,7 @@ final class CoupleConnectViewController: UIViewController, View {
     private let connectButton = UIButton(type: .system).then {
         $0.setTitle("연결하기", for: .normal)
         $0.setTitleColor(.white, for: .disabled)
-
+        
         $0.titleLabel?.font = .pretenSemiBold(16)
         $0.tintColor = .white
         $0.backgroundColor = .grayScale400
@@ -124,9 +125,9 @@ final class CoupleConnectViewController: UIViewController, View {
         super.viewDidLayoutSubviews()
         layoutViews()
     }
-
+    
     // MARK: - Setup & Layout
-
+    
     private func setupViews() {
         view.addSubview(background)
         view.addSubview(scrollview)
@@ -134,7 +135,7 @@ final class CoupleConnectViewController: UIViewController, View {
         view.addSubview(soloStartButton)
         scrollview.addSubview(contentsView)
     }
-
+    
     private func setupFlexLayout() {
         contentsView.flex.paddingHorizontal(20).define {
             $0.addItem(titleLabel)
@@ -180,7 +181,7 @@ final class CoupleConnectViewController: UIViewController, View {
                 .marginBottom(24)
         }
     }
-
+    
     private func layoutViews() {
         background.pin
             .all()
@@ -228,6 +229,7 @@ final class CoupleConnectViewController: UIViewController, View {
             .subscribe(onNext: { [weak self] code in
                 guard let self = self else { return }
                 self.myCodeTextField.setMyCodeStyle(code)
+                self.mycode = code
             })
             .disposed(by: disposeBag)
         
@@ -252,7 +254,7 @@ final class CoupleConnectViewController: UIViewController, View {
                 } else {
                     showAlert(icon: UIImage(resource: .warning), title: "앗, 입력하신 코드가 올바르지 않아요", primaryButtonTitle: "다시 입력하기", primaryButtonAction: {})
                 }
-                     
+                
             })
             .disposed(by: disposeBag)
         
@@ -287,7 +289,17 @@ final class CoupleConnectViewController: UIViewController, View {
             .disposed(by: disposeBag)
         
         connectButton.rx.tap
-            .map { CoupleReactor.Action.tapConnectButton(self.partnerCodeTextField.getCode().uppercased()) }
+            .compactMap { [weak self] in
+                guard let self = self else { return nil }
+                let partnerCode = self.partnerCodeTextField.getCode().uppercased()
+                
+                if self.mycode == partnerCode {
+                    self.showToast(message: "자신의 링크 코드는 사용할 수 없습니다")
+                    return nil
+                }
+                
+                return CoupleReactor.Action.tapConnectButton(partnerCode)
+            }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
@@ -338,9 +350,9 @@ extension CoupleConnectViewController {
             let userInfo = notification.userInfo,
             let keyboardFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
         else { return }
-
+        
         let keyboardHeight = keyboardFrame.height - view.safeAreaInsets.bottom
-
+        
         scrollview.contentInset.bottom = keyboardHeight + 100
         
         scrollview.isScrollEnabled = true
