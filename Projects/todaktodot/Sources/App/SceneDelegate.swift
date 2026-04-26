@@ -62,7 +62,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         NotificationCenter.default.post(name: .sceneWillEnterForeground, object: nil)
         
         if UserdefaultKey.nicknameIsEmpty {
-            NotificationCenter.default.post(name: .connectedCouple, object: nil)
+            NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
         }
     }
 

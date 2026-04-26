@@ -91,7 +91,7 @@ final class AppCoordinator: Coordinator {
     }
     
     private func setupConnectedCoupleObserver() {
-        NotificationCenter.default.rx.notification(.connectedCouple)
+        NotificationCenter.default.rx.notification(.connectionCompleteAndGoToNickname)
             .observe(on: MainScheduler.asyncInstance)
             .subscribe(onNext: { [weak self] _ in
                 if let topVC = self?.navigationController.topViewController,

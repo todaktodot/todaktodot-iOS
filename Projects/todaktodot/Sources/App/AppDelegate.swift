@@ -71,7 +71,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         let body = notification.request.content.body
         
         if title.contains("연결되었어요!") {
-           NotificationCenter.default.post(name: .connectedCouple, object: nil)
+           NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
         } else {
             DispatchQueue.main.async {
                 self.showCustomInAppPush(title: title, body: body)
@@ -93,7 +93,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         } else if title.contains("모두") {
             AnalyticsService.log(.pushOpen(type: .bothCompleted))
         } else if title.contains("연결되었어요!") {
-            NotificationCenter.default.post(name: .connectedCouple, object: nil)
+            NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
         }  
         
         completionHandler()
