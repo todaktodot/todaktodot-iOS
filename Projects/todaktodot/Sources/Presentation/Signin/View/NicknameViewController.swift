@@ -96,6 +96,21 @@ final class NicknameViewController: UIViewController, View {
         }
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        if UserdefaultKey.nicknameIsEmpty {
+            coordinator?.navigationController.interactivePopGestureRecognizer?.isEnabled = false
+        }
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        if UserdefaultKey.nicknameIsEmpty {
+            UserdefaultKey.nicknameIsEmpty = false
+            coordinator?.navigationController.interactivePopGestureRecognizer?.isEnabled = true
+        }
+    }
+    
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         layoutViews()

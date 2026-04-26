@@ -9,5 +9,6 @@ import Foundation
 
 extension Notification.Name {
     public static let logoutRequired = Notification.Name("logoutRequired")
+    public static let connectedCouple = Notification.Name("connectedCouple")
     public static let sceneWillEnterForeground = Notification.Name("sceneWillEnterForeground")
 }
