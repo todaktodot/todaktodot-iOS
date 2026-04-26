@@ -39,7 +39,7 @@ final class NicknameViewController: UIViewController, View {
     }
     
     private let textFiled = UITextField().then {
-        $0.placeholder = "닉네임을 입력해주세요"
+        $0.placeholder = "글자 수는 1~10자까지 입력 가능해요"
         $0.font = .pretenMedium(16)
         $0.textColor = .grayScale900
         $0.backgroundColor = .white
@@ -49,6 +49,12 @@ final class NicknameViewController: UIViewController, View {
         $0.layer.cornerRadius = 6
         $0.layer.borderWidth = 1
         $0.layer.borderColor = UIColor.grayScale200.cgColor
+    }
+    
+    private let textFiledDescriptionLabel = TDLabel().then {
+        $0.text = "한글, 영어, 숫자, 이모지 모두 사용 가능해요!"
+        $0.font = .pretenMedium(12)
+        $0.textColor = .grayScale600
     }
     
     private let nextButton = UIButton(type: .system).then {
@@ -96,6 +102,21 @@ final class NicknameViewController: UIViewController, View {
         }
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        if UserdefaultKey.nicknameIsEmpty {
+            coordinator?.navigationController.interactivePopGestureRecognizer?.isEnabled = false
+        }
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        if UserdefaultKey.nicknameIsEmpty {
+            UserdefaultKey.nicknameIsEmpty = false
+            coordinator?.navigationController.interactivePopGestureRecognizer?.isEnabled = true
+        }
+    }
+    
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         layoutViews()
@@ -115,6 +136,10 @@ final class NicknameViewController: UIViewController, View {
             $0.addItem(textFiled)
                 .marginTop(40)
                 .height(56)
+            
+            $0.addItem(textFiledDescriptionLabel)
+                .marginTop(8)
+                .marginLeft(8)
         }
     }
     
@@ -160,8 +185,9 @@ final class NicknameViewController: UIViewController, View {
             .disposed(by: disposeBag)
         
         nextButton.rx.tap
-            .compactMap { self.textFiled.text }
+            .withLatestFrom(textFiled.rx.text.orEmpty)
             .filter { !$0.isEmpty }
+            .distinctUntilChanged()
             .map { CoupleReactor.Action.tapNicknameButton($0) }
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
@@ -204,7 +230,7 @@ extension NicknameViewController: UITextFieldDelegate {
     ) -> Bool {
         if string.isEmpty { return true }
         
-        let allowedPattern = "^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z]+$"
+        let allowedPattern = "^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9\\p{Emoji}]+$"
         let isValidInput = string.range(of: allowedPattern, options: .regularExpression) != nil
         
         if !isValidInput { return false }

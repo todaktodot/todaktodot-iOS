@@ -24,8 +24,6 @@ final class CoupleDatePickerView: UIView {
         $0.textColor = .grayScale900
         $0.tintColor = .clear
         $0.font = .pretenMedium(16)
-        $0.autocorrectionType = .no
-        $0.spellCheckingType = .no
     }
 
     private let disposeBag = DisposeBag()
