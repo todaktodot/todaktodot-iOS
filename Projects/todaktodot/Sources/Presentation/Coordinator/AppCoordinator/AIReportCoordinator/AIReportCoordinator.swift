@@ -14,7 +14,8 @@ final class AIReportCoordinator: Coordinator {
     var navigationController: UINavigationController
     weak var tabBarCoordinator: TabBarCoordinator?
     private weak var currentLoadingViewController: LoadingViewController?
-    private let reactor = AIReportReactor(useCase: AIReportUseCase(repository: AIReportRepositoryImpl(networkManager: NetworkManager.shared)))
+    private let container = AppDIContainer.shared
+    private lazy var reactor = container.makeAIReportReactor()
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
