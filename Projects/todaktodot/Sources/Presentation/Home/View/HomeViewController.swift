@@ -127,6 +127,18 @@ final class HomeViewController: BaseViewController, View {
         $0.numberOfLines = 0
     }
     
+    private let timezoneNoticeLabel = TDLabel().then {
+        $0.numberOfLines = 0
+        $0.isHidden = NSTimeZone.system.identifier == "Asia/Seoul"
+        let text = "* 모든 시간은 한국 시간을 기준으로 안내돼요"
+        let attr = NSMutableAttributedString(string: text, attributes: [
+            .font: UIFont.pretenRegular(12),
+            .foregroundColor: UIColor.grayScale600
+        ])
+        attr.addAttribute(.font, value: UIFont.pretenBold(12), range: (text as NSString).range(of: "한국 시간을 기준"))
+        $0.attributedText = attr
+    }
+    
     private let tooltipContainer = TouchPassthroughView().then {
         $0.isHidden = true
         $0.clipsToBounds = false
@@ -505,7 +517,7 @@ extension HomeViewController {
         questionIcon.addGestureRecognizer(tapGesture)
         
         let descParagraphStyle = NSMutableParagraphStyle()
-        descParagraphStyle.lineHeightMultiple = 1.5
+        descParagraphStyle.lineHeightMultiple = 1.3
         descriptionLabel.attributedText = NSAttributedString(
             string: "매일 08시 업데이트· 다음날 04시 작성 마감\n04시~ 08시 사이에는 답변할 수 없어요",
             attributes: [.paragraphStyle: descParagraphStyle]
@@ -536,7 +548,9 @@ extension HomeViewController {
                 }
                 flex.addItem(descriptionCard).direction(.column).marginTop(20).define { descFlex in
                     descFlex.addItem(descriptionTitle).marginTop(16).marginLeft(16)
-                    descFlex.addItem(descriptionLabel).marginTop(4).marginLeft(16).marginBottom(16)
+                    let showNotice = NSTimeZone.system.identifier != "Asia/Seoul"
+                    descFlex.addItem(descriptionLabel).marginTop(4).marginLeft(16).marginBottom(showNotice ? 0 : 16)
+                    descFlex.addItem(timezoneNoticeLabel).marginTop(8).marginLeft(16).marginBottom(16).isIncludedInLayout(showNotice)
                 }
                 flex.addItem(pokeButton).height(48).marginTop(16)
             }
