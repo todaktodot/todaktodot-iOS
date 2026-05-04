@@ -313,6 +313,7 @@ final class MypageViewController: CustomBackViewController, View {
             .subscribe(onNext: { [weak self] state in
                 guard let self = self else { return }
                 UserdefaultKey.isLoggedIn = false
+                UserdefaultKey.resetAuthUserDefaults()
                 self.coordinator?.showSigninFlow(alertType: .logout)
             })
             .disposed(by: disposeBag)

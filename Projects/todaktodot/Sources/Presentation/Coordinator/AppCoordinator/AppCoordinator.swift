@@ -20,6 +20,7 @@ final class AppCoordinator: Coordinator {
         self.navigationController.isNavigationBarHidden = true
         setupLogoutObserver()
         setupUpdateCheckObserver()
+        setupConnectedCoupleObserver()
     }
     
     func start() {
@@ -89,11 +90,39 @@ final class AppCoordinator: Coordinator {
             .disposed(by: disposeBag)
     }
     
+    private func setupConnectedCoupleObserver() {
+        NotificationCenter.default.rx.notification(.connectionCompleteAndGoToNickname)
+            .observe(on: MainScheduler.asyncInstance)
+            .subscribe(onNext: { [weak self] _ in
+                if let topVC = self?.navigationController.topViewController,
+                   topVC is NicknameViewController {
+                    return
+                }
+
+                UserdefaultKey.nicknameIsEmpty = true
+                self?.showConnectedCoupleAlert()
+            })
+            .disposed(by: disposeBag)
+    }
+    
     private func forceLogout() {
         UserdefaultKey.resetAuthUserDefaults()
         
         showSigninFlow()
         navigationController.viewControllers.first?.showAlert(icon: UIImage(resource: .warning), title: "로그인 정보가 만료되었습니다\n다시 로그인 해주세요", primaryButtonTitle: "확인", primaryButtonAction: {})
+    }
+    
+    private func showConnectedCoupleAlert() {
+        self.navigationController.showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: { [weak self] in
+            guard let self else { return }
+            removeCurrentCoordinator()
+            
+            let signinCoordinator = SigninCoordinator(navigationController: navigationController)
+            signinCoordinator.parentCoordinator = self
+            addChild(signinCoordinator)
+            currentCoordinator = signinCoordinator
+            signinCoordinator.showNickname(flowType: .join)
+        })
     }
     
     private func showLogoutAlert(type: LogoutType) {

@@ -181,8 +181,6 @@ final class CoupleReactor: Reactor {
                 startDate: yesterdayDate.toYYYYMMDD(),
                 endDate: tomorrowDate.toYYYYMMDD()
             )
-        case 4..<8:
-            return .just(true)
         default:
             return self.coupleUseCase.assignCards(
                 startDate: now.toYYYYMMDD(),
