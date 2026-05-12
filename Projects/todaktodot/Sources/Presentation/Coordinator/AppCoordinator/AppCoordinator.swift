@@ -95,7 +95,7 @@ final class AppCoordinator: Coordinator {
             .observe(on: MainScheduler.asyncInstance)
             .subscribe(onNext: { [weak self] _ in
                 if let topVC = self?.navigationController.topViewController,
-                   topVC is NicknameViewController {
+                   topVC is NicknameViewController || topVC is SigninViewController {
                     return
                 }
 
