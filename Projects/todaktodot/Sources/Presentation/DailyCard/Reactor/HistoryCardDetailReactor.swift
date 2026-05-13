@@ -78,6 +78,7 @@ final class HistoryCardDetailReactor: Reactor {
     
     enum FeedbackState {
         case none
+        case locked
         case generating
         case loaded(CardFeedback)
         case retryable
@@ -111,7 +112,7 @@ final class HistoryCardDetailReactor: Reactor {
         } else if let cached = Self.feedbackCache[id] {
             initialFeedback = .loaded(cached)
         } else if !card.isBothAnswered {
-            initialFeedback = .none
+            initialFeedback = .locked
         } else if Self.hasRegenerated(for: card.date.toYYYYMMDD()) {
             initialFeedback = .error
         } else if Self.hasPolled(for: card.date.toYYYYMMDD()) {

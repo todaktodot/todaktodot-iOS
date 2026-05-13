@@ -95,6 +95,15 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     }
     private let feedbackErrorStatus = UIView().then { $0.isHidden = true }
     
+    private let feedbackLockedBubble = UIView().then {
+        $0.isHidden = true
+        $0.layer.shadowColor = UIColor.mainPurple.cgColor
+        $0.layer.shadowOffset = CGSize(width: 5, height: 5)
+        $0.layer.shadowRadius = 20
+        $0.layer.shadowOpacity = 0.2
+        $0.layer.masksToBounds = false
+    }
+    
     init(card: QuestionCard) {
         self.card = card
         self.multipleChoice = card.questions.first(where: { $0.type == .multipleChoice })
@@ -126,12 +135,11 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         setupSituation()
         setupMyAnswer()
         setupPartnerAnswer()
-        if card.user1Answered && card.user2Answered {
-            setupAIFeedback()
-            setupFeedbackLoadingView()
-            setupFeedbackRetryView()
-            setupFeedbackErrorView()
-        }
+        setupAIFeedback()
+        setupFeedbackLoadingView()
+        setupFeedbackRetryView()
+        setupFeedbackErrorView()
+        setupFeedbackLockedView()
         
         rootFlexContainer.flex
             .paddingHorizontal(20)
@@ -149,6 +157,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
                 flex.addItem(feedbackRetryStatus).marginTop(12)
                 flex.addItem(feedbackErrorBubble).marginTop(28)
                 flex.addItem(feedbackErrorStatus).marginTop(12)
+                flex.addItem(feedbackLockedBubble).marginTop(28)
             }
         
         mainCardContainer.flex
@@ -371,7 +380,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     }
     
     private func layoutTail() {
-        let bubbles = [aiFeedbackContainer, feedbackLoadingBubble, feedbackRetryBubble, feedbackErrorBubble]
+        let bubbles = [aiFeedbackContainer, feedbackLoadingBubble, feedbackRetryBubble, feedbackErrorBubble, feedbackLockedBubble]
         for bubble in bubbles {
             guard let tail = bubble.subviews.first(where: { $0.accessibilityIdentifier == "tailImageView" }) else { continue }
             tail.pin.bottom(1).right(0).width(40).height(22)
@@ -391,7 +400,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     }
     
     private func updateFeedbackUI(state: HistoryCardDetailReactor.FeedbackState) {
-        let allBubbles = [aiFeedbackContainer, feedbackLoadingBubble, feedbackRetryBubble, feedbackErrorBubble]
+        let allBubbles = [aiFeedbackContainer, feedbackLoadingBubble, feedbackRetryBubble, feedbackErrorBubble, feedbackLockedBubble]
         let allStatuses = [aiFeedbackStatus, feedbackLoadingStatus, feedbackRetryStatus, feedbackErrorStatus]
         
         func show(bubble: UIView, status: UIView?, animated: Bool = false) {
@@ -423,6 +432,9 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
             allStatuses.forEach { $0.flex.isIncludedInLayout(false); $0.isHidden = true }
             rootFlexContainer.flex.layout(mode: .adjustHeight)
             scrollView.contentSize = rootFlexContainer.frame.size
+            
+        case .locked:
+            show(bubble: feedbackLockedBubble, status: nil)
             
         case .generating:
             didShowLoading = true
@@ -547,6 +559,27 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
             }
         }
         populateStatusView(feedbackErrorStatus)
+    }
+    
+    private func setupFeedbackLockedView() {
+        let (boxView, tail) = makeFeedbackBubbleBox()
+        let header = makeFeedbackHeader()
+        let lockedLabel = TDLabel().then {
+            $0.text = "🔒 둘 다 답변을 완료해야 AI 피드백이 생성돼요"
+            $0.font = .pretenRegular(16)
+            $0.textColor = .grayScale600
+            $0.textAlignment = .center
+            $0.numberOfLines = 0
+        }
+        
+        feedbackLockedBubble.addSubview(boxView)
+        feedbackLockedBubble.addSubview(tail)
+        feedbackLockedBubble.flex.paddingBottom(22).define { flex in
+            flex.addItem(boxView).paddingHorizontal(20).paddingVertical(21).define { f in
+                f.addItem(header)
+                f.addItem(lockedLabel).marginTop(16).alignSelf(.center)
+            }
+        }
     }
     
     private func makeFeedbackBubbleBox() -> (UIView, UIImageView) {
