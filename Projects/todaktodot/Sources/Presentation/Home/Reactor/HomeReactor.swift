@@ -51,7 +51,7 @@ final class HomeReactor: Reactor {
         case checkCoupleConnection
         case retryFetchCards
         case initialLoad
-        case checkPartnerSelection(coupleCardId: Int)
+        case checkPartnerSelection
     }
     
     enum Mutation {
@@ -379,12 +379,13 @@ final class HomeReactor: Reactor {
                             }
                     }
         
-        case .checkPartnerSelection(let coupleCardId):
-            return cardUseCase.fetchHistoryCardDetail(coupleCardId: coupleCardId)
+        case .checkPartnerSelection:
+            let today = CardService.shared.getCardSystemDate().toYYYYMMDD()
+            return cardUseCase.fetchHistoryCards(startDate: today, endDate: today)
                 .flatMap { result -> Observable<Mutation> in
                     switch result {
-                    case .success(let card):
-                        if card.selectedByUserId != nil {
+                    case .success(let cards):
+                        if let card = cards.first, card.selectedByUserId != nil {
                             return .just(.setPartnerSelectedCard(card))
                         }
                         return .just(.setPartnerSelectedCard(nil))

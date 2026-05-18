@@ -408,20 +408,7 @@ final class HomeViewController: BaseViewController, View {
                     return
                 }
                 
-                let cardSystemDate = CardService.shared.getCardSystemDate()
-                let todayCard = self.historyCards.first { Calendar.current.isDate($0.date, inSameDayAs: cardSystemDate) }
-                
-                if let todayCard = todayCard, todayCard.selectedByUserId != nil {
-                    self.coordinator?.showDailyCardDetail(card: todayCard)
-                } else {
-                    let coupleCardId = todayCard?.coupleCardId ?? 0
-                    if coupleCardId > 0 {
-                        reactor.action.onNext(.checkPartnerSelection(coupleCardId: coupleCardId))
-                    } else {
-                        let todayCards = CardService.shared.getTodayCards()
-                        self.coordinator?.showDailyCard(todayCards: todayCards, selectedType: todayCard?.type ?? .none)
-                    }
-                }
+                reactor.action.onNext(.checkPartnerSelection)
             })
             .disposed(by: disposeBag)
         
@@ -431,12 +418,18 @@ final class HomeViewController: BaseViewController, View {
             .subscribe(onNext: { [weak self] card in
                 guard let self else { return }
                 if let card {
-                    self.coordinator?.showDailyCardDetail(card: card)
+                    switch card.type {
+                    case .roleplay:
+                        self.coordinator?.showDailyCardDetail(card: card)
+                    case .balance:
+                        self.coordinator?.showBalanceCardDetail(card: card)
+                    case .none:
+                        let todayCards = CardService.shared.getTodayCards()
+                        self.coordinator?.showDailyCard(todayCards: todayCards, selectedType: .none)
+                    }
                 } else {
-                    let cardSystemDate = CardService.shared.getCardSystemDate()
-                    let todayCard = self.historyCards.first { Calendar.current.isDate($0.date, inSameDayAs: cardSystemDate) }
                     let todayCards = CardService.shared.getTodayCards()
-                    self.coordinator?.showDailyCard(todayCards: todayCards, selectedType: todayCard?.type ?? .none)
+                    self.coordinator?.showDailyCard(todayCards: todayCards, selectedType: .none)
                 }
             })
             .disposed(by: disposeBag)
