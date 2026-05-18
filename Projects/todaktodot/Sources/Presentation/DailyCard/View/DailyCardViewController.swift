@@ -17,6 +17,7 @@ final class DailyCardViewController: UIViewController, View {
     
     var disposeBag = DisposeBag()
     weak var coordinator: HomeCoordinator?
+    private var pendingCardType: CardType = .none
     
     private let rootFlexContainer = UIView()
     private let titleLabel = TDLabel().then {
@@ -41,10 +42,6 @@ final class DailyCardViewController: UIViewController, View {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
     }
     
     func bind(reactor: DailyCardReactor) {
@@ -111,15 +108,19 @@ final class DailyCardViewController: UIViewController, View {
             })
             .disposed(by: disposeBag)
         
-        reactor.state.map { $0.shouldShowAlreadySelectedAlert }
-            .filter { $0 }
+        reactor.pulse(\.$partnerSelectedCard)
+            .skip(1)
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] _ in
-                self?.showNotificationAlert()
+            .subscribe(onNext: { [weak self] card in
+                guard let self else { return }
+                if let card {
+                    self.showNotificationAlert(with: card)
+                } else {
+                    self.showConfirmationAlert(for: self.pendingCardType)
+                }
             })
             .disposed(by: disposeBag)
     }
-    
     
     private func setupUI() {
         view.backgroundColor = .lightPurple
@@ -159,12 +160,7 @@ final class DailyCardViewController: UIViewController, View {
         rootFlexContainer.flex.layout()
     }
     
-    private func showNotificationAlert() {
-        guard let reactor = reactor,
-              let card = getCard(for: reactor.currentState.historySelectedType) else {
-            return
-        }
-        
+    private func showNotificationAlert(with card: QuestionCard) {
         showAlert(
             icon: UIImage(resource: .warning),
             title: "연인이 이미 유형을 선택했어요!",
@@ -231,14 +227,22 @@ extension DailyCardViewController {
     
     private func handleCardSelection(selectedType: CardType, historyType: CardType, reactor: DailyCardReactor) {
         if historyType != .none && historyType != selectedType {
-            showNotificationAlert()
+            if let card = getCard(for: historyType) {
+                showNotificationAlert(with: card)
+            }
         } else if historyType == .none {
-            showConfirmationAlert(for: selectedType)
+            guard let coupleCardId = CardService.shared.getTodayCards().first?.coupleCardId else {
+                showConfirmationAlert(for: selectedType)
+                return
+            }
+            pendingCardType = selectedType
+            reactor.action.onNext(.checkPartnerSelection(coupleCardId: coupleCardId))
         } else {
             let action: DailyCardReactor.Action = selectedType == .roleplay ? .tapSituationButton : .tapBalanceButton
             reactor.action.onNext(action)
         }
     }
+
     
     
     private func animateButtonTap(_ button: UIButton?) {

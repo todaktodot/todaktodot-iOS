@@ -408,20 +408,32 @@ final class HomeViewController: BaseViewController, View {
                     return
                 }
                 
-                let cardSystemDate = CardService.shared.getCardSystemDate()
-                let todayCard = self.historyCards.first { Calendar.current.isDate($0.date, inSameDayAs: cardSystemDate) }
-                
-                if let todayCard = todayCard, todayCard.selectedByUserId != nil {
-                    self.coordinator?.showDailyCardDetail(card: todayCard)
+                reactor.action.onNext(.checkPartnerSelection)
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$partnerSelectedCard)
+            .skip(1)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] card in
+                guard let self else { return }
+                if let card {
+                    switch card.type {
+                    case .roleplay:
+                        self.coordinator?.showDailyCardDetail(card: card)
+                    case .balance:
+                        self.coordinator?.showBalanceCardDetail(card: card)
+                    case .none:
+                        let todayCards = CardService.shared.getTodayCards()
+                        self.coordinator?.showDailyCard(todayCards: todayCards, selectedType: .none)
+                    }
                 } else {
-                    let selectedType = todayCard?.type ?? .none
                     let todayCards = CardService.shared.getTodayCards()
-                    self.coordinator?.showDailyCard(todayCards: todayCards, selectedType: selectedType)
+                    self.coordinator?.showDailyCard(todayCards: todayCards, selectedType: .none)
                 }
             })
             .disposed(by: disposeBag)
     }
-    
     private func setupUI() {
         gradientLayer.colors = [
             UIColor(hex: "F9F2EE").cgColor,

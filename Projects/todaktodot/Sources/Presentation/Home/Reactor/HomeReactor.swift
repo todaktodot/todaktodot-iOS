@@ -51,6 +51,7 @@ final class HomeReactor: Reactor {
         case checkCoupleConnection
         case retryFetchCards
         case initialLoad
+        case checkPartnerSelection
     }
     
     enum Mutation {
@@ -67,6 +68,7 @@ final class HomeReactor: Reactor {
         case setWeeklyCardsFetchFailed(Bool)
         case setDidPokeSuccess(Bool)
         case setCardLoadState(CardLoadState)
+        case setPartnerSelectedCard(QuestionCard?)
     }
     
     struct State {
@@ -81,6 +83,7 @@ final class HomeReactor: Reactor {
         var weeklyCardsFetchFailed: Bool = false
         @Pulse var didPokeSuccess: Bool = false
         @Pulse var cardLoadState: CardLoadState = .loading
+        @Pulse var partnerSelectedCard: QuestionCard? = nil
     }
     
     let initialState = State()
@@ -375,6 +378,21 @@ final class HomeReactor: Reactor {
                                 }
                             }
                     }
+        
+        case .checkPartnerSelection:
+            let today = CardService.shared.getCardSystemDate().toYYYYMMDD()
+            return cardUseCase.fetchHistoryCards(startDate: today, endDate: today)
+                .flatMap { result -> Observable<Mutation> in
+                    switch result {
+                    case .success(let cards):
+                        if let card = cards.first, card.selectedByUserId != nil {
+                            return .just(.setPartnerSelectedCard(card))
+                        }
+                        return .just(.setPartnerSelectedCard(nil))
+                    case .failure:
+                        return .just(.setPartnerSelectedCard(nil))
+                    }
+                }
         }
     }
     
@@ -408,6 +426,8 @@ final class HomeReactor: Reactor {
             newState.didPokeSuccess = success
         case .setCardLoadState(let state):
             newState.cardLoadState = state
+        case .setPartnerSelectedCard(let card):
+            newState.partnerSelectedCard = card
         }
         return newState
     }
