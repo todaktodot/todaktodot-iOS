@@ -159,21 +159,34 @@ extension AppCoordinator {
         onNone: @escaping () -> Void
     ) {
         UpdateManager.shared.fetch {
-            let result = UpdateManager.shared.checkUpdate()
+            let update = UpdateManager.shared.checkUpdate()
             
-            switch result.type {
+            switch update.type {
             case .force:
-                onForce(result.url)
+                onForce(update.url)
             case .optional:
-                onOptional(result.url)
+                if let maintenanceInfo = UpdateManager.shared.checkMaintenanceInfo() {
+                    self.showMaintenance(maintenanceInfo)
+                } else {
+                    onOptional(update.url)
+                }
             case .none:
-                onNone()
+                if let maintenanceInfo = UpdateManager.shared.checkMaintenanceInfo() {
+                    self.showMaintenance(maintenanceInfo)
+                } else {
+                    onNone()
+                }
             }
         }
     }
     
+    private func showMaintenance(_ maintenanceAlertInfo: MaintenanceAlertInfo) {
+        let forceUpdateViewController = ForceDimViewController(maintenanceAlertInfo: maintenanceAlertInfo)
+        navigationController.setViewControllers([forceUpdateViewController], animated: true)
+    }
+    
     private func showForceUpdate(url: URL?) {
-        let forceUpdateViewController = ForceUpdateViewController(url: url)
+        let forceUpdateViewController = ForceDimViewController(url: url)
         navigationController.setViewControllers([forceUpdateViewController], animated: true)
     }
     
