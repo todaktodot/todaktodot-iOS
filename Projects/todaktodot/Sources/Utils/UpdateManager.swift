@@ -32,9 +32,9 @@ final class UpdateManager {
         
         if let data = jsonString.data(using: .utf8) {
             let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-            let enabled = json?["enabled"] as? Bool ?? true
+            let enabled = json?["enabled"] as? Bool ?? false
             
-            if !enabled {
+            if enabled {
                 let startAt = json?["startAt"] as? String
                 let endAt = json?["endAt"] as? String
                 let title = json?["title"] as? String ?? "지금은 이용할 수 없어요"
