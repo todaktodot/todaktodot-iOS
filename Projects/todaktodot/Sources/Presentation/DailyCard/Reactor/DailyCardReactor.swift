@@ -31,6 +31,7 @@ final class DailyCardReactor: Reactor {
         case tapBalanceButton
         case selectCardType(coupleCardId: Int, cardType: CardType)
         case submitAnswers(coupleCardId: Int, cardId: Int, answers: [Answer])
+        case checkPartnerSelection(coupleCardId: Int)
     }
     
     enum Mutation {
@@ -42,6 +43,7 @@ final class DailyCardReactor: Reactor {
         case setCardTypeSelected(CardType)
         case setShouldRetryAndGoHome
         case setCardTypeSelectionError
+        case setPartnerSelectedCard(QuestionCard?)
     }
     
     struct State {
@@ -54,6 +56,7 @@ final class DailyCardReactor: Reactor {
         var submitError: Error?
         var shouldRetryAndGoHome: Bool = false
         var shouldShowAlreadySelectedAlert: Bool = false
+        @Pulse var partnerSelectedCard: QuestionCard? = nil
     }
     
     let initialState: State
@@ -108,6 +111,19 @@ final class DailyCardReactor: Reactor {
                     },
                 .just(.setLoading(false))
             ])
+        case .checkPartnerSelection(let coupleCardId):
+            return cardUseCase.fetchHistoryCardDetail(coupleCardId: coupleCardId)
+                .flatMap { result -> Observable<Mutation> in
+                    switch result {
+                    case .success(let card):
+                        if card.selectedByUserId != nil {
+                            return .just(.setPartnerSelectedCard(card))
+                        }
+                        return .just(.setPartnerSelectedCard(nil))
+                    case .failure:
+                        return .just(.setPartnerSelectedCard(nil))
+                    }
+                }
         }
     }
     
@@ -133,6 +149,8 @@ final class DailyCardReactor: Reactor {
             newState.shouldRetryAndGoHome = true
         case .setCardTypeSelectionError:
             newState.shouldShowAlreadySelectedAlert = true
+        case .setPartnerSelectedCard(let card):
+            newState.partnerSelectedCard = card
         }
         return newState
     }

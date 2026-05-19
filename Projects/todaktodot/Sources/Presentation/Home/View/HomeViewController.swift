@@ -27,6 +27,8 @@ final class HomeViewController: BaseViewController, View {
     private var currentAnswerStatus: AnswerStatus?
     private var hasShownCardTypeTooltip = false
     private var liftedCardView: UIView?
+    private var skeletonShownAt: CFTimeInterval = 0
+    private var isHidingSkeleton = false
     private let mainCard = UIView().then {
         $0.backgroundColor = .white
         $0.layer.cornerRadius = 20
@@ -47,6 +49,25 @@ final class HomeViewController: BaseViewController, View {
     }
     
     private let skeletonShimmerLayer = CAGradientLayer()
+    
+    private let retryFetchButton = UIButton().then {
+        $0.isHidden = true
+        var config = UIButton.Configuration.plain()
+        config.imagePadding = 8
+        config.imagePlacement = .leading
+        config.image = UIImage(named: "retry")?.resizedWithBetterQuality(to: CGSize(width: 28, height: 28))
+        config.attributedTitle = AttributedString("질문 불러오기", attributes: AttributeContainer([
+            .font: UIFont.pretenSemiBold(16),
+            .foregroundColor: UIColor.mainPurple
+        ]))
+        config.background.backgroundColor = .white
+        config.background.strokeColor = .mainPurple
+        config.background.strokeWidth = 1
+        config.background.cornerRadius = 6
+        config.cornerStyle = .fixed
+        $0.configuration = config
+    }
+    private let chipRow = UIView()
     
     private let yearLabel = TDLabel().then {
         $0.text = "2025년 9월 14일 일요일"
@@ -127,6 +148,18 @@ final class HomeViewController: BaseViewController, View {
         $0.numberOfLines = 0
     }
     
+    private let timezoneNoticeLabel = TDLabel().then {
+        $0.numberOfLines = 0
+        $0.isHidden = NSTimeZone.system.identifier == "Asia/Seoul"
+        let text = "* 모든 시간은 한국 시간을 기준으로 안내돼요"
+        let attr = NSMutableAttributedString(string: text, attributes: [
+            .font: UIFont.pretenRegular(12),
+            .foregroundColor: UIColor.grayScale600
+        ])
+        attr.addAttribute(.font, value: UIFont.pretenBold(12), range: (text as NSString).range(of: "한국 시간을 기준"))
+        $0.attributedText = attr
+    }
+    
     private let tooltipContainer = TouchPassthroughView().then {
         $0.isHidden = true
         $0.clipsToBounds = false
@@ -167,7 +200,7 @@ final class HomeViewController: BaseViewController, View {
         // reactor?.action.onNext(.assignCards)
         setupUI()
         showMainCardSkeleton()
-        fetchAllCards()
+        reactor?.action.onNext(.initialLoad)
         
         NotificationCenter.default.addObserver(
             self,
@@ -191,15 +224,19 @@ final class HomeViewController: BaseViewController, View {
         }
     }
     
+    private var hasAppeared = false
+    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         reactor?.action.onNext(.checkCoupleConnection)
         if let status = currentAnswerStatus {
             updateMainCard(for: status)
         }
-        fetchHistoryCards()
-    }
-    
+        if hasAppeared {
+            fetchHistoryCards()
+        }
+        hasAppeared = true
+    }    
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         tooltipContainer.isHidden = true
@@ -222,6 +259,10 @@ final class HomeViewController: BaseViewController, View {
                 guard let self = self else { return }
                 self.historyCards = historyCards
                 self.isLoadingHistoryCards = false
+                
+                // loading 중이면 데이터만 저장, UI는 updateCardLoadState에서 처리
+                guard self.reactor?.currentState.cardLoadState == .loaded else { return }
+                
                 self.updateWeekCards()
                 self.updateMainCardFromHistory(historyCards)
                 if firstAnimation {
@@ -264,6 +305,7 @@ final class HomeViewController: BaseViewController, View {
         answerStatusStream
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] status in
+                guard self?.reactor?.currentState.cardLoadState == .loaded else { return }
                 self?.updateMainCard(for: status)
             })
             .disposed(by: disposeBag)
@@ -289,6 +331,7 @@ final class HomeViewController: BaseViewController, View {
         Observable.combineLatest(answerStatusStream, coupleConnectedStream)
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] status, isCoupleConnected in
+                guard self?.reactor?.currentState.cardLoadState == .loaded else { return }
                 self?.updateMainCard(for: status)
                 self?.updateButtonForMyAnswered(status: status, isCoupleConnected: isCoupleConnected)
             })
@@ -340,6 +383,18 @@ final class HomeViewController: BaseViewController, View {
             })
             .disposed(by: disposeBag)
         
+        reactor.pulse(\.$cardLoadState)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] state in
+                self?.updateCardLoadState(state)
+            })
+            .disposed(by: disposeBag)
+        
+        retryFetchButton.rx.tap
+            .map { HomeReactor.Action.retryFetchCards }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
         arrowButton.rx.tap
             .do(onNext: { print("🔘 Arrow button tap detected!") })
             .withLatestFrom(reactor.state.map { $0.answerStatus })
@@ -353,20 +408,32 @@ final class HomeViewController: BaseViewController, View {
                     return
                 }
                 
-                let cardSystemDate = CardService.shared.getCardSystemDate()
-                let todayCard = self.historyCards.first { Calendar.current.isDate($0.date, inSameDayAs: cardSystemDate) }
-                
-                if let todayCard = todayCard, todayCard.selectedByUserId != nil {
-                    self.coordinator?.showDailyCardDetail(card: todayCard)
+                reactor.action.onNext(.checkPartnerSelection)
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$partnerSelectedCard)
+            .skip(1)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] card in
+                guard let self else { return }
+                if let card {
+                    switch card.type {
+                    case .roleplay:
+                        self.coordinator?.showDailyCardDetail(card: card)
+                    case .balance:
+                        self.coordinator?.showBalanceCardDetail(card: card)
+                    case .none:
+                        let todayCards = CardService.shared.getTodayCards()
+                        self.coordinator?.showDailyCard(todayCards: todayCards, selectedType: .none)
+                    }
                 } else {
-                    let selectedType = todayCard?.type ?? .none
                     let todayCards = CardService.shared.getTodayCards()
-                    self.coordinator?.showDailyCard(todayCards: todayCards, selectedType: selectedType)
+                    self.coordinator?.showDailyCard(todayCards: todayCards, selectedType: .none)
                 }
             })
             .disposed(by: disposeBag)
     }
-    
     private func setupUI() {
         gradientLayer.colors = [
             UIColor(hex: "F9F2EE").cgColor,
@@ -505,13 +572,13 @@ extension HomeViewController {
         questionIcon.addGestureRecognizer(tapGesture)
         
         let descParagraphStyle = NSMutableParagraphStyle()
-        descParagraphStyle.lineHeightMultiple = 1.5
+        descParagraphStyle.lineHeightMultiple = 1.3
         descriptionLabel.attributedText = NSAttributedString(
             string: "매일 08시 업데이트· 다음날 04시 작성 마감\n04시~ 08시 사이에는 답변할 수 없어요",
             attributes: [.paragraphStyle: descParagraphStyle]
         )
         
-        [yearLabel, questionIcon, titleLabel, chip1, chip2, chip3, arrowButton, descriptionCard, pokeButton]
+        [yearLabel, questionIcon, titleLabel, chip1, chip2, chip3, arrowButton, descriptionCard, pokeButton, retryFetchButton]
             .forEach {mainCard.addSubview($0)}
         [descriptionTitle, descriptionLabel].forEach {descriptionCard.addSubview($0)}
         
@@ -524,7 +591,7 @@ extension HomeViewController {
                 flex.addItem(questionIcon).position(.absolute).top(20).right(20).size(24)
                 flex.addItem(yearLabel)
                 flex.addItem(titleLabel).marginTop(8)
-                flex.addItem().direction(.row).justifyContent(.spaceBetween).alignItems(.start).marginTop(16).define { rowFlex in
+                flex.addItem(chipRow).direction(.row).justifyContent(.spaceBetween).alignItems(.start).marginTop(16).define { rowFlex in
                     rowFlex.addItem().direction(.column).define { chipContainer in
                         chipContainer.addItem().direction(.row).define { firstRow in
                             firstRow.addItem(chip1).height(37).width(chip1.intrinsicContentSize.width)
@@ -536,8 +603,11 @@ extension HomeViewController {
                 }
                 flex.addItem(descriptionCard).direction(.column).marginTop(20).define { descFlex in
                     descFlex.addItem(descriptionTitle).marginTop(16).marginLeft(16)
-                    descFlex.addItem(descriptionLabel).marginTop(4).marginLeft(16).marginBottom(16)
+                    let showNotice = NSTimeZone.system.identifier != "Asia/Seoul"
+                    descFlex.addItem(descriptionLabel).marginTop(4).marginLeft(16).marginBottom(showNotice ? 0 : 16)
+                    descFlex.addItem(timezoneNoticeLabel).marginTop(8).marginLeft(16).marginBottom(16).isIncludedInLayout(showNotice)
                 }
+                flex.addItem(retryFetchButton).height(48).marginTop(20)
                 flex.addItem(pokeButton).height(48).marginTop(16)
             }
         
@@ -589,6 +659,7 @@ extension HomeViewController {
     }
     
     private func showMainCardSkeleton() {
+        skeletonShownAt = CACurrentMediaTime()
         mainCard.alpha = 0
         mainCard.isHidden = true
         mainCardSkeleton.isHidden = false
@@ -640,15 +711,95 @@ extension HomeViewController {
     }
     
     private func hideMainCardSkeleton() {
+        guard !isHidingSkeleton else { return }
+        isHidingSkeleton = true
         mainCard.isHidden = false
-        
         UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseInOut], animations: {
             self.mainCardSkeleton.alpha = 0
             self.mainCard.alpha = 1
         }) { _ in
+            self.isHidingSkeleton = false
             self.mainCardSkeleton.isHidden = true
             self.mainCardSkeleton.alpha = 1
         }
+    }
+    
+    private func updateCardLoadState(_ state: CardLoadState) {
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.lineHeightMultiple = 1.5
+        
+        switch state {
+        case .loading:
+            weekCardsContainer.isHidden = true
+            showMainCardSkeleton()
+            return
+            
+        case .loaded:
+            // 히스토리카드 렌더링
+            updateWeekCards()
+            weekCardsContainer.isHidden = false
+            
+            // 메인카드 렌더링
+            let dateFormatter = DateFormatter()
+            dateFormatter.locale = Locale(identifier: "ko_KR")
+            dateFormatter.dateFormat = "yyyy년 M월 d일 EEEE"
+            yearLabel.text = dateFormatter.string(from: CardService.shared.getCardSystemDate())
+            chipRow.isHidden = false
+            chipRow.flex.isIncludedInLayout(true)
+            descriptionCard.isHidden = false
+            descriptionCard.flex.isIncludedInLayout(true)
+            retryFetchButton.isHidden = true
+            retryFetchButton.flex.isIncludedInLayout(false)
+            mainCard.flex.paddingBottom(24)
+            
+            // 내부 상태값 반영 (answerStatus, 칩, 날짜 등)
+            if let status = reactor?.currentState.answerStatus {
+                updateMainCard(for: status)
+            }
+            updateMainCardFromHistory(historyCards)
+            
+            // 모든 요소 세팅 완료 후 한 번에 스켈레톤 페이드아웃
+            hideMainCardSkeleton()
+            
+            if firstAnimation {
+                cardAmimation()
+                firstAnimation = false
+            }
+            return
+            
+        case .retryable:
+            yearLabel.text = "데일리카드 생성 오류"
+            titleLabel.attributedText = NSAttributedString(
+                string: "오늘의 질문을\n가져오지 못했어요",
+                attributes: [.paragraphStyle: paragraphStyle]
+            )
+            retryFetchButton.isHidden = false
+            retryFetchButton.flex.isIncludedInLayout(true).height(44).marginTop(20).marginHorizontal(-4)
+            
+        case .error:
+            yearLabel.text = "데일리카드 생성 오류"
+            titleLabel.attributedText = NSAttributedString(
+                string: "질문 불러오기에 실패했어요\n잠시 후 다시 시도해 주세요",
+                attributes: [.paragraphStyle: paragraphStyle]
+            )
+            retryFetchButton.isHidden = true
+            retryFetchButton.flex.isIncludedInLayout(false)
+        }
+        
+        chipRow.isHidden = true
+        chipRow.flex.isIncludedInLayout(false)
+        descriptionCard.isHidden = true
+        descriptionCard.flex.isIncludedInLayout(false)
+        arrowButton.isHidden = true
+        pokeButton.isHidden = true
+        pokeButton.flex.isIncludedInLayout(false)
+        cardTypeTooltipContainer.isHidden = true
+        
+        titleLabel.flex.markDirty()
+        mainCard.flex.paddingBottom(32).markDirty()
+        hideMainCardSkeleton()
+        contentContainer.flex.layout(mode: .adjustHeight)
+        scrollView.contentSize = contentContainer.frame.size
     }
     
     private func updateMainCard(for status: AnswerStatus) {
@@ -726,8 +877,6 @@ extension HomeViewController {
     }
     
     private func updateTodayCardUI(_ cards: [QuestionCard]) {
-        hideMainCardSkeleton()
-        
         guard let firstCard = cards.first else {
             print("⚠️ 표시 가능한 오늘 카드 없음")
             return
@@ -747,12 +896,14 @@ extension HomeViewController {
     }
     
     private func updateMainCardFromHistory(_ cards: [QuestionCard]) {
+        // cardLoadState가 loaded가 아니면 메인카드 업데이트하지 않음
+        guard reactor?.currentState.cardLoadState == .loaded else { return }
+        
         // 히스토리에서 오늘 카드 찾기 (8시 기준)
         let cardSystemDate = CardService.shared.getCardSystemDate()
         let todayCard = cards.first { Calendar.current.isDate($0.date, inSameDayAs: cardSystemDate) }
         
         guard let card = todayCard else {
-            hideMainCardSkeleton()
             print("⚠️ 오늘 카드 없음")
             return
         }
@@ -791,8 +942,6 @@ extension HomeViewController {
         
         chip3.setHighlighted(isSelectedByPartner)
         showCardTypeTooltip(isSelectedByPartner)
-        
-        hideMainCardSkeleton()
     }
     
     private func updateButtonForMyAnswered(status: AnswerStatus, isCoupleConnected: Bool) {

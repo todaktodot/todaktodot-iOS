@@ -150,6 +150,17 @@ final class CardRepositoryImpl: CardRepository {
             .catch { error in .just(.failure(error)) }
     }
     
+    func fetchFeedbackStatus(coupleCardId: Int) -> Observable<Result<FeedbackStatusResult, Error>> {
+        let endpoint = Endpoint<FeedbackStatusResponseDTO>(
+            baseURL: .todaktodotAPI,
+            path: "/api/feedback/couple-cards/\(coupleCardId)",
+            method: .get
+        )
+        return networkManager.request(with: endpoint)
+            .map { dto in Result<FeedbackStatusResult, Error>.success(dto.toEntity()) }
+            .catch { error in .just(.failure(error)) }
+    }
+    
     func notiAgree() -> Observable<Bool> {        var parameters: [String: String] = [ "infoAlarmYN" : "Y" ]
         
         let endpoint = Endpoint<Empty>(

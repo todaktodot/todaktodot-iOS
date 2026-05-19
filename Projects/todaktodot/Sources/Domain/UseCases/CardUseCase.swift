@@ -55,4 +55,8 @@ final class CardUseCase {
     func generateFeedback(coupleCardId: Int, cardId: Int, issuedDate: String) -> Observable<Result<Void, Error>> {
         repository.generateFeedback(coupleCardId: coupleCardId, cardId: cardId, issuedDate: issuedDate)
     }
+    
+    func fetchFeedbackStatus(coupleCardId: Int) -> Observable<Result<FeedbackStatusResult, Error>> {
+        repository.fetchFeedbackStatus(coupleCardId: coupleCardId)
+    }
 }

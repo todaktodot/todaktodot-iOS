@@ -50,7 +50,7 @@ final class AppDIContainer {
 // MARK: - Make Reactor
 extension AppDIContainer {
     func makeHomeReactor() -> HomeReactor {
-        HomeReactor(cardUseCase: cardUseCase, loginUseCase: loginUseCase)
+        HomeReactor(cardUseCase: cardUseCase, loginUseCase: loginUseCase, coupleUseCase: coupleUseCase)
     }
     
     func makeSigninReactor() -> SigninReactor {
