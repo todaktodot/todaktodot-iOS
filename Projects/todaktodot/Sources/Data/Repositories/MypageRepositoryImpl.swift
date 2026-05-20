@@ -32,9 +32,9 @@ final class MypageRepositoryImpl: MypageRepository {
             }
     }
     
-    func logout() -> Observable<Bool> {
+    func logout() -> Observable<Void> {
         guard let provider = UserdefaultKey.loginProvider,
-              let token = UserdefaultKey.accessToken else { return .just(false) }
+              let token = UserdefaultKey.accessToken else { return .just(()) }
         
         let parameters: [String: Any] = [
             "provider": provider,
@@ -49,7 +49,7 @@ final class MypageRepositoryImpl: MypageRepository {
         )
 
         return networkManager.requestOptional(with: endpoint)
-            .map { _ in true }
+            .map { _ in }
     }
     
     func disconnectCouple() -> Observable<Bool> {
@@ -72,6 +72,22 @@ final class MypageRepositoryImpl: MypageRepository {
 
         return networkManager.requestOptional(with: endpoint)
             .map { _ in true }
+    }
+    
+    func deleteDeviceToken() -> Observable<Void> {
+        guard let deviceToken = UserdefaultKey.diviceToken else {
+            return .just(())
+        }
+
+        let endpoint = Endpoint<Empty>(
+            baseURL: .todaktodotAPI,
+            path: "/api/device-token",
+            method: .delete,
+            parameters: ["fcmToken": deviceToken]
+        )
+
+        return networkManager.requestOptional(with: endpoint)
+            .map { _ in }
     }
     
     func updateTerms(infoAgree: Bool? = nil, marketingAgree: Bool? = nil, advertiesmentAgree: Bool? = nil) -> Observable<Bool> {
