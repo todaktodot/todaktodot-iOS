@@ -68,7 +68,13 @@ final class MyPageReactor: Reactor {
             
         case .tapLogout:
             return useCase.logout()
-                .map { .setLogout($0) }
+                .flatMap { _ in
+                    self.useCase.deleteDeviceToken()
+                }
+                .map { _ in .setLogout(true) }
+                .catch { _ in
+                    .just(.setLogout(true))
+                }
             
         case .tapWitdrawal:
             return useCase.withdrawal()

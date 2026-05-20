@@ -14,6 +14,7 @@ final class AppCoordinator: Coordinator {
     
     private var disposeBag = DisposeBag()
     private var currentCoordinator: Coordinator?
+    private let updateManager = UpdateManager.shared
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
@@ -158,20 +159,20 @@ extension AppCoordinator {
         onOptional: @escaping (URL?) -> Void,
         onNone: @escaping () -> Void
     ) {
-        UpdateManager.shared.fetch {
-            let update = UpdateManager.shared.checkUpdate()
+        updateManager.fetch {
+            let update = self.updateManager.checkUpdate()
             
             switch update.type {
             case .force:
                 onForce(update.url)
             case .optional:
-                if let maintenanceInfo = UpdateManager.shared.checkMaintenanceInfo() {
+                if let maintenanceInfo = self.updateManager.checkMaintenanceInfo() {
                     self.showMaintenance(maintenanceInfo)
                 } else {
                     onOptional(update.url)
                 }
             case .none:
-                if let maintenanceInfo = UpdateManager.shared.checkMaintenanceInfo() {
+                if let maintenanceInfo = self.updateManager.checkMaintenanceInfo() {
                     self.showMaintenance(maintenanceInfo)
                 } else {
                     onNone()
