@@ -78,6 +78,7 @@ final class HistoryCardDetailReactor: Reactor {
     
     enum FeedbackState {
         case none
+        case locked
         case generating
         case loaded(CardFeedback)
         case retryable
@@ -111,7 +112,7 @@ final class HistoryCardDetailReactor: Reactor {
         } else if let cached = Self.feedbackCache[id] {
             initialFeedback = .loaded(cached)
         } else if !card.isBothAnswered {
-            initialFeedback = .none
+            initialFeedback = .locked
         } else if Self.hasRegenerated(for: card.date.toYYYYMMDD()) {
             initialFeedback = .error
         } else if Self.hasPolled(for: card.date.toYYYYMMDD()) {
@@ -160,18 +161,25 @@ final class HistoryCardDetailReactor: Reactor {
         return Observable<Int>.timer(pollingInterval, scheduler: MainScheduler.instance)
             .flatMapLatest { [weak self] _ -> Observable<Mutation> in
                 guard let self else { return .empty() }
-                return self.cardUseCase.fetchHistoryCardDetail(coupleCardId: coupleCardId)
+                return self.cardUseCase.fetchFeedbackStatus(coupleCardId: coupleCardId)
                     .flatMap { [weak self] result -> Observable<Mutation> in
                         guard let self else { return .empty() }
                         switch result {
-                        case .success(let card):
-                            if let feedback = card.feedback {
-                                return .just(.setFeedbackState(.loaded(feedback)))
+                        case .success(let statusResult):
+                            switch statusResult.status {
+                            case .completed:
+                                if let feedback = statusResult.feedback {
+                                    return .just(.setFeedbackState(.loaded(feedback)))
+                                }
+                                return .just(.setFeedbackState(fallback))
+                            case .generating:
+                                return .just(.setFeedbackState(fallback))
+                            case .notStarted, .failed:
+                                if case .error = fallback {
+                                    Self.sendWebhook(card: self.currentState.card, reason: "단건 조회 상태: \(statusResult.status.rawValue)")
+                                }
+                                return .just(.setFeedbackState(fallback))
                             }
-                            if case .error = fallback {
-                                Self.sendWebhook(card: self.currentState.card, reason: "마지막 조회, 피드백 빈값")
-                            }
-                            return .just(.setFeedbackState(fallback))
                         case .failure(let error):
                             if case .error = fallback {
                                 let afErr = error as? CustomAFError

@@ -17,4 +17,5 @@ protocol CardRepository {
     func fetchHistoryCardDetail(coupleCardId: Int) -> Observable<Result<QuestionCard, Error>>
     func notiAgree() -> Observable<Bool>
     func generateFeedback(coupleCardId: Int, cardId: Int, issuedDate: String) -> Observable<Result<Void, Error>>
+    func fetchFeedbackStatus(coupleCardId: Int) -> Observable<Result<FeedbackStatusResult, Error>>
 }

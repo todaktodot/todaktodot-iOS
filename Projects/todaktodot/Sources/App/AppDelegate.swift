@@ -41,7 +41,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             } else {
             }
         }
-        
+        NSTimeZone.default = TimeZone(identifier: "Asia/Seoul")!
         return true
     }
 }
