@@ -64,11 +64,26 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         print("Device Token (Hex): \(tokenString)")
     }
     
+    func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+    ) {
+        print("📩 Silent Push Received")
+        print("userInfo:", userInfo)
+
+        completionHandler(.newData)
+    }
+    
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         completionHandler([.sound])
         
         let title = notification.request.content.title
         let body = notification.request.content.body
+        
+        print("📩 userInfo pretty:")
+        if let data = try? JSONSerialization.data(withJSONObject: notification.request.content.userInfo,
+                                                   options: .prettyPrinted),
+           let jsonString = String(data: data, encoding: .utf8) {
+            print(jsonString)
+        }
         
         if title.contains("연결되었어요!") {
            NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
@@ -82,7 +97,18 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
+        
         let title = response.notification.request.content.title
+        let body = response.notification.request.content.body
+        
+        print("📩 userInfo pretty:")
+        if let data = try? JSONSerialization.data(withJSONObject: response.notification.request.content.userInfo,
+                                                   options: .prettyPrinted),
+           let jsonString = String(data: data, encoding: .utf8) {
+            print(jsonString)
+        } else {
+            print("userInfo:", response.notification.request.content.userInfo)
+        }
         
         if title.contains("질문이") {
             AnalyticsService.log(.pushOpen(type: .todayCardArrived))
@@ -94,7 +120,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
             AnalyticsService.log(.pushOpen(type: .bothCompleted))
         } else if title.contains("연결되었어요!") {
             NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
-        }  
+        }
         
         completionHandler()
     }

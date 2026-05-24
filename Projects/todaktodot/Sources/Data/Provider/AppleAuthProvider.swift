@@ -8,13 +8,18 @@
 import Foundation
 import AuthenticationServices
 import RxSwift
+
 import NetworkKit
 
+struct AppleLoginResult {
+    let authorizationCode: String
+    let appName: String?
+}
+
 final class AppleAuthProvider {
-    
     private var currentDelegate: AppleAuthorizationDelegate?
     
-    func login() -> Observable<String> {
+    func login() -> Observable<AppleLoginResult> {
         return Observable.create { [weak self] observer in
             guard self != nil else {
                 observer.onError(NSError(domain: "AppleLogin", code: -1))
@@ -23,6 +28,7 @@ final class AppleAuthProvider {
 
             let provider = ASAuthorizationAppleIDProvider()
             let request = provider.createRequest()
+            request.requestedScopes = [.fullName]
 
             let controller = ASAuthorizationController(authorizationRequests: [request])
 
@@ -34,7 +40,20 @@ final class AppleAuthProvider {
                         observer.onError(NSError(domain: "AppleLogin", code: -2))
                         return
                     }
-                    observer.onNext(code)
+
+                    let fullName = [
+                        credential.fullName?.familyName,
+                        credential.fullName?.givenName
+                    ]
+                    .compactMap { $0 }
+                    .joined(separator: "")
+
+                    observer.onNext(
+                        AppleLoginResult(
+                            authorizationCode: code,
+                            appName: fullName.isEmpty ? nil : fullName
+                        )
+                    )
                     observer.onCompleted()
                     self.currentDelegate = nil
                 },
