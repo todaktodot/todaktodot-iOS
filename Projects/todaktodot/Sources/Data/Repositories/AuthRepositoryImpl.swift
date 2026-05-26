@@ -36,10 +36,11 @@ final class AuthRepositoryImpl: AuthRepository {
         switch type {
         case .kakao:
             return kakaoAuthProvider.login()
-                .flatMap { oauthToken in
+                .flatMap { result in
                     return self.requestLogin(
-                        accessToken: oauthToken.accessToken,
-                        loginType: .kakao
+                        accessToken: result.accessToken,
+                        loginType: .kakao,
+                        name: result.appName
                     )
                 }
         case .google:
@@ -55,20 +56,25 @@ final class AuthRepositoryImpl: AuthRepository {
                 }
         case .apple:
             return appleAuthProvider.login()
-                .flatMap { authorizationCode in
+                .flatMap { result in
                     return self.requestLogin(
-                        accessToken: authorizationCode,
-                        loginType: .apple
+                        accessToken: result.authorizationCode,
+                        loginType: .apple,
+                        name: result.appName
                     )
                 }
         }
     }
     
-    private func requestLogin(accessToken: String, loginType: LoginType) -> Observable<Bool> {
-        let parameters: [String: Any] = [
+    private func requestLogin(accessToken: String, loginType: LoginType, name: String? = nil) -> Observable<Bool> {
+        var parameters: [String: Any] = [
             "provider": loginType.rawValue.uppercased(),
             "token": accessToken
         ]
+        
+        if let name = name {
+            parameters["name"] = name
+        }
         
         let endpoint = Endpoint<LoginInfo>(
             baseURL: .todaktodotAPI,

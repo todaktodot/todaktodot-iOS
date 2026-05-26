@@ -14,6 +14,7 @@ final class AppCoordinator: Coordinator {
     
     private var disposeBag = DisposeBag()
     private var currentCoordinator: Coordinator?
+    private let updateManager = UpdateManager.shared
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
@@ -95,7 +96,7 @@ final class AppCoordinator: Coordinator {
             .observe(on: MainScheduler.asyncInstance)
             .subscribe(onNext: { [weak self] _ in
                 if let topVC = self?.navigationController.topViewController,
-                   topVC is NicknameViewController {
+                   topVC is NicknameViewController || topVC is SigninViewController {
                     return
                 }
 
@@ -158,22 +159,35 @@ extension AppCoordinator {
         onOptional: @escaping (URL?) -> Void,
         onNone: @escaping () -> Void
     ) {
-        UpdateManager.shared.fetch {
-            let result = UpdateManager.shared.checkUpdate()
+        updateManager.fetch {
+            let update = self.updateManager.checkUpdate()
             
-            switch result.type {
+            switch update.type {
             case .force:
-                onForce(result.url)
+                onForce(update.url)
             case .optional:
-                onOptional(result.url)
+                if let maintenanceInfo = self.updateManager.checkMaintenanceInfo() {
+                    self.showMaintenance(maintenanceInfo)
+                } else {
+                    onOptional(update.url)
+                }
             case .none:
-                onNone()
+                if let maintenanceInfo = self.updateManager.checkMaintenanceInfo() {
+                    self.showMaintenance(maintenanceInfo)
+                } else {
+                    onNone()
+                }
             }
         }
     }
     
+    private func showMaintenance(_ maintenanceAlertInfo: MaintenanceAlertInfo) {
+        let forceUpdateViewController = ForceDimViewController(maintenanceAlertInfo: maintenanceAlertInfo)
+        navigationController.setViewControllers([forceUpdateViewController], animated: true)
+    }
+    
     private func showForceUpdate(url: URL?) {
-        let forceUpdateViewController = ForceUpdateViewController(url: url)
+        let forceUpdateViewController = ForceDimViewController(url: url)
         navigationController.setViewControllers([forceUpdateViewController], animated: true)
     }
     

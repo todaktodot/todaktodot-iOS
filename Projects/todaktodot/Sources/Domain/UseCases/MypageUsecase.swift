@@ -19,7 +19,7 @@ final class MypageUsecase {
         repository.fetchInfo()
     }
     
-    func logout() -> Observable<Bool> {
+    func logout() -> Observable<Void> {
         repository.logout()
     }
     
@@ -29,6 +29,10 @@ final class MypageUsecase {
     
     func withdrawal() -> Observable<Bool> {
         repository.withdrawal()
+    }
+    
+    func deleteDeviceToken() -> Observable<Void> {
+        repository.deleteDeviceToken()
     }
     
     func updateTerms(infoAgree: Bool? = nil, marketingAgree: Bool? = nil, advertiesmentAgree: Bool? = nil) -> Observable<Bool> {

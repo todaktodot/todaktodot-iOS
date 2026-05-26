@@ -9,8 +9,9 @@ import RxSwift
 
 protocol MypageRepository {
     func fetchInfo() -> Observable<MypageInfo>
-    func logout() -> Observable<Bool>
+    func logout() -> Observable<Void>
     func disconnectCouple() -> Observable<Bool>
     func withdrawal() -> Observable<Bool>
+    func deleteDeviceToken() -> Observable<Void>
     func updateTerms(infoAgree: Bool?, marketingAgree: Bool?, advertiesmentAgree: Bool?) -> Observable<Bool>
 }

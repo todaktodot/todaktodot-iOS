@@ -64,14 +64,19 @@ final class CoupleReactor: Reactor {
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
         case .issueCoupleCode:
-            return coupleUseCase.issueCode()
-                .map { Mutation.setMyCode($0.linkCode) }
-                .catch {
-                    if let afError = $0.asCustomAFError, afError.isAlreadyCouple {
-                        return .just(.setAlreadyCouple)
+            if UserdefaultKey.coupleType == .connected {
+                return Observable.just(.setAlreadyCouple)
+                    .observe(on: MainScheduler.asyncInstance)
+            } else {
+                return coupleUseCase.issueCode()
+                    .map { Mutation.setMyCode($0.linkCode) }
+                    .catch {
+                        if let afError = $0.asCustomAFError, afError.isAlreadyCouple {
+                            return .just(.setAlreadyCouple)
+                        }
+                        return .just(.setError($0))
                     }
-                    return .just(.setError($0))
-                }
+            }
         case .tapConnectButton(let code):
             return coupleUseCase.connectCouple(code: code)
                 .flatMap { _ -> Observable<Mutation> in
@@ -98,7 +103,7 @@ final class CoupleReactor: Reactor {
             return .just(.setIsJoined(UserdefaultKey.joined))
             
         case .tapSoloStartButton:
-            if UserdefaultKey.coupleType == .solo {
+            if UserdefaultKey.coupleType != .null {
                 return .just(.setSoloStart(true))
             } else {
                 return coupleUseCase.soloStart()
