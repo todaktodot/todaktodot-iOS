@@ -59,4 +59,12 @@ final class CardUseCase {
     func fetchFeedbackStatus(coupleCardId: Int) -> Observable<Result<FeedbackStatusResult, Error>> {
         repository.fetchFeedbackStatus(coupleCardId: coupleCardId)
     }
+    
+    func saveEmoji(coupleCardId: Int, emojiType: EmojiType) -> Observable<Result<Void, Error>> {
+        repository.saveEmoji(coupleCardId: coupleCardId, emojiType: emojiType)
+    }
+    
+    func deleteEmoji(coupleCardId: Int) -> Observable<Result<Void, Error>> {
+        repository.deleteEmoji(coupleCardId: coupleCardId)
+    }
 }

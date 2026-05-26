@@ -18,4 +18,6 @@ protocol CardRepository {
     func notiAgree() -> Observable<Bool>
     func generateFeedback(coupleCardId: Int, cardId: Int, issuedDate: String) -> Observable<Result<Void, Error>>
     func fetchFeedbackStatus(coupleCardId: Int) -> Observable<Result<FeedbackStatusResult, Error>>
+    func saveEmoji(coupleCardId: Int, emojiType: EmojiType) -> Observable<Result<Void, Error>>
+    func deleteEmoji(coupleCardId: Int) -> Observable<Result<Void, Error>>
 }

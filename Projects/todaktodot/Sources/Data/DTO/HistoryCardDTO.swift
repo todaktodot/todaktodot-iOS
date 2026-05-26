@@ -42,7 +42,9 @@ struct HistoryQuestionDTO: Decodable {
     let answerRequired: Bool?
     let options: [HistoryOptionDTO]?
     let user1Answer: String?
+    let user1Emoji: String?
     let user2Answer: String?
+    let user2Emoji: String?
 }
 
 struct HistoryOptionDTO: Decodable {
@@ -98,7 +100,9 @@ extension CardHistoryResponseDTO {
                             QuestionOption(id: $0.optionNo ?? -1, text: $0.optionContent ?? "")
                         } ?? [],
                         user1Answer: shouldSwap ? q.user2Answer : q.user1Answer,
-                        user2Answer: shouldSwap ? q.user1Answer : q.user2Answer
+                        user1Emoji: EmojiType(rawValue: (shouldSwap ? q.user2Emoji : q.user1Emoji) ?? ""),
+                        user2Answer: shouldSwap ? q.user1Answer : q.user2Answer,
+                        user2Emoji: EmojiType(rawValue: (shouldSwap ? q.user1Emoji : q.user2Emoji) ?? "")
                     )
                 } ?? [],
                 situation: card.situation ?? "",
