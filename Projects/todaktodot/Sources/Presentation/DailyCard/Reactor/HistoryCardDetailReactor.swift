@@ -88,15 +88,19 @@ final class HistoryCardDetailReactor: Reactor {
     enum Action {
         case checkFeedback
         case regenerate
+        case saveEmoji(EmojiType)
+        case deleteEmoji
     }
     
     enum Mutation {
         case setFeedbackState(FeedbackState)
+        case setEmoji(EmojiType?)
     }
     
     struct State {
         var card: QuestionCard
         @Pulse var feedbackState: FeedbackState
+        @Pulse var myEmoji: EmojiType?
     }
     
     let initialState: State
@@ -121,7 +125,7 @@ final class HistoryCardDetailReactor: Reactor {
             initialFeedback = .generating
         }
         
-        self.initialState = State(card: card, feedbackState: initialFeedback)
+        self.initialState = State(card: card, feedbackState: initialFeedback, myEmoji: card.questions.first(where: { $0.type == .subjective })?.user1Emoji)
     }
     
     func mutate(action: Action) -> Observable<Mutation> {
@@ -154,6 +158,24 @@ final class HistoryCardDetailReactor: Reactor {
                         }
                     }
             )
+            
+        case .saveEmoji(let emojiType):
+            // let coupleCardId = currentState.card.coupleCardId
+            return .just(.setEmoji(emojiType))
+            // return Observable.concat(
+            //     .just(.setEmoji(emojiType)),
+            //     cardUseCase.saveEmoji(coupleCardId: coupleCardId, emojiType: emojiType)
+            //         .flatMap { _ in Observable<Mutation>.empty() }
+            // )
+            
+        case .deleteEmoji:
+            // let coupleCardId = currentState.card.coupleCardId
+            return .just(.setEmoji(nil))
+            // return Observable.concat(
+            //     .just(.setEmoji(nil)),
+            //     cardUseCase.deleteEmoji(coupleCardId: coupleCardId)
+            //         .flatMap { _ in Observable<Mutation>.empty() }
+            // )
         }
     }
     
@@ -229,6 +251,8 @@ final class HistoryCardDetailReactor: Reactor {
             if case .loaded(let feedback) = feedbackState {
                 Self.cacheFeedback(feedback, for: state.card.coupleCardId)
             }
+        case .setEmoji(let emoji):
+            newState.myEmoji = emoji
         }
         return newState
     }
