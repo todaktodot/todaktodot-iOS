@@ -405,7 +405,6 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
             }
         }
         
-        // 버튼 위치 계산
         let buttonFrame = button.convert(button.bounds, to: view)
         let paletteWidth: CGFloat = view.bounds.width - 16
         let paletteHeight: CGFloat = 60
@@ -414,10 +413,9 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         let paletteX: CGFloat = 8
         let belowY = buttonFrame.maxY + spacing
         let aboveY = buttonFrame.minY - paletteHeight - spacing
-        
-        // 아래 공간 충분하면 아래, 아니면 위
+    
         let paletteY: CGFloat
-        if belowY + paletteHeight < view.bounds.height - view.safeAreaInsets.bottom {
+        if belowY + paletteHeight < view.bounds.height - view.safeAreaInsets.bottom - 80 {
             paletteY = belowY
         } else {
             paletteY = aboveY
