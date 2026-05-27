@@ -160,22 +160,22 @@ final class HistoryCardDetailReactor: Reactor {
             )
             
         case .saveEmoji(let emojiType):
-            // let coupleCardId = currentState.card.coupleCardId
-            return .just(.setEmoji(emojiType))
-            // return Observable.concat(
-            //     .just(.setEmoji(emojiType)),
-            //     cardUseCase.saveEmoji(coupleCardId: coupleCardId, emojiType: emojiType)
-            //         .flatMap { _ in Observable<Mutation>.empty() }
-            // )
+            guard isCurrentWeek(card: currentState.card) else { return .empty() }
+            let coupleCardId = currentState.card.coupleCardId
+            return Observable.concat(
+                .just(.setEmoji(emojiType)),
+                cardUseCase.saveEmoji(coupleCardId: coupleCardId, emojiType: emojiType)
+                    .flatMap { _ in Observable<Mutation>.empty() }
+            )
             
         case .deleteEmoji:
-            // let coupleCardId = currentState.card.coupleCardId
-            return .just(.setEmoji(nil))
-            // return Observable.concat(
-            //     .just(.setEmoji(nil)),
-            //     cardUseCase.deleteEmoji(coupleCardId: coupleCardId)
-            //         .flatMap { _ in Observable<Mutation>.empty() }
-            // )
+            guard isCurrentWeek(card: currentState.card) else { return .empty() }
+            let coupleCardId = currentState.card.coupleCardId
+            return Observable.concat(
+                .just(.setEmoji(nil)),
+                cardUseCase.deleteEmoji(coupleCardId: coupleCardId)
+                    .flatMap { _ in Observable<Mutation>.empty() }
+            )
         }
     }
     
@@ -241,6 +241,13 @@ final class HistoryCardDetailReactor: Reactor {
         ]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
         URLSession.shared.dataTask(with: request).resume()
+    }
+    
+    private func isCurrentWeek(card: QuestionCard) -> Bool {
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2 // 월요일 시작
+        let today = CardService.shared.getCardSystemDate()
+        return calendar.isDate(card.date, equalTo: today, toGranularity: .weekOfYear)
     }
     
     func reduce(state: State, mutation: Mutation) -> State {

@@ -25,6 +25,13 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     private var emojiAddButton: UIView?
     private let emojiPalette = EmojiPaletteView()
     
+    private var isCurrentWeek: Bool {
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2
+        let today = CardService.shared.getCardSystemDate()
+        return calendar.isDate(card.date, equalTo: today, toGranularity: .weekOfYear)
+    }
+    
     private let scrollView = UIScrollView()
     private let rootFlexContainer = UIView()
     
@@ -325,24 +332,27 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
                     emojiContainer.flex.width(52).height(36).justifyContent(.center).alignItems(.center).define { f in
                         f.addItem(emojiImage).size(36)
                     }
-                    // 수정 버튼
-                    let editButton = UIView().then {
-                        $0.isUserInteractionEnabled = true
-                        let tap = UITapGestureRecognizer(target: self, action: #selector(emojiAddTapped(_:)))
-                        $0.addGestureRecognizer(tap)
-                    }
-                    let editImage = UIImageView().then {
-                        $0.image = UIImage(named: "emoji_add")
-                        $0.contentMode = .scaleAspectFit
-                    }
-                    editButton.flex.size(24).justifyContent(.center).alignItems(.center).define { f in
-                        f.addItem(editImage).size(24)
-                    }
-                    self.emojiAddButton = editButton
                     flex.addItem(emojiContainer)
-                    flex.addItem(editButton).marginLeft(10).alignSelf(.center)
-                } else {
-                    // 미선택 - 추가 버튼
+                    
+                    if self.isCurrentWeek {
+                        // 수정 버튼 (이번주만)
+                        let editButton = UIView().then {
+                            $0.isUserInteractionEnabled = true
+                            let tap = UITapGestureRecognizer(target: self, action: #selector(emojiAddTapped(_:)))
+                            $0.addGestureRecognizer(tap)
+                        }
+                        let editImage = UIImageView().then {
+                            $0.image = UIImage(named: "emoji_add")
+                            $0.contentMode = .scaleAspectFit
+                        }
+                        editButton.flex.size(24).justifyContent(.center).alignItems(.center).define { f in
+                            f.addItem(editImage).size(24)
+                        }
+                        self.emojiAddButton = editButton
+                        flex.addItem(editButton).marginLeft(10).alignSelf(.center)
+                    }
+                } else if self.isCurrentWeek {
+                    // 미선택 - 추가 버튼 (이번주만)
                     let addContainer = UIView().then {
                         $0.backgroundColor = UIColor(hex: "F5F2F8")
                         $0.layer.cornerRadius = 18
@@ -613,7 +623,9 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         }
         
         emojiRow.flex.markDirty()
-        emojiRow.flex.layout()
+        partnerAnswerContainer.flex.layout()
+        rootFlexContainer.flex.layout(mode: .adjustHeight)
+        scrollView.contentSize = rootFlexContainer.frame.size
     }
     
     private func updateFeedbackUI(state: HistoryCardDetailReactor.FeedbackState) {
