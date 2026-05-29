@@ -97,6 +97,16 @@ extension MainTabBarController {
         }
     }
     
+    func selectTab(index: Int) {
+        showViewController(at: index)
+        customTabBar.setSelectedIndex(index, animated: false)
+    }
+    
+    func viewController(at index: Int) -> UIViewController? {
+        guard index >= 0 && index < viewControllers.count else { return nil }
+        return viewControllers[index]
+    }
+    
     private func showViewController(at index: Int) {
         guard index >= 0 && index < viewControllers.count else { return }
         

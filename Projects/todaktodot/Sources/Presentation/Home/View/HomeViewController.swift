@@ -249,6 +249,8 @@ final class HomeViewController: BaseViewController, View {
             showNotificationAlert()
             UserdefaultKey.isInitialLogin = false
         }
+        
+        PushRouter.shared.consumePending()
     }
     
     func bind(reactor: HomeReactor) {

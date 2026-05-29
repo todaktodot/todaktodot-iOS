@@ -90,17 +90,20 @@ final class HistoryCardDetailReactor: Reactor {
         case regenerate
         case saveEmoji(EmojiType)
         case deleteEmoji
+        case refreshPartnerEmoji
     }
     
     enum Mutation {
         case setFeedbackState(FeedbackState)
         case setEmoji(EmojiType?)
+        case setPartnerEmoji(EmojiType?)
     }
     
     struct State {
         var card: QuestionCard
         @Pulse var feedbackState: FeedbackState
         @Pulse var myEmoji: EmojiType?
+        @Pulse var partnerEmoji: EmojiType?
     }
     
     let initialState: State
@@ -125,7 +128,7 @@ final class HistoryCardDetailReactor: Reactor {
             initialFeedback = .generating
         }
         
-        self.initialState = State(card: card, feedbackState: initialFeedback, myEmoji: card.questions.first(where: { $0.type == .subjective })?.user1Emoji)
+        self.initialState = State(card: card, feedbackState: initialFeedback, myEmoji: card.questions.first(where: { $0.type == .multipleChoice })?.user2Emoji, partnerEmoji: card.questions.first(where: { $0.type == .multipleChoice })?.user1Emoji)
     }
     
     func mutate(action: Action) -> Observable<Mutation> {
@@ -176,6 +179,21 @@ final class HistoryCardDetailReactor: Reactor {
                 cardUseCase.deleteEmoji(coupleCardId: coupleCardId)
                     .flatMap { _ in Observable<Mutation>.empty() }
             )
+            
+        case .refreshPartnerEmoji:
+            let card = currentState.card
+            let dateStr = card.date.toYYYYMMDD()
+            return cardUseCase.fetchHistoryCards(startDate: dateStr, endDate: dateStr)
+                .flatMap { result -> Observable<Mutation> in
+                    switch result {
+                    case .success(let cards):
+                        let matched = cards.first(where: { $0.coupleCardId == card.coupleCardId })
+                        let emoji = matched?.questions.first(where: { $0.type == .multipleChoice })?.user1Emoji
+                        return .just(.setPartnerEmoji(emoji))
+                    case .failure:
+                        return .empty()
+                    }
+                }
         }
     }
     
@@ -260,6 +278,8 @@ final class HistoryCardDetailReactor: Reactor {
             }
         case .setEmoji(let emoji):
             newState.myEmoji = emoji
+        case .setPartnerEmoji(let emoji):
+            newState.partnerEmoji = emoji
         }
         return newState
     }

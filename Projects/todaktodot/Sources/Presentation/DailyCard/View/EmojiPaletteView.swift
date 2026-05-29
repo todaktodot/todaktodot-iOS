@@ -121,10 +121,10 @@ final class EmojiPaletteView: UIView {
     @objc private func emojiTapped(_ sender: UIButton) {
         let type = emojiTypes[sender.tag]
         if type == currentSelectedEmoji {
-            onEmojiDeleted?()
+            dismiss()
         } else {
             onEmojiSelected?(type)
+            dismiss()
         }
-        dismiss()
     }
 }

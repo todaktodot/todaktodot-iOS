@@ -69,6 +69,10 @@ extension AppDIContainer {
         HistoryCardDetailReactor(cardUseCase: cardUseCase, card: card)
     }
     
+    func makeCardUseCase() -> CardUseCase {
+        cardUseCase
+    }
+    
     func makeAIReportReactor() -> AIReportReactor {
         AIReportReactor(useCase: aiReportUseCase)
     }

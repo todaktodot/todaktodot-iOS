@@ -136,6 +136,12 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         let dismissTap = UITapGestureRecognizer(target: self, action: #selector(dismissEmojiPalette))
         dismissTap.cancelsTouchesInView = false
         view.addGestureRecognizer(dismissTap)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(handlePartnerEmojiPush), name: .partnerEmojiReceived, object: nil)
+    }
+    
+    @objc private func handlePartnerEmojiPush() {
+        reactor?.action.onNext(.refreshPartnerEmoji)
     }
     
     @objc private func dismissEmojiPalette(_ sender: UITapGestureRecognizer) {
@@ -257,7 +263,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
                 return self.multipleChoice?.options.first(where: { $0.id == optionNo })?.text ?? "답변 없음"
             }(),
             reasonText: subjectiveChoice?.user1Answer,
-            emoji: subjectiveChoice?.user2Emoji,
+            emoji: multipleChoice?.user1Emoji,
             isPartner: false
         )
     }
@@ -272,7 +278,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
                 return self.multipleChoice?.options.first(where: { $0.id == optionNo })?.text ?? "답변 없음"
             }(),
             reasonText: subjectiveChoice?.user2Answer,
-            emoji: subjectiveChoice?.user1Emoji,
+            emoji: multipleChoice?.user2Emoji,
             isPartner: true
         )
     }
@@ -324,6 +330,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
                         $0.layer.cornerRadius = 18
                         $0.layer.borderWidth = 1
                         $0.layer.borderColor = UIColor.mainPurple.cgColor
+                        $0.isUserInteractionEnabled = true
                     }
                     let emojiImage = UIImageView().then {
                         $0.image = UIImage(named: emoji.imageName)
@@ -332,6 +339,12 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
                     emojiContainer.flex.width(52).height(36).justifyContent(.center).alignItems(.center).define { f in
                         f.addItem(emojiImage).size(36)
                     }
+                    
+                    if self.isCurrentWeek {
+                        let deleteTap = UITapGestureRecognizer(target: self, action: #selector(emojiDeleteTapped))
+                        emojiContainer.addGestureRecognizer(deleteTap)
+                    }
+                    
                     flex.addItem(emojiContainer)
                     
                     if self.isCurrentWeek {
@@ -389,6 +402,10 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
             }
         }
         return row
+    }
+    
+    @objc private func emojiDeleteTapped() {
+        reactor?.action.onNext(.deleteEmoji)
     }
     
     @objc private func emojiAddTapped(_ sender: UITapGestureRecognizer) {
@@ -548,6 +565,14 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
                 self?.updatePartnerEmojiUI(emoji: emoji)
             })
             .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$partnerEmoji)
+            .skip(1)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] emoji in
+                self?.updateMyAnswerEmojiUI(emoji: emoji)
+            })
+            .disposed(by: disposeBag)
     }
     
     private func updatePartnerEmojiUI(emoji: EmojiType?) {
@@ -565,6 +590,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
                 $0.layer.cornerRadius = 18
                 $0.layer.borderWidth = 1
                 $0.layer.borderColor = UIColor.mainPurple.cgColor
+                $0.isUserInteractionEnabled = true
             }
             let emojiImage = UIImageView().then {
                 $0.image = UIImage(named: emoji.imageName)
@@ -573,6 +599,11 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
             emojiContainer.addSubview(emojiImage)
             emojiContainer.flex.width(52).height(36).justifyContent(.center).alignItems(.center).define { f in
                 f.addItem(emojiImage).size(36)
+            }
+            
+            if isCurrentWeek {
+                let deleteTap = UITapGestureRecognizer(target: self, action: #selector(self.emojiDeleteTapped))
+                emojiContainer.addGestureRecognizer(deleteTap)
             }
             
             let editButton = UIView().then {
@@ -622,6 +653,62 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         
         emojiRow.flex.markDirty()
         partnerAnswerContainer.flex.layout()
+        rootFlexContainer.flex.layout(mode: .adjustHeight)
+        scrollView.contentSize = rootFlexContainer.frame.size
+    }
+    
+    private func updateMyAnswerEmojiUI(emoji: EmojiType?) {
+        // myAnswerContainer에서 tag 998로 이모지 row를 찾아 업데이트
+        let existingRow = myAnswerContainer.viewWithTag(998)
+        
+        if let emoji {
+            if let row = existingRow {
+                row.subviews.forEach { $0.removeFromSuperview() }
+                let emojiContainer = UIView().then {
+                    $0.backgroundColor = UIColor(hex: "F5F2F8")
+                    $0.layer.cornerRadius = 18
+                }
+                let emojiImage = UIImageView().then {
+                    $0.image = UIImage(named: emoji.imageName)
+                    $0.contentMode = .scaleAspectFit
+                }
+                emojiContainer.addSubview(emojiImage)
+                emojiContainer.flex.width(52).height(36).justifyContent(.center).alignItems(.center).define { f in
+                    f.addItem(emojiImage).size(36)
+                }
+                row.addSubview(emojiContainer)
+                row.flex.direction(.row).justifyContent(.end).define { flex in
+                    flex.addItem(emojiContainer)
+                }
+                row.flex.markDirty()
+            } else {
+                let row = UIView()
+                row.tag = 998
+                let emojiContainer = UIView().then {
+                    $0.backgroundColor = UIColor(hex: "F5F2F8")
+                    $0.layer.cornerRadius = 18
+                }
+                let emojiImage = UIImageView().then {
+                    $0.image = UIImage(named: emoji.imageName)
+                    $0.contentMode = .scaleAspectFit
+                }
+                emojiContainer.addSubview(emojiImage)
+                emojiContainer.flex.width(52).height(36).justifyContent(.center).alignItems(.center).define { f in
+                    f.addItem(emojiImage).size(36)
+                }
+                row.addSubview(emojiContainer)
+                row.flex.direction(.row).justifyContent(.end).define { flex in
+                    flex.addItem(emojiContainer)
+                }
+                myAnswerContainer.addSubview(row)
+                myAnswerContainer.flex.addItem(row).marginTop(12)
+            }
+        } else {
+            existingRow?.subviews.forEach { $0.removeFromSuperview() }
+            existingRow?.flex.isIncludedInLayout(false)
+        }
+        
+        myAnswerContainer.flex.markDirty()
         rootFlexContainer.flex.layout(mode: .adjustHeight)
         scrollView.contentSize = rootFlexContainer.frame.size
     }

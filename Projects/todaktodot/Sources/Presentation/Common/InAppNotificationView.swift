@@ -40,6 +40,12 @@ final class InAppNotificationView: UIView {
         flex.layout(mode: .adjustHeight)
     }
     
+    override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
+        let inside = bounds.contains(point)
+        print("📌 InAppPush point inside: \(inside), bounds: \(bounds), point: \(point)")
+        return inside
+    }
+    
     private func setupFlexLayout() {
         self.flex.define {
             $0.addItem(title)
@@ -50,6 +56,8 @@ final class InAppNotificationView: UIView {
                 .marginBottom(15)
                 .marginLeft(20)
         }
+        title.isUserInteractionEnabled = false
+        body.isUserInteractionEnabled = false
     }
     
     private func layoutViews() {
