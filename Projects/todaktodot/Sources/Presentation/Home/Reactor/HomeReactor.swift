@@ -335,10 +335,9 @@ final class HomeReactor: Reactor {
                             mutations.append(.just(.setCardLoadState(.retryable)))
                         } else {
                             let status = self.determineAnswerStatus(from: todayCards)
+                            mutations.append(.just(.setCardLoadState(.loaded)))
                             mutations.append(.just(.setTodayCards(todayCards)))
                             mutations.append(.just(.setAnswerStatus(status)))
-                            // loaded는 모든 데이터 세팅 후 마지막에
-                            mutations.append(.just(.setCardLoadState(.loaded)))
                         }
                     case .failure:
                         mutations.append(.just(.setCardLoadState(.retryable)))
