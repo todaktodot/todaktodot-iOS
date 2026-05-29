@@ -576,6 +576,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     }
     
     private func updatePartnerEmojiUI(emoji: EmojiType?) {
+        print("🎯 updatePartnerEmojiUI called: \(String(describing: emoji))")
         guard let emojiRow = partnerAnswerContainer.viewWithTag(999) else { return }
         
         // 기존 flex children 제거
@@ -711,6 +712,13 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         myAnswerContainer.flex.markDirty()
         rootFlexContainer.flex.layout(mode: .adjustHeight)
         scrollView.contentSize = rootFlexContainer.frame.size
+        
+        if let row = myAnswerContainer.viewWithTag(998) {
+            row.alpha = 0
+            UIView.animate(withDuration: 0.25) {
+                row.alpha = 1
+            }
+        }
     }
     
     private func updateFeedbackUI(state: HistoryCardDetailReactor.FeedbackState) {

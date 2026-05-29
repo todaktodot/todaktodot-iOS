@@ -304,7 +304,10 @@ final class HomeViewController: BaseViewController, View {
                         self.tooltipContainer.transform = .identity
                     }
                 } else {
-                    self.tooltipContainer.isHidden = true
+                    // 이미 애니메이션 중이거나 보이는 상태면 숨기지 않음
+                    if self.tooltipContainer.alpha == 0 {
+                        self.tooltipContainer.isHidden = true
+                    }
                 }
             })
             .disposed(by: disposeBag)
