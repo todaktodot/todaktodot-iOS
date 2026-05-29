@@ -88,6 +88,9 @@ let project = Project(
                         "NSAllowsArbitraryLoads": true
                     ],
                     "ITSAppUsesNonExemptEncryption" : false,
+                    "UIBackgroundModes": [
+                        "remote-notification"
+                    ],
                 ]
             ),
             sources: ["Sources/**"],
