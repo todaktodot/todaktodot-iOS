@@ -93,9 +93,14 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
            NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
         } else {
             let userInfo = notification.request.content.userInfo
-            if (userInfo["type"] as? String) == "EMOJI_REACTION" {
+            let pushType = userInfo["type"] as? String
+            
+            if pushType == "EMOJI_REACTION" {
                 NotificationCenter.default.post(name: .partnerEmojiReceived, object: nil)
+            } else if pushType == "PARTNER_ANSWER" || pushType == "BOTH_ANSWER" {
+                NotificationCenter.default.post(name: .cardAnswerStatusChanged, object: nil)
             }
+            
             DispatchQueue.main.async {
                 self.showCustomInAppPush(title: title, body: body, userInfo: userInfo)
             }

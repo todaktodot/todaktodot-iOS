@@ -208,6 +208,13 @@ final class HomeViewController: BaseViewController, View {
             name: UIApplication.willEnterForegroundNotification,
             object: nil
         )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleCardAnswerStatusChanged),
+            name: .cardAnswerStatusChanged,
+            object: nil
+        )
     }
     
     private func fetchAllCards() {
@@ -524,6 +531,10 @@ final class HomeViewController: BaseViewController, View {
         if let status = currentAnswerStatus {
             updateMainCard(for: status)
         }
+        fetchHistoryCards()
+    }
+    
+    @objc private func handleCardAnswerStatusChanged() {
         fetchHistoryCards()
     }
     
