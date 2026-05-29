@@ -22,6 +22,15 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     private var subjectiveChoice: Question?
     private var feedbackLabel: MaskingLabel?
     private var didShowLoading = false
+    private var emojiAddButton: UIView?
+    private let emojiPalette = EmojiPaletteView()
+    
+    private var isCurrentWeek: Bool {
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2
+        let today = CardService.shared.getCardSystemDate()
+        return calendar.isDate(card.date, equalTo: today, toGranularity: .weekOfYear)
+    }
     
     private let scrollView = UIScrollView()
     private let rootFlexContainer = UIView()
@@ -123,6 +132,24 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         reactor?.action.onNext(.checkFeedback)
         AnalyticsService.log(.historyCardDetailBegin(cardId: card.coupleCardId))
         AnalyticsService.log(.historyCardType(status: card.isBothAnswered ? .both : card.user1Answered ? .mineOnly : .partnerOnly))
+        
+        let dismissTap = UITapGestureRecognizer(target: self, action: #selector(dismissEmojiPalette))
+        dismissTap.cancelsTouchesInView = false
+        view.addGestureRecognizer(dismissTap)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(handlePartnerEmojiPush), name: .partnerEmojiReceived, object: nil)
+    }
+    
+    @objc private func handlePartnerEmojiPush() {
+        reactor?.action.onNext(.refreshPartnerEmoji)
+    }
+    
+    @objc private func dismissEmojiPalette(_ sender: UITapGestureRecognizer) {
+        guard !emojiPalette.isHidden else { return }
+        let location = sender.location(in: view)
+        if !emojiPalette.frame.contains(location) {
+            emojiPalette.dismiss()
+        }
     }
 
     private func setupUI() {
@@ -130,6 +157,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         
         view.addSubview(scrollView)
         scrollView.addSubview(rootFlexContainer)
+        scrollView.delegate = self
         
         setupModeIndicators()
         setupSituation()
@@ -234,7 +262,9 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
                 let optionNo = Int(self.multipleChoice?.user1Answer ?? "0") ?? 0
                 return self.multipleChoice?.options.first(where: { $0.id == optionNo })?.text ?? "답변 없음"
             }(),
-            reasonText: subjectiveChoice?.user1Answer
+            reasonText: subjectiveChoice?.user1Answer,
+            emoji: multipleChoice?.user1Emoji,
+            isPartner: false
         )
     }
     
@@ -247,11 +277,13 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
                 let optionNo = Int(self.multipleChoice?.user2Answer ?? "0") ?? 0
                 return self.multipleChoice?.options.first(where: { $0.id == optionNo })?.text ?? "답변 없음"
             }(),
-            reasonText: subjectiveChoice?.user2Answer
+            reasonText: subjectiveChoice?.user2Answer,
+            emoji: multipleChoice?.user2Emoji,
+            isPartner: true
         )
     }
     
-    private func setupAnswerContainer(_ container: UIView, nickname: String?, answered: Bool, answerText: String, reasonText: String?) {
+    private func setupAnswerContainer(_ container: UIView, nickname: String?, answered: Bool, answerText: String, reasonText: String?, emoji: EmojiType?, isPartner: Bool) {
         let nicknameLabel = TDLabel().then {
             $0.text = nickname
             $0.font = .pretenSemiBold(16)
@@ -274,12 +306,140 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         
         let answerRow = makeTagRow(tag: "답변", content: answerText)
         let reasonRow = makeTagRow(tag: "이유", content: reasonText ?? "답변하지 않았어요 🥲", contentColor: reasonText == nil ? .grayScale600 : .grayScale800)
+        let emojiRow = makeEmojiRow(emoji: emoji, isPartner: isPartner)
+        if isPartner { emojiRow.tag = 999 }
         
         container.flex.padding(20).define { flex in
             flex.addItem(nicknameLabel)
             flex.addItem(answerRow).marginTop(12)
             flex.addItem(reasonRow).marginTop(18)
+            if isPartner || emoji != nil {
+                flex.addItem(emojiRow).marginTop(12)
+            }
         }
+    }
+    
+    private func makeEmojiRow(emoji: EmojiType?, isPartner: Bool) -> UIView {
+        let row = UIView()
+        row.flex.direction(.row).justifyContent(.end).define { flex in
+            if isPartner {
+                if let emoji {
+                    // 선택된 이모지 표시
+                    let emojiContainer = UIView().then {
+                        $0.backgroundColor = .lightPurple
+                        $0.layer.cornerRadius = 18
+                        $0.layer.borderWidth = 1
+                        $0.layer.borderColor = UIColor.mainPurple.cgColor
+                        $0.isUserInteractionEnabled = true
+                    }
+                    let emojiImage = UIImageView().then {
+                        $0.image = UIImage(named: emoji.imageName)
+                        $0.contentMode = .scaleAspectFit
+                    }
+                    emojiContainer.flex.width(52).height(36).justifyContent(.center).alignItems(.center).define { f in
+                        f.addItem(emojiImage).size(36)
+                    }
+                    
+                    if self.isCurrentWeek {
+                        let deleteTap = UITapGestureRecognizer(target: self, action: #selector(emojiDeleteTapped))
+                        emojiContainer.addGestureRecognizer(deleteTap)
+                    }
+                    
+                    flex.addItem(emojiContainer)
+                    
+                    if self.isCurrentWeek {
+                        // 수정 버튼 (이번주만)
+                        let editButton = UIView().then {
+                            $0.isUserInteractionEnabled = true
+                            let tap = UITapGestureRecognizer(target: self, action: #selector(emojiAddTapped(_:)))
+                            $0.addGestureRecognizer(tap)
+                        }
+                        let editImage = UIImageView().then {
+                            $0.image = UIImage(named: "emoji_add")
+                            $0.contentMode = .scaleAspectFit
+                        }
+                        editButton.flex.size(24).justifyContent(.center).alignItems(.center).define { f in
+                            f.addItem(editImage).size(24)
+                        }
+                        self.emojiAddButton = editButton
+                        flex.addItem(editButton).marginLeft(10).alignSelf(.center)
+                    }
+                } else if self.isCurrentWeek {
+                    // 미선택 - 추가 버튼 (이번주만)
+                    let addContainer = UIView().then {
+                        $0.backgroundColor = UIColor(hex: "F5F2F8")
+                        $0.layer.cornerRadius = 18
+                        $0.isUserInteractionEnabled = true
+                        let tap = UITapGestureRecognizer(target: self, action: #selector(emojiAddTapped(_:)))
+                        $0.addGestureRecognizer(tap)
+                    }
+                    let addImage = UIImageView().then {
+                        $0.image = UIImage(named: "emoji_add")
+                        $0.contentMode = .scaleAspectFit
+                    }
+                    addContainer.flex.width(52).height(36).justifyContent(.center).alignItems(.center).define { f in
+                        f.addItem(addImage).size(28)
+                    }
+                    self.emojiAddButton = addContainer
+                    flex.addItem(addContainer)
+                }
+            } else {
+                // 내 답변 - 상대방이 단 이모지 표시만
+                if let emoji {
+                    let emojiContainer = UIView().then {
+                        $0.backgroundColor = UIColor(hex: "F5F2F8")
+                        $0.layer.cornerRadius = 18
+                    }
+                    let emojiImage = UIImageView().then {
+                        $0.image = UIImage(named: emoji.imageName)
+                        $0.contentMode = .scaleAspectFit
+                    }
+                    emojiContainer.flex.width(52).height(36).justifyContent(.center).alignItems(.center).define { f in
+                        f.addItem(emojiImage).size(36)
+                    }
+                    flex.addItem(emojiContainer)
+                }
+            }
+        }
+        return row
+    }
+    
+    @objc private func emojiDeleteTapped() {
+        reactor?.action.onNext(.deleteEmoji)
+    }
+    
+    @objc private func emojiAddTapped(_ sender: UITapGestureRecognizer) {
+        guard let button = sender.view else { return }
+        
+        if emojiPalette.superview == nil {
+            view.addSubview(emojiPalette)
+            emojiPalette.isHidden = true
+            emojiPalette.onEmojiSelected = { [weak self] type in
+                self?.reactor?.action.onNext(.saveEmoji(type))
+            }
+            emojiPalette.onEmojiDeleted = { [weak self] in
+                self?.reactor?.action.onNext(.deleteEmoji)
+            }
+        }
+        
+        let buttonFrame = button.convert(button.bounds, to: view)
+        let paletteWidth: CGFloat = view.bounds.width - 16
+        let paletteHeight: CGFloat = 60
+        let spacing: CGFloat = 8
+        
+        let paletteX: CGFloat = 8
+        let belowY = buttonFrame.maxY + spacing
+        let aboveY = buttonFrame.minY - paletteHeight - spacing
+    
+        let paletteY: CGFloat
+        if belowY + paletteHeight < view.bounds.height - view.safeAreaInsets.bottom - 80 {
+            paletteY = belowY
+        } else {
+            paletteY = aboveY
+        }
+        
+        emojiPalette.frame = CGRect(x: paletteX, y: paletteY, width: paletteWidth, height: paletteHeight)
+        emojiPalette.showWithJumpAnimation(selectedEmoji: reactor?.currentState.myEmoji)
     }
     
     private func makeTagRow(tag: String, content: String, contentColor: UIColor = .grayScale800) -> UIView {
@@ -397,6 +557,168 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
                 self?.updateFeedbackUI(state: state)
             })
             .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$myEmoji)
+            .skip(1)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] emoji in
+                self?.updatePartnerEmojiUI(emoji: emoji)
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$partnerEmoji)
+            .skip(1)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] emoji in
+                self?.updateMyAnswerEmojiUI(emoji: emoji)
+            })
+            .disposed(by: disposeBag)
+    }
+    
+    private func updatePartnerEmojiUI(emoji: EmojiType?) {
+        print("🎯 updatePartnerEmojiUI called: \(String(describing: emoji))")
+        guard let emojiRow = partnerAnswerContainer.viewWithTag(999) else { return }
+        
+        // 기존 flex children 제거
+        emojiRow.subviews.forEach {
+            $0.flex.isIncludedInLayout(false)
+            $0.removeFromSuperview()
+        }
+        
+        if let emoji {
+            let emojiContainer = UIView().then {
+                $0.backgroundColor = .lightPurple
+                $0.layer.cornerRadius = 18
+                $0.layer.borderWidth = 1
+                $0.layer.borderColor = UIColor.mainPurple.cgColor
+                $0.isUserInteractionEnabled = true
+            }
+            let emojiImage = UIImageView().then {
+                $0.image = UIImage(named: emoji.imageName)
+                $0.contentMode = .scaleAspectFit
+            }
+            emojiContainer.addSubview(emojiImage)
+            emojiContainer.flex.width(52).height(36).justifyContent(.center).alignItems(.center).define { f in
+                f.addItem(emojiImage).size(36)
+            }
+            
+            if isCurrentWeek {
+                let deleteTap = UITapGestureRecognizer(target: self, action: #selector(self.emojiDeleteTapped))
+                emojiContainer.addGestureRecognizer(deleteTap)
+            }
+            
+            let editButton = UIView().then {
+                $0.isUserInteractionEnabled = true
+                let tap = UITapGestureRecognizer(target: self, action: #selector(self.emojiAddTapped(_:)))
+                $0.addGestureRecognizer(tap)
+            }
+            let editImage = UIImageView().then {
+                $0.image = UIImage(named: "emoji_add")
+                $0.contentMode = .scaleAspectFit
+            }
+            editButton.addSubview(editImage)
+            editButton.flex.size(24).justifyContent(.center).alignItems(.center).define { f in
+                f.addItem(editImage).size(24)
+            }
+            self.emojiAddButton = editButton
+            
+            emojiRow.addSubview(emojiContainer)
+            emojiRow.addSubview(editButton)
+            emojiRow.flex.direction(.row).justifyContent(.end).alignItems(.center).define { flex in
+                flex.addItem(emojiContainer)
+                flex.addItem(editButton).marginLeft(10).alignSelf(.center)
+            }
+        } else {
+            let addContainer = UIView().then {
+                $0.backgroundColor = UIColor(hex: "F5F2F8")
+                $0.layer.cornerRadius = 18
+                $0.isUserInteractionEnabled = true
+                let tap = UITapGestureRecognizer(target: self, action: #selector(self.emojiAddTapped(_:)))
+                $0.addGestureRecognizer(tap)
+            }
+            let addImage = UIImageView().then {
+                $0.image = UIImage(named: "emoji_add")
+                $0.contentMode = .scaleAspectFit
+            }
+            addContainer.addSubview(addImage)
+            addContainer.flex.width(52).height(36).justifyContent(.center).alignItems(.center).define { f in
+                f.addItem(addImage).size(28)
+            }
+            self.emojiAddButton = addContainer
+            
+            emojiRow.addSubview(addContainer)
+            emojiRow.flex.direction(.row).justifyContent(.end).define { flex in
+                flex.addItem(addContainer)
+            }
+        }
+        
+        emojiRow.flex.markDirty()
+        partnerAnswerContainer.flex.layout()
+        rootFlexContainer.flex.layout(mode: .adjustHeight)
+        scrollView.contentSize = rootFlexContainer.frame.size
+    }
+    
+    private func updateMyAnswerEmojiUI(emoji: EmojiType?) {
+        // myAnswerContainer에서 tag 998로 이모지 row를 찾아 업데이트
+        let existingRow = myAnswerContainer.viewWithTag(998)
+        
+        if let emoji {
+            if let row = existingRow {
+                row.subviews.forEach { $0.removeFromSuperview() }
+                let emojiContainer = UIView().then {
+                    $0.backgroundColor = UIColor(hex: "F5F2F8")
+                    $0.layer.cornerRadius = 18
+                }
+                let emojiImage = UIImageView().then {
+                    $0.image = UIImage(named: emoji.imageName)
+                    $0.contentMode = .scaleAspectFit
+                }
+                emojiContainer.addSubview(emojiImage)
+                emojiContainer.flex.width(52).height(36).justifyContent(.center).alignItems(.center).define { f in
+                    f.addItem(emojiImage).size(36)
+                }
+                row.addSubview(emojiContainer)
+                row.flex.direction(.row).justifyContent(.end).define { flex in
+                    flex.addItem(emojiContainer)
+                }
+                row.flex.markDirty()
+            } else {
+                let row = UIView()
+                row.tag = 998
+                let emojiContainer = UIView().then {
+                    $0.backgroundColor = UIColor(hex: "F5F2F8")
+                    $0.layer.cornerRadius = 18
+                }
+                let emojiImage = UIImageView().then {
+                    $0.image = UIImage(named: emoji.imageName)
+                    $0.contentMode = .scaleAspectFit
+                }
+                emojiContainer.addSubview(emojiImage)
+                emojiContainer.flex.width(52).height(36).justifyContent(.center).alignItems(.center).define { f in
+                    f.addItem(emojiImage).size(36)
+                }
+                row.addSubview(emojiContainer)
+                row.flex.direction(.row).justifyContent(.end).define { flex in
+                    flex.addItem(emojiContainer)
+                }
+                myAnswerContainer.addSubview(row)
+                myAnswerContainer.flex.addItem(row).marginTop(12)
+            }
+        } else {
+            existingRow?.subviews.forEach { $0.removeFromSuperview() }
+            existingRow?.flex.isIncludedInLayout(false)
+        }
+        
+        myAnswerContainer.flex.markDirty()
+        rootFlexContainer.flex.layout(mode: .adjustHeight)
+        scrollView.contentSize = rootFlexContainer.frame.size
+        
+        if let row = myAnswerContainer.viewWithTag(998) {
+            row.alpha = 0
+            UIView.animate(withDuration: 0.25) {
+                row.alpha = 1
+            }
+        }
     }
     
     private func updateFeedbackUI(state: HistoryCardDetailReactor.FeedbackState) {
@@ -664,5 +986,14 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     
     func navigateBack() {
         coordinator?.navigateBack()
+    }
+}
+
+// MARK: - UIScrollViewDelegate
+extension HistoryCardDetailViewController: UIScrollViewDelegate {
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        if !emojiPalette.isHidden {
+            emojiPalette.dismiss()
+        }
     }
 }

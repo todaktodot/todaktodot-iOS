@@ -39,7 +39,9 @@ struct MockCardData {
                         QuestionOption(id: 2, text: "번갈아가며 내기")
                     ],
                     user1Answer: nil,
-                    user2Answer: nil
+                    user1Emoji: nil,
+                    user2Answer: nil,
+                    user2Emoji: nil
                 ),
                 Question(
                     number: 2,
@@ -48,7 +50,9 @@ struct MockCardData {
                     isRequired: false,
                     options: [],
                     user1Answer: nil,
-                    user2Answer: nil
+                    user1Emoji: nil,
+                    user2Answer: nil,
+                    user2Emoji: nil
                 )
             ],
             situation: "비용",
@@ -81,7 +85,9 @@ struct MockCardData {
                         QuestionOption(id: 2, text: "거절한다")
                     ],
                     user1Answer: nil,
-                    user2Answer: nil
+                    user1Emoji: nil,
+                    user2Answer: nil,
+                    user2Emoji: nil
                 ),
                 Question(
                     number: 2,
@@ -90,7 +96,9 @@ struct MockCardData {
                     isRequired: false,
                     options: [],
                     user1Answer: nil,
-                    user2Answer: nil
+                    user1Emoji: nil,
+                    user2Answer: nil,
+                    user2Emoji: nil
                 )
             ],
             situation: "약속",
@@ -123,7 +131,9 @@ struct MockCardData {
                         QuestionOption(id: 2, text: "즉흥적으로 돌아다니기")
                     ],
                     user1Answer: nil,
-                    user2Answer: nil
+                    user1Emoji: nil,
+                    user2Answer: nil,
+                    user2Emoji: nil
                 ),
                 Question(
                     number: 2,
@@ -132,7 +142,9 @@ struct MockCardData {
                     isRequired: false,
                     options: [],
                     user1Answer: nil,
-                    user2Answer: nil
+                    user1Emoji: nil,
+                    user2Answer: nil,
+                    user2Emoji: nil
                 )
             ],
             situation: "여행",
@@ -168,7 +180,9 @@ struct MockCardData {
                         QuestionOption(id: 2, text: "영화관")
                     ],
                     user1Answer: "카페",
-                    user2Answer: "카페"
+                    user1Emoji: .heart,
+                    user2Answer: "카페",
+                    user2Emoji: .good
                 ),
                 Question(
                     number: 2,
@@ -177,7 +191,9 @@ struct MockCardData {
                     isRequired: false,
                     options: [],
                     user1Answer: "편하게 대화할 수 있어서",
-                    user2Answer: "조용하고 분위기 좋아서"
+                    user1Emoji: .heart,
+                    user2Answer: "조용하고 분위기 좋아서",
+                    user2Emoji: .good
                 )
             ],
             situation: "데이트",
@@ -215,7 +231,9 @@ struct MockCardData {
                         QuestionOption(id: 2, text: "여행")
                     ],
                     user1Answer: "저축/투자",
-                    user2Answer: "여행"
+                    user1Emoji: nil,
+                    user2Answer: "여행",
+                    user2Emoji: nil
                 ),
                 Question(
                     number: 2,
@@ -224,7 +242,9 @@ struct MockCardData {
                     isRequired: false,
                     options: [],
                     user1Answer: "미래를 위해 준비하고 싶어서",
-                    user2Answer: "지금 이 순간을 즐기고 싶어서"
+                    user1Emoji: nil,
+                    user2Answer: "지금 이 순간을 즐기고 싶어서",
+                    user2Emoji: nil
                 )
             ],
             situation: "가치관",
@@ -262,7 +282,9 @@ struct MockCardData {
                         QuestionOption(id: 2, text: "시간을 두고 생각하기")
                     ],
                     user1Answer: "바로 대화로 풀기",
-                    user2Answer: "시간을 두고 생각하기"
+                    user1Emoji: nil,
+                    user2Answer: "시간을 두고 생각하기",
+                    user2Emoji: nil
                 ),
                 Question(
                     number: 2,
@@ -271,7 +293,9 @@ struct MockCardData {
                     isRequired: false,
                     options: [],
                     user1Answer: "빨리 해결하는 게 좋아서",
-                    user2Answer: nil
+                    user1Emoji: nil,
+                    user2Answer: nil,
+                    user2Emoji: nil
                 )
             ],
             situation: "갈등",
@@ -309,7 +333,9 @@ struct MockCardData {
                         QuestionOption(id: 2, text: "하루 1-2번 정도")
                     ],
                     user1Answer: "수시로 연락",
-                    user2Answer: "하루 1-2번 정도"
+                    user1Emoji: nil,
+                    user2Answer: "하루 1-2번 정도",
+                    user2Emoji: nil
                 ),
                 Question(
                     number: 2,
@@ -318,7 +344,9 @@ struct MockCardData {
                     isRequired: false,
                     options: [],
                     user1Answer: nil,
-                    user2Answer: "각자 시간도 필요해서"
+                    user1Emoji: nil,
+                    user2Answer: "각자 시간도 필요해서",
+                    user2Emoji: nil
                 )
             ],
             situation: "빈도",
@@ -356,7 +384,9 @@ struct MockCardData {
                         QuestionOption(id: 2, text: "밖에 나가기")
                     ],
                     user1Answer: "집에서 쉬기",
-                    user2Answer: nil
+                    user1Emoji: nil,
+                    user2Answer: nil,
+                    user2Emoji: nil
                 ),
                 Question(
                     number: 2,
@@ -365,7 +395,9 @@ struct MockCardData {
                     isRequired: false,
                     options: [],
                     user1Answer: "평일에 너무 피곤해서",
-                    user2Answer: nil
+                    user1Emoji: nil,
+                    user2Answer: nil,
+                    user2Emoji: nil
                 )
             ],
             situation: "주말",
@@ -397,7 +429,9 @@ struct MockCardData {
                         QuestionOption(id: 2, text: "감성적인 선물")
                     ],
                     user1Answer: nil,
-                    user2Answer: nil
+                    user1Emoji: nil,
+                    user2Answer: nil,
+                    user2Emoji: nil
                 ),
                 Question(
                     number: 2,
@@ -406,7 +440,9 @@ struct MockCardData {
                     isRequired: false,
                     options: [],
                     user1Answer: nil,
-                    user2Answer: nil
+                    user1Emoji: nil,
+                    user2Answer: nil,
+                    user2Emoji: nil
                 )
             ],
             situation: "선물",

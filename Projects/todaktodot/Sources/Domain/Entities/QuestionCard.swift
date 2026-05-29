@@ -44,7 +44,9 @@ struct Question: Codable {
     let isRequired: Bool
     let options: [QuestionOption]
     let user1Answer: String?
+    let user1Emoji: EmojiType?
     let user2Answer: String?
+    let user2Emoji: EmojiType?
 }
 
 struct QuestionOption: Codable {
