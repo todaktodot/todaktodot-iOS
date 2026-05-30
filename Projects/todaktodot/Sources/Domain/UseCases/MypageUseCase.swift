@@ -8,7 +8,7 @@
 import Foundation
 import RxSwift
 
-final class MypageUsecase {
+final class MypageUseCase {
     private let repository: MypageRepository
 
     init(repository: MypageRepository) {

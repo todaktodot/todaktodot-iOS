@@ -14,6 +14,7 @@ final class AppCoordinator: Coordinator {
     
     private var disposeBag = DisposeBag()
     private var currentCoordinator: Coordinator?
+    private var isShowingConnectionAlert = false
     private let updateManager = UpdateManager.shared
     
     init(navigationController: UINavigationController) {
@@ -95,13 +96,21 @@ final class AppCoordinator: Coordinator {
         NotificationCenter.default.rx.notification(.connectionCompleteAndGoToNickname)
             .observe(on: MainScheduler.asyncInstance)
             .subscribe(onNext: { [weak self] _ in
-                if let topVC = self?.navigationController.topViewController,
+                guard let self else { return }
+
+                if let topVC = self.navigationController.topViewController,
                    topVC is NicknameViewController || topVC is SigninViewController {
+                    self.isShowingConnectionAlert = false
                     return
                 }
 
-                UserdefaultKey.nicknameIsEmpty = true
-                self?.showConnectedCoupleAlert()
+                guard self.isShowingConnectionAlert == false else {
+                    return
+                }
+
+                self.isShowingConnectionAlert = true
+                UserdefaultKey.createdMyNickname = false
+                self.showConnectedCoupleAlert()
             })
             .disposed(by: disposeBag)
     }
@@ -116,6 +125,8 @@ final class AppCoordinator: Coordinator {
     private func showConnectedCoupleAlert() {
         self.navigationController.showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: { [weak self] in
             guard let self else { return }
+
+            self.isShowingConnectionAlert = false
             removeCurrentCoordinator()
             
             let signinCoordinator = SigninCoordinator(navigationController: navigationController)
@@ -140,6 +151,20 @@ final class AppCoordinator: Coordinator {
         
         self.navigationController.showAlert(icon: UIImage(resource: .check), title: title, primaryButtonTitle: "확인", primaryButtonAction: {})
     }
+    
+    private func checkCoupleState() {
+        if UserdefaultKey.coupleType != .connected || (UserdefaultKey.coupleType == .connected && !UserdefaultKey.createdMyNickname) {
+            let container = AppDIContainer.shared
+            let useCase = container.makeMypageUseCase()
+            
+            useCase.fetchInfo()
+                .observe(on: MainScheduler.instance)
+                .subscribe(onNext: { result in
+                    NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
+                })
+                .disposed(by: disposeBag)
+        }
+    }
 }
 
 // MARK: 업데이트
@@ -149,7 +174,9 @@ extension AppCoordinator {
             .observe(on: MainScheduler.asyncInstance)
             .subscribe(onNext: { [weak self] _ in
                 guard UserdefaultKey.isKakaoLoginInProgress == false else { return }
-                self?.checkNewVersion()
+                self?.checkNewVersion {
+                    self?.checkCoupleState()
+                }
             })
             .disposed(by: disposeBag)
     }
@@ -191,7 +218,7 @@ extension AppCoordinator {
         navigationController.setViewControllers([forceUpdateViewController], animated: true)
     }
     
-    private func checkNewVersion() {
+    private func checkNewVersion(versionCheckCompletion: @escaping () -> Void) {
         let shouldShowUpdateAlert: Bool = {
             guard let date = UserdefaultKey.skipUpdateAlertToday else {
                 return true
@@ -199,7 +226,10 @@ extension AppCoordinator {
             return !Calendar.current.isDateInToday(date)
         }()
 
-        guard shouldShowUpdateAlert else { return }
+        guard shouldShowUpdateAlert else {
+            versionCheckCompletion()
+            return
+        }
         
         handleUpdate(
             onForce: { [weak self] url in
@@ -210,9 +240,15 @@ extension AppCoordinator {
                     if let url {
                         UIApplication.shared.open(url)
                     }
-                }, secondaryButtonTitle: "나중에 할게요", isUpdate: .optional)
+                }, secondaryButtonTitle: "나중에 할게요", secondaryButtonAction: {
+                    versionCheckCompletion()
+                }, isUpdate: .optional)
             },
-            onNone: {}
+            onNone: {
+                versionCheckCompletion()
+            }
         )
     }
+    
+    
 }

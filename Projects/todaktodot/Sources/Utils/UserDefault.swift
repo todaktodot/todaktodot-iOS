@@ -54,9 +54,6 @@ enum UserdefaultKey {
     @UserDefaultCodable(key: "isKakaoLoginInProgress", defaultValue: false)
     static var isKakaoLoginInProgress: Bool
     
-    @UserDefaultCodable(key: "nicknameIsEmpty", defaultValue: false)
-    static var nicknameIsEmpty: Bool
-    
     // MARK: -
     @UserDefault(key: "connectedDate", defaultValue: Date())
     static var connectedDate: Date
