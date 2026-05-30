@@ -77,8 +77,10 @@ extension DailyCardResponseDTO {
                         options: q.options?.map {
                             QuestionOption(id: $0.optionNo, text: $0.optionContent)
                         } ?? [],
-                        user1Answer: nil,
-                        user2Answer: nil
+                        user1Answer: nil as String?,
+                        user1Emoji: nil as EmojiType?,
+                        user2Answer: nil as String?,
+                        user2Emoji: nil as EmojiType?
                     )
                 },
                 situation: card.situation ?? "",

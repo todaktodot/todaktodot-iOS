@@ -161,6 +161,31 @@ final class CardRepositoryImpl: CardRepository {
             .catch { error in .just(.failure(error)) }
     }
     
+    func saveEmoji(coupleCardId: Int, emojiType: EmojiType) -> Observable<Result<Void, Error>> {
+        let endpoint = Endpoint<SaveEmojiResponseDTO>(
+            baseURL: .todaktodotAPI,
+            path: "/api/daily-card/history/emoji",
+            method: .post,
+            parameters: ["coupleCardId": coupleCardId, "emojiType": emojiType.rawValue]
+        )
+        return networkManager.request(with: endpoint)
+            .map { _ in Result<Void, Error>.success(()) }
+            .catch { error in .just(.failure(error)) }
+    }
+    
+    func deleteEmoji(coupleCardId: Int) -> Observable<Result<Void, Error>> {
+        let endpoint = Endpoint<Empty>(
+            baseURL: .todaktodotAPI,
+            path: "/api/daily-card/history/emoji",
+            method: .delete,
+            encodingType: .query,
+            parameters: ["coupleCardId": coupleCardId]
+        )
+        return networkManager.requestOptional(with: endpoint)
+            .map { _ in Result<Void, Error>.success(()) }
+            .catch { error in .just(.failure(error)) }
+    }
+    
     func notiAgree() -> Observable<Bool> {        var parameters: [String: String] = [ "infoAlarmYN" : "Y" ]
         
         let endpoint = Endpoint<Empty>(

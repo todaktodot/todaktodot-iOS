@@ -208,6 +208,13 @@ final class HomeViewController: BaseViewController, View {
             name: UIApplication.willEnterForegroundNotification,
             object: nil
         )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleCardAnswerStatusChanged),
+            name: .cardAnswerStatusChanged,
+            object: nil
+        )
     }
     
     private func fetchAllCards() {
@@ -249,6 +256,8 @@ final class HomeViewController: BaseViewController, View {
             showNotificationAlert()
             UserdefaultKey.isInitialLogin = false
         }
+        
+        PushRouter.shared.consumePending()
     }
     
     func bind(reactor: HomeReactor) {
@@ -265,6 +274,7 @@ final class HomeViewController: BaseViewController, View {
                 
                 self.updateWeekCards()
                 self.updateMainCardFromHistory(historyCards)
+                self.refreshAnswerStatus()
                 if firstAnimation {
                     cardAmimation()
                     firstAnimation = false
@@ -294,7 +304,10 @@ final class HomeViewController: BaseViewController, View {
                         self.tooltipContainer.transform = .identity
                     }
                 } else {
-                    self.tooltipContainer.isHidden = true
+                    // 이미 애니메이션 중이거나 보이는 상태면 숨기지 않음
+                    if self.tooltipContainer.alpha == 0 {
+                        self.tooltipContainer.isHidden = true
+                    }
                 }
             })
             .disposed(by: disposeBag)
@@ -481,6 +494,26 @@ final class HomeViewController: BaseViewController, View {
         view.setNeedsLayout()
     }
     
+    private func refreshAnswerStatus() {
+        let cardSystemDate = CardService.shared.getCardSystemDate()
+        guard let card = historyCards.first(where: { Calendar.current.isDate($0.date, inSameDayAs: cardSystemDate) }) else {
+            print("⚠️ refreshAnswerStatus: 오늘 카드 못 찾음, historyCards count: \(historyCards.count)")
+            return
+        }
+        let status: AnswerStatus
+        if card.user1Answered && card.user2Answered {
+            status = .bothAnswered
+        } else if card.user1Answered {
+            status = .myAnswered
+        } else if card.user2Answered {
+            status = .partnerAnswered
+        } else {
+            status = .bothUnanswered
+        }
+        print("✅ refreshAnswerStatus: \(status), user1: \(card.user1Answered), user2: \(card.user2Answered)")
+        updateMainCard(for: status)
+    }
+    
     private func fetchHistoryCards() {
         /// 월요일부터 오늘까지 (8시 기준)
         var calendar = Calendar.current
@@ -522,6 +555,10 @@ final class HomeViewController: BaseViewController, View {
         if let status = currentAnswerStatus {
             updateMainCard(for: status)
         }
+        fetchHistoryCards()
+    }
+    
+    @objc private func handleCardAnswerStatusChanged() {
         fetchHistoryCards()
     }
     
@@ -753,13 +790,32 @@ extension HomeViewController {
             mainCard.flex.paddingBottom(24)
             
             // 내부 상태값 반영 (answerStatus, 칩, 날짜 등)
-            if let status = reactor?.currentState.answerStatus {
+            let cards = reactor?.currentState.historyCards ?? []
+            self.historyCards = cards
+            let cardSystemDate = CardService.shared.getCardSystemDate()
+            let todayHistoryCard = cards.first { Calendar.current.isDate($0.date, inSameDayAs: cardSystemDate) }
+            if let card = todayHistoryCard {
+                let status: AnswerStatus
+                if card.user1Answered && card.user2Answered {
+                    status = .bothAnswered
+                } else if card.user1Answered {
+                    status = .myAnswered
+                } else if card.user2Answered {
+                    status = .partnerAnswered
+                } else {
+                    status = .bothUnanswered
+                }
+                updateMainCard(for: status)
+            } else if let status = reactor?.currentState.answerStatus {
                 updateMainCard(for: status)
             }
-            updateMainCardFromHistory(historyCards)
+            updateMainCardFromHistory(cards)
             
             // 모든 요소 세팅 완료 후 한 번에 스켈레톤 페이드아웃
             hideMainCardSkeleton()
+            
+            // 히스토리 기반 답변 상태 최종 반영
+            refreshAnswerStatus()
             
             if firstAnimation {
                 cardAmimation()
@@ -802,7 +858,11 @@ extension HomeViewController {
         scrollView.contentSize = contentContainer.frame.size
     }
     
-    private func updateMainCard(for status: AnswerStatus) {
+    private func updateMainCard(for status: AnswerStatus, caller: String = #function) {
+        // 이미 답변 상태가 확인된 후에 bothUnanswered로 되돌리지 않음
+        if status == .bothUnanswered && currentAnswerStatus != nil && currentAnswerStatus != .bothUnanswered {
+            return
+        }
         let isFirstSet = currentAnswerStatus == nil
         let previousStatus = currentAnswerStatus
         currentAnswerStatus = status
@@ -862,6 +922,10 @@ extension HomeViewController {
             contentContainer.flex.layout(mode: .adjustHeight)
             mainCard.layoutIfNeeded()
             scrollView.contentSize = contentContainer.frame.size
+        }
+        
+        if !isFirstSet && previousStatus != status {
+            UIView.transition(with: titleLabel, duration: 0.25, options: .transitionCrossDissolve, animations: nil)
         }
         
         applyUpdate()

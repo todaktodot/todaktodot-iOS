@@ -53,11 +53,23 @@ extension AppDelegate: MessagingDelegate {
     }
 }
 
+private enum AssociatedKeys {
+    static var pushUserInfo = "pushUserInfo"
+}
+
 extension AppDelegate: UNUserNotificationCenterDelegate {
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         Messaging.messaging().apnsToken = deviceToken
         let tokenString = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
         print("Device Token (Hex): \(tokenString)")
+    }
+    
+    func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+    ) {
+        print("📩 Silent Push Received")
+        print("userInfo:", userInfo)
+
+        completionHandler(.newData)
     }
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
@@ -66,11 +78,27 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         let title = notification.request.content.title
         let body = notification.request.content.body
         
+        print("📩 userInfo pretty:")
+        if let data = try? JSONSerialization.data(withJSONObject: notification.request.content.userInfo,
+                                                   options: .prettyPrinted),
+           let jsonString = String(data: data, encoding: .utf8) {
+            print(jsonString)
+        }
+        
         if title.contains("연결되었어요!") {
            NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
         } else {
+            let userInfo = notification.request.content.userInfo
+            let pushType = userInfo["type"] as? String
+            
+            if pushType == "EMOJI_REACTION" {
+                NotificationCenter.default.post(name: .partnerEmojiReceived, object: nil)
+            } else if pushType == "PARTNER_ANSWER" || pushType == "BOTH_ANSWER" {
+                NotificationCenter.default.post(name: .cardAnswerStatusChanged, object: nil)
+            }
+            
             DispatchQueue.main.async {
-                self.showCustomInAppPush(title: title, body: body)
+                self.showCustomInAppPush(title: title, body: body, userInfo: userInfo)
             }
         }
     }
@@ -78,7 +106,18 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
+        
         let title = response.notification.request.content.title
+        let body = response.notification.request.content.body
+        
+        print("📩 userInfo pretty:")
+        if let data = try? JSONSerialization.data(withJSONObject: response.notification.request.content.userInfo,
+                                                   options: .prettyPrinted),
+           let jsonString = String(data: data, encoding: .utf8) {
+            print(jsonString)
+        } else {
+            print("userInfo:", response.notification.request.content.userInfo)
+        }
         
         if title.contains("질문이") {
             AnalyticsService.log(.pushOpen(type: .todayCardArrived))
@@ -90,12 +129,13 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
             AnalyticsService.log(.pushOpen(type: .bothCompleted))
         } else if title.contains("연결되었어요!") {
             NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
-        }  
+        }
         
+        PushRouter.shared.route(userInfo: response.notification.request.content.userInfo)
         completionHandler()
     }
     
-    private func showCustomInAppPush(title: String, body: String) {
+    private func showCustomInAppPush(title: String, body: String, userInfo: [AnyHashable: Any] = [:]) {
         guard let windowScene = UIApplication.shared.connectedScenes
             .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene, let window = windowScene.keyWindow else {
             return
@@ -104,26 +144,45 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         window.subviews.filter({ $0 is InAppNotificationView }).forEach({ $0.removeFromSuperview() })
         
         let pushView = InAppNotificationView(title: title, body: body)
+        pushView.isUserInteractionEnabled = true
+        let tap = UITapGestureRecognizer(target: self, action: #selector(inAppPushTapped))
+        pushView.addGestureRecognizer(tap)
+        objc_setAssociatedObject(pushView, &AssociatedKeys.pushUserInfo, userInfo, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        
         window.addSubview(pushView)
+        window.bringSubviewToFront(pushView)
         
         pushView.pin
             .top(-100)
             .horizontally(20)
             .height(80)
         
-        UIView.animate(withDuration: 0.3, delay: 0) { [weak self] in
-            guard let self else { return }
+        UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseOut, animations: {
             pushView.pin
                 .top(window.pin.safeArea.top)
                 .horizontally(20)
                 .height(80)
-        } completion: { [weak self] _ in
-            guard let self else { return }
-            UIView.animate(withDuration: 0.3, delay: 2.0) {
-                pushView.pin.top(-100)
-            } completion: { _ in
-                pushView.removeFromSuperview()
+        }) { _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                guard pushView.superview != nil else { return }
+                UIView.animate(withDuration: 0.3) {
+                    pushView.pin.top(-100)
+                } completion: { _ in
+                    pushView.removeFromSuperview()
+                }
             }
         }
+    }
+    
+    @objc private func inAppPushTapped(_ sender: UITapGestureRecognizer) {
+        guard let pushView = sender.view,
+              let userInfo = objc_getAssociatedObject(pushView, &AssociatedKeys.pushUserInfo) as? [AnyHashable: Any] else { return }
+        UIView.animate(withDuration: 0.2, animations: {
+            pushView.alpha = 0
+            pushView.transform = CGAffineTransform(translationX: 0, y: -20)
+        }) { _ in
+            pushView.removeFromSuperview()
+        }
+        PushRouter.shared.route(userInfo: userInfo)
     }
 }
