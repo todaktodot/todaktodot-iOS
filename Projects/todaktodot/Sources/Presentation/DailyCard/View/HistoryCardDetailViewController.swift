@@ -271,7 +271,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     private func setupPartnerAnswer() {
         setupAnswerContainer(
             partnerAnswerContainer,
-            nickname: UserdefaultKey.nicknameInfo?.anotherUserNickname,
+            nickname: UserdefaultKey.nicknameInfo?.anotherUserNickname ?? "연인",
             answered: card.user2Answered,
             answerText: {
                 let optionNo = Int(self.multipleChoice?.user2Answer ?? "0") ?? 0
@@ -290,30 +290,29 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
             $0.textColor = .mainPurple
         }
         
-        guard answered else {
-            let notAnsweredLabel = TDLabel().then {
-                $0.text = "답변하지 않았어요 🥲"
-                $0.font = .pretenRegular(16)
-                $0.textColor = .grayScale600
-                $0.numberOfLines = 0
-            }
-            container.flex.padding(20).define { flex in
-                flex.addItem(nicknameLabel)
-                flex.addItem(notAnsweredLabel).marginTop(12)
-            }
-            return
-        }
-        
-        let answerRow = makeTagRow(tag: "답변", content: answerText)
-        let reasonRow = makeTagRow(tag: "이유", content: reasonText ?? "답변하지 않았어요 🥲", contentColor: reasonText == nil ? .grayScale600 : .grayScale800)
         let emojiRow = makeEmojiRow(emoji: emoji, isPartner: isPartner)
         if isPartner { emojiRow.tag = 999 }
+        let showEmoji = isPartner || emoji != nil || self.isCurrentWeek
         
         container.flex.padding(20).define { flex in
             flex.addItem(nicknameLabel)
-            flex.addItem(answerRow).marginTop(12)
-            flex.addItem(reasonRow).marginTop(18)
-            if isPartner || emoji != nil {
+            
+            if answered {
+                let answerRow = makeTagRow(tag: "답변", content: answerText)
+                let reasonRow = makeTagRow(tag: "이유", content: reasonText ?? "답변하지 않았어요 🥲", contentColor: reasonText == nil ? .grayScale600 : .grayScale800)
+                flex.addItem(answerRow).marginTop(12)
+                flex.addItem(reasonRow).marginTop(18)
+            } else {
+                let notAnsweredLabel = TDLabel().then {
+                    $0.text = "답변하지 않았어요 🥲"
+                    $0.font = .pretenRegular(16)
+                    $0.textColor = .grayScale600
+                    $0.numberOfLines = 0
+                }
+                flex.addItem(notAnsweredLabel).marginTop(12)
+            }
+            
+            if showEmoji {
                 flex.addItem(emojiRow).marginTop(12)
             }
         }

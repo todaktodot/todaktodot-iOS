@@ -68,13 +68,19 @@ final class UpdateManager {
 
         if let data = jsonString.data(using: .utf8) {
             let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-            
+            let formatter = ISO8601DateFormatter()
+            let now = Date()
+
+            if let startAt = json?["startAt"] as? String, let startDate = formatter.date(from: startAt) {
+                guard startDate <= now else { return (.none, nil) }
+            }
+
             let forceVersion = json?["minimum_version"] as? String ?? "0.0.0"
             let optionalVersion = json?["recommended_version"] as? String ?? "0.0.0"
             let urlString = json?["app_store_url"] as? String ?? "https://apps.apple.com"
-            
+
             print("forceVersion: \(forceVersion), optionalVersion: \(optionalVersion)")
-            
+
             if isLowerVersion(currentVersion, than: forceVersion) {
                 return (.force, URL(string: urlString))
             } else if isLowerVersion(currentVersion, than: optionalVersion) {
@@ -83,7 +89,7 @@ final class UpdateManager {
                 return (.none, nil)
             }
         }
-        
+
         return (.none, nil)
     }
     
