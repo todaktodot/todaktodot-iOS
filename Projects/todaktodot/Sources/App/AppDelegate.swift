@@ -72,7 +72,11 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     ) {
         print("📩 Silent Push Received")
         print("userInfo:", userInfo)
-
+        
+        if let type = userInfo["type"] as? String, type == "CONNECT_COUPLE" {
+            NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
+        }
+        
         completionHandler(.newData)
     }
     
@@ -81,13 +85,6 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         
         let title = notification.request.content.title
         let body = notification.request.content.body
-        
-        print("📩 userInfo pretty:")
-        if let data = try? JSONSerialization.data(withJSONObject: notification.request.content.userInfo,
-                                                   options: .prettyPrinted),
-           let jsonString = String(data: data, encoding: .utf8) {
-            print(jsonString)
-        }
         
         if title.contains("연결되었어요!") {
            NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
@@ -112,16 +109,6 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
         
         let title = response.notification.request.content.title
-        let body = response.notification.request.content.body
-        
-        print("📩 userInfo pretty:")
-        if let data = try? JSONSerialization.data(withJSONObject: response.notification.request.content.userInfo,
-                                                   options: .prettyPrinted),
-           let jsonString = String(data: data, encoding: .utf8) {
-            print(jsonString)
-        } else {
-            print("userInfo:", response.notification.request.content.userInfo)
-        }
         
         if title.contains("질문이") {
             AnalyticsService.log(.pushOpen(type: .todayCardArrived))

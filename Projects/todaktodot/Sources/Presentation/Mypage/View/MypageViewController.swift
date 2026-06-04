@@ -303,6 +303,10 @@ final class MypageViewController: CustomBackViewController, View {
                 settingSectionView.advertiesmentNotiSwitch.setSwitch(isOn: info.advertAgree)
                 settingSectionView.marketingNotiSwitch.setSwitch(isOn: info.marketingAgree)
                 layoutViews()
+                
+                if UserdefaultKey.coupleType == .connected && info.myNickname.isEmpty {
+                    NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
+                }
             })
             .disposed(by: disposeBag)
         

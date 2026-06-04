@@ -104,15 +104,15 @@ final class NicknameViewController: UIViewController, View {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        if UserdefaultKey.nicknameIsEmpty {
+        if !UserdefaultKey.createdMyNickname {
             coordinator?.navigationController.interactivePopGestureRecognizer?.isEnabled = false
         }
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        if UserdefaultKey.nicknameIsEmpty {
-            UserdefaultKey.nicknameIsEmpty = false
+        if !UserdefaultKey.createdMyNickname {
+            UserdefaultKey.createdMyNickname = true
             coordinator?.navigationController.interactivePopGestureRecognizer?.isEnabled = true
         }
     }
@@ -179,6 +179,7 @@ final class NicknameViewController: UIViewController, View {
                 }
                 
                 if flowType.value != .edit {
+                    UserdefaultKey.createdMyNickname = true
                     AnalyticsService.log(.nicknameSetCompleted)
                 }
             })

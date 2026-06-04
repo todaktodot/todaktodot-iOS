@@ -43,7 +43,7 @@ final class AppDIContainer {
     private lazy var loginUseCase = LoginUseCase(repository: authRepository)
     private lazy var cardUseCase = CardUseCase(repository: cardRepository)
     private lazy var coupleUseCase = CoupleUseCase(repository: coupleRepository)
-    private lazy var mypageUseCase = MypageUsecase(repository: mypageRepository)
+    private lazy var mypageUseCase = MypageUseCase(repository: mypageRepository)
     private lazy var aiReportUseCase = AIReportUseCase(repository: aiReportRepository)
 }
 
@@ -79,6 +79,10 @@ extension AppDIContainer {
     
     func makeMyPageReactor() -> MyPageReactor {
         MyPageReactor(mypageUsecase: mypageUseCase)
+    }
+    
+    func makeMypageUseCase() -> MypageUseCase {
+        mypageUseCase
     }
 }
 

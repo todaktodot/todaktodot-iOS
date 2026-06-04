@@ -46,9 +46,9 @@ final class MyPageReactor: Reactor {
     
     let initialState = State()
     
-    private let useCase: MypageUsecase
+    private let useCase: MypageUseCase
 
-    init(mypageUsecase: MypageUsecase) {
+    init(mypageUsecase: MypageUseCase) {
         self.useCase = mypageUsecase
     }
     

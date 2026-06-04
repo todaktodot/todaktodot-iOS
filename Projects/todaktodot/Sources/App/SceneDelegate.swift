@@ -7,7 +7,6 @@ import GoogleSignIn
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
-//    private let serverService = ServerJoinService.shared
     static let kakaoCodeRelay = PublishRelay<String>()
     static let googleCodeRelay = PublishRelay<String>()
     
@@ -61,7 +60,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 //        AnalyticsService().screenEvent(ScreenName: .splash)
         NotificationCenter.default.post(name: .sceneWillEnterForeground, object: nil)
         
-        if UserdefaultKey.nicknameIsEmpty {
+        if !UserdefaultKey.createdMyNickname {
             NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
         }
     }
