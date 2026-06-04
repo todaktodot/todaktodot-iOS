@@ -13,6 +13,7 @@ final class UpdateManager {
     static let shared = UpdateManager()
     
     private let remoteConfig = RemoteConfig.remoteConfig()
+    private let iso8601DateFormatter = ISO8601DateFormatter()
     
     private init() {
         let settings = RemoteConfigSettings()
@@ -39,12 +40,11 @@ final class UpdateManager {
                 let endAt = json?["endAt"] as? String
                 let title = json?["title"] as? String ?? "지금은 이용할 수 없어요"
                 let message = json?["message"] as? String ?? "서비스 점검 중(00:00 - 04:00)이에요\n더 나은 서비스를 위해 조금만 기다려주세요"
-                let formatter = ISO8601DateFormatter()
                 
                 guard let startAt,
                       let endAt,
-                      let startDate = formatter.date(from: startAt),
-                      let endDate = formatter.date(from: endAt) else {
+                      let startDate = iso8601DateFormatter.date(from: startAt),
+                      let endDate = iso8601DateFormatter.date(from: endAt) else {
                     return nil
                 }
                 
@@ -68,10 +68,9 @@ final class UpdateManager {
 
         if let data = jsonString.data(using: .utf8) {
             let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-            let formatter = ISO8601DateFormatter()
             let now = Date()
 
-            if let startAt = json?["startAt"] as? String, let startDate = formatter.date(from: startAt) {
+            if let startAt = json?["startAt"] as? String, let startDate = iso8601DateFormatter.date(from: startAt) {
                 guard startDate <= now else { return (.none, nil) }
             }
 
