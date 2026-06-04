@@ -271,7 +271,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     private func setupPartnerAnswer() {
         setupAnswerContainer(
             partnerAnswerContainer,
-            nickname: UserdefaultKey.nicknameInfo?.anotherUserNickname,
+            nickname: UserdefaultKey.nicknameInfo?.anotherUserNickname ?? "연인",
             answered: card.user2Answered,
             answerText: {
                 let optionNo = Int(self.multipleChoice?.user2Answer ?? "0") ?? 0
