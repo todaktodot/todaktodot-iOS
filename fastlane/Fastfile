@@ -177,6 +177,7 @@ platform :ios do
      	 submit_for_review: true,
      	 automatic_release: false,
      	 force: true,
+	 run_precheck_before_submit: false,
 	 release_notes: {
 	  "ko-KR" => "버그 수정"
 	  }
