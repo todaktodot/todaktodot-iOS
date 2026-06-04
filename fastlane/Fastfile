@@ -170,7 +170,22 @@ platform :ios do
 
     upload_to_testflight(
       app_identifier: bundle_id,
-      skip_waiting_for_build_processing: true
+      skip_waiting_for_build_processing: false
     )
+
+    if bundle_id == "info.todaktodot"
+    	upload_to_app_store(
+     	 api_key: api_key,
+     	 app_identifier: bundle_id,
+     	 skip_metadata: true,
+     	 skip_screenshots: true,
+     	 submit_for_review: true,
+     	 automatic_release: false,
+     	 force: true,
+	 release_notes: {
+	  "ko-KR" => "버그 수정"
+	  }
+       )
+    end
   end
 end
