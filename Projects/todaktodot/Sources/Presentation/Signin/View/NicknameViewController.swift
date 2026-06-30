@@ -339,14 +339,30 @@ final class NicknameViewController: UIViewController, View {
             })
            .disposed(by: disposeBag)
                 
-        
         nextButton.rx.tap
-            .do(onNext: { _ in
+            .subscribe(onNext: { [weak self] in
+                guard let self else { return }
+
+                if self.currentStep == .birthday {
+                    guard let selectedDate = self.birthdayDatePicker.isDateSelected.value,
+                          let birthday = selectedDate.toDate(),
+                        Calendar.current.dateComponents([.year], from: birthday, to: Date()).year ?? 0 >= 14
+                    else {
+                        self.showNotAdultAlert()
+                        return
+                    }
+                }
+
                 self.nextButtonToggle(isEnabled: false)
+                self.reactor?.action.onNext(.tapNext)
             })
-            .map { CoupleReactor.Action.tapNext }
-            .bind(to: reactor.action)
             .disposed(by: disposeBag)
+    }
+    
+    private func showNotAdultAlert() {
+        showAlert(icon: UIImage(resource: .warning), title: "만 14세 이상만 가입할 수 있어요", primaryButtonTitle: "확인", primaryButtonAction: {
+            (UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate)?.changeNavigationRootView(animated: true, alertType: .notAdult)
+        })
     }
     
     private func checkTextField(isNotEmpty: Bool) {

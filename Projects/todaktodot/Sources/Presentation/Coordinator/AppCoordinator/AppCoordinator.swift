@@ -147,6 +147,8 @@ final class AppCoordinator: Coordinator {
             title = "정상적으로 커플 연결이 해제됐어요\n다시 로그인이 필요해요"
         case .withdrawal:
             title = "정상적으로 탈퇴 되었어요"
+        case .notAdult:
+            return
         }
         
         self.navigationController.showAlert(icon: UIImage(resource: .check), title: title, primaryButtonTitle: "확인", primaryButtonAction: {})
