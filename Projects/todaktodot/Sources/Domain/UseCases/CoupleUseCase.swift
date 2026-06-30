@@ -42,4 +42,8 @@ final class CoupleUseCase {
     func assignCards(startDate: String, endDate: String) -> Observable<Bool> {
         repository.assignCards(startDate: startDate, endDate: endDate)
     }
+    
+    func setOnboarding(info: OnboardingInfo) -> Observable<String> {
+        repository.setOnboarding(info: info)
+    }
 }

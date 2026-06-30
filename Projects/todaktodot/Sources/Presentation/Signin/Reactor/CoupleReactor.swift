@@ -138,17 +138,22 @@ final class CoupleReactor: Reactor {
                         return .just(.setError($0))
                     }
             }
+            
         case .tapNext:
             switch currentState.nicknameViewStep {
             case .nickname:
                 return .just(.setStep(.birthday))
+
             case .birthday:
                 return .just(.setStep(.gender))
-            case .gender, .edit:
-                guard let nickname = currentState.inputNickname else { return .empty() }
-                return coupleUseCase.updateNickname(nickname: nickname)
-                    .map { Mutation.setNickname($0) }
+
+            case .gender:
+                return submitOnboarding()
+
+            case .edit:
+                return updateNickname()
             }
+            
         case let .nicknameChanged(text):
             return .just(.setCurrentNickname(text))
 
@@ -157,6 +162,7 @@ final class CoupleReactor: Reactor {
 
         case let .genderChanged(gender):
             return .just(.setGender(gender))
+            
         case .isEditingOnly:
             return .just(.setStep(.edit))
         }
@@ -204,6 +210,33 @@ final class CoupleReactor: Reactor {
         }
         
         return newState
+    }
+    
+    private func submitOnboarding() -> Observable<Mutation> {
+        guard let nickname = currentState.inputNickname,
+              let birthday = currentState.birthday,
+              let gender = currentState.gender
+        else {
+            return .empty()
+        }
+
+        return coupleUseCase
+            .setOnboarding(info: .init(
+                nickname: nickname,
+                birthDate: birthday,
+                gender: gender
+            ))
+            .map(Mutation.setNickname)
+    }
+
+    private func updateNickname() -> Observable<Mutation> {
+        guard let nickname = currentState.inputNickname else {
+            return .empty()
+        }
+
+        return coupleUseCase
+            .updateNickname(nickname: nickname)
+            .map(Mutation.setNickname)
     }
     
     private func assignCards() -> Observable<Bool> {

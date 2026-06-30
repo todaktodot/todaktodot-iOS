@@ -320,6 +320,8 @@ final class NicknameViewController: UIViewController, View {
                 } else {
                     nextButtonToggle(isEnabled: false)
                 }
+                
+                reactor.action.onNext(.birthdayChanged(date))
             })
             .disposed(by: disposeBag)
         
