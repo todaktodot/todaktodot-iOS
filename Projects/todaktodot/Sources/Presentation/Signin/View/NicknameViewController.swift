@@ -343,12 +343,12 @@ final class NicknameViewController: UIViewController, View {
             .subscribe(onNext: { [weak self] in
                 guard let self else { return }
 
-                if self.currentStep == .birthday {
-                    guard let selectedDate = self.birthdayDatePicker.isDateSelected.value,
-                          let birthday = selectedDate.toDate(),
-                        Calendar.current.dateComponents([.year], from: birthday, to: Date()).year ?? 0 >= 14
+                if currentStep == .birthday {
+                    guard
+                        let birthday = birthdayDatePicker.isDateSelected.value?.toDate(),
+                        isOver14YearsOld(birthday)
                     else {
-                        self.showNotAdultAlert()
+                        showNotAdultAlert()
                         return
                     }
                 }
@@ -357,6 +357,15 @@ final class NicknameViewController: UIViewController, View {
                 self.reactor?.action.onNext(.tapNext)
             })
             .disposed(by: disposeBag)
+    }
+    
+    private func isOver14YearsOld(_ birthDate: Date) -> Bool {
+        guard let limitDate = Calendar(identifier: .gregorian)
+            .date(byAdding: .year, value: 14, to: birthDate) else {
+            return false
+        }
+
+        return Date() >= limitDate
     }
     
     private func showNotAdultAlert() {
