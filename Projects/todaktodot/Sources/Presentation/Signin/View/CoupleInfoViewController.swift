@@ -50,7 +50,7 @@ final class CoupleInfoViewController: UIViewController, View {
         $0.textColor = .grayScale900
     }
     
-    private let datePickerView = CoupleDatePickerView()
+    private let datePickerView = CustomDatePickerView()
     
     private let relationshipLabel = TDLabel().then {
         $0.text = "관계 단계"
@@ -120,8 +120,6 @@ final class CoupleInfoViewController: UIViewController, View {
             $0.addItem(datePickerView)
                 .marginTop(12)
                 .height(56)
-                .cornerRadius(8)
-                .backgroundColor(.white)
             
             $0.addItem(relationshipLabel)
                 .marginTop(20)

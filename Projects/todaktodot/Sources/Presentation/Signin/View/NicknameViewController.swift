@@ -25,7 +25,10 @@ enum ConnectFlowType {
 final class NicknameViewController: UIViewController, View {
     var disposeBag = DisposeBag()
     weak var coordinator: SigninCoordinator?
-    private var flowType = BehaviorRelay<ConnectFlowType?>(value: nil)
+    
+    private var flowType: ConnectFlowType?
+    private var currentStep: CoupleReactor.NicknameViewStep?
+    private var isTappedGenderButton = false
     
     private let contentsView = UIView()
     private let backgroundView = UIImageView().then {
@@ -52,10 +55,21 @@ final class NicknameViewController: UIViewController, View {
     }
     
     private let textFiledDescriptionLabel = TDLabel().then {
-        $0.text = "한글, 영어, 숫자, 이모지 모두 사용 가능해요!"
+        $0.text = "한글, 영어, 숫자, 이모지 모두 사용 가능해요!(최대 10자)"
         $0.font = .pretenMedium(12)
         $0.textColor = .grayScale600
     }
+    
+    private let genderButtonStackVIew = UIView().then {
+        $0.alpha = 0
+    }
+    
+    private let birthdayDatePicker = CustomDatePickerView().then {
+        $0.alpha = 0
+    }
+    
+    private let maleButton = GenderButton(gender: .male)
+    private let femaleButton = GenderButton(gender: .female)
     
     private let nextButton = UIButton(type: .system).then {
         $0.setTitle("다음", for: .normal)
@@ -67,18 +81,29 @@ final class NicknameViewController: UIViewController, View {
         $0.isEnabled = false
     }
     
+    private let checkIcon = UIImageView().then {
+        $0.image = UIImage(resource: .nicknameCheckIcon)
+    }
+    
+    private let iconTextSpacingView = UIView()
+    
     init(flowType: ConnectFlowType? = nil, nickname: String? = nil) {
-        self.flowType.accept(flowType)
+        self.flowType = flowType
+
         if let nickname {
             textFiled.text = nickname
         }
         super.init(nibName: nil, bundle: nil)
         
+        birthdayDatePicker.flex.display(.none)
+        genderButtonStackVIew.flex.display(.none)
+        checkIcon.flex.display(.none)
+        
         if flowType == nil {
             if UserdefaultKey.createdCoupleInfo {
-                self.flowType.accept(.join)
+                self.flowType = .join
             } else {
-                self.flowType.accept(.create)
+                self.flowType = .create
             }
         }
     }
@@ -97,7 +122,7 @@ final class NicknameViewController: UIViewController, View {
         setupFlexLayout()
         textFiled.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
         
-        if flowType.value == .create || flowType.value == .join {
+        if flowType == .create || flowType == .join {
             AnalyticsService.log(.nicknameSetBegin)
         }
     }
@@ -132,14 +157,40 @@ final class NicknameViewController: UIViewController, View {
         contentsView.flex.paddingHorizontal(20).define {
             $0.addItem(titleLabel)
                 .marginTop(84)
+                .marginBottom(16)
             
-            $0.addItem(textFiled)
-                .marginTop(40)
+            $0.addItem(genderButtonStackVIew)
+                .marginTop(24)
+                .height(82)
+                .direction(.row)
+                .gap(11)
+                .define {
+                    $0.addItem(maleButton)
+                        .grow(1)
+                    
+                    $0.addItem(femaleButton)
+                        .grow(1)
+                }
+            
+            $0.addItem(birthdayDatePicker)
+                .marginTop(24)
                 .height(56)
             
-            $0.addItem(textFiledDescriptionLabel)
+            $0.addItem(textFiled)
+                .marginTop(24)
+                .height(56)
+            
+            $0.addItem()
                 .marginTop(8)
-                .marginLeft(8)
+                .direction(.row)
+                .define {
+                    $0.addItem(checkIcon)
+                        .size(18)
+                    $0.addItem(iconTextSpacingView)
+                        .size(6)
+                    $0.addItem(textFiledDescriptionLabel)
+                        .marginLeft(2)
+                }
         }
     }
     
@@ -159,15 +210,18 @@ final class NicknameViewController: UIViewController, View {
     }
     
     func bind(reactor: CoupleReactor) {
+        if flowType == .edit {
+            reactor.action.onNext(.isEditingOnly)
+        }
         
         reactor.state
-            .compactMap { $0.updateNickname }
+            .compactMap { $0.outputNickname }
             .subscribe(onNext: { [weak self] nickname in
                 guard let self = self else { return }
                 
                 coordinator?.onNicknameUpdated?(nickname)
                 
-                if let type = flowType.value {
+                if let type = flowType {
                     switch type {
                     case .create:
                         self.coordinator?.showCoupleInfo()
@@ -178,30 +232,149 @@ final class NicknameViewController: UIViewController, View {
                     }
                 }
                 
-                if flowType.value != .edit {
+                if flowType != .edit {
                     UserdefaultKey.createdMyNickname = true
                     AnalyticsService.log(.nicknameSetCompleted)
                 }
             })
             .disposed(by: disposeBag)
         
-        nextButton.rx.tap
-            .withLatestFrom(textFiled.rx.text.orEmpty)
-            .filter { !$0.isEmpty }
-            .distinctUntilChanged()
-            .map { CoupleReactor.Action.tapNicknameButton($0) }
-            .bind(to: reactor.action)
+        reactor.state
+            .map { $0.nicknameViewStep }
+            .subscribe(onNext: { [weak self] step in
+                guard let self else { return }
+                currentStep = step
+                switch step {
+                case .birthday:
+                    birthdayDatePicker.flex.display(.flex)
+
+                    UIView.animate(withDuration: 0.2) {
+                        self.contentsView.flex.layout()
+                    }
+
+                    UIView.animate(
+                        withDuration: 0.15,
+                        delay: 0.15
+                    ) {
+                        self.titleLabel.text = "생년월일을 알려주세요"
+                        self.birthdayDatePicker.alpha = 1
+                    }
+                case .gender:
+                    genderButtonStackVIew.flex.display(.flex)
+                    
+                    UIView.animate(withDuration: 0.2) {
+                        self.contentsView.flex.layout()
+                    }
+
+                    UIView.animate(
+                        withDuration: 0.15,
+                        delay: 0.15
+                    ) {
+                        self.titleLabel.text = "성별을 알려주세요"
+                        self.genderButtonStackVIew.alpha = 1
+                    }
+                case .edit, .nickname:
+                    return
+                }
+                
+            })
             .disposed(by: disposeBag)
         
         textFiled.rx.text.orEmpty
-            .map { !$0.isEmpty }
-            .subscribe(onNext: { [weak self] enabled in
-                self?.nextButton.isEnabled = enabled
-                self?.nextButton.backgroundColor = enabled
-                    ? .mainPurple
-                    : .grayScale400
+            .distinctUntilChanged()
+            .map(CoupleReactor.Action.nicknameChanged)
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+        
+        Observable.combineLatest(
+            textFiled.rx.text.orEmpty,
+            birthdayDatePicker.isDateSelected.map { $0 ?? "" },
+            reactor.state.map(\.nicknameViewStep),
+            reactor.state.map(\.gender)
+        )
+        .map { text, birthday, step, gender in
+            switch step {
+            case .nickname, .edit:
+                let isNotEmpty = !text.isEmpty
+                self.checkTextField(isNotEmpty: isNotEmpty)
+                return isNotEmpty
+
+            case .birthday:
+                return !text.isEmpty && !birthday.isEmpty
+
+            case .gender:
+                return !text.isEmpty && !birthday.isEmpty && gender != nil
+            }
+        }
+        .distinctUntilChanged()
+        .bind(with: self) { owner, enabled in
+            owner.nextButtonToggle(isEnabled: enabled)
+        }
+        .disposed(by: disposeBag)
+        
+        birthdayDatePicker.isDateSelected
+            .subscribe(onNext: { [weak self] date in
+                guard let self, let date else { return }
+                if let text = textFiled.text, !text.isEmpty {
+                    nextButtonToggle(isEnabled: !date.isEmpty)
+                } else {
+                    nextButtonToggle(isEnabled: false)
+                }
             })
             .disposed(by: disposeBag)
+        
+        maleButton.isTap
+            .subscribe(onNext: { [weak self] _ in
+                guard let self else { return }
+                genderButtonUpdate(isMale: true)
+            })
+           .disposed(by: disposeBag)
+        
+        femaleButton.isTap
+            .subscribe(onNext: { [weak self] _ in
+                guard let self else { return }
+                genderButtonUpdate(isMale: false)
+            })
+           .disposed(by: disposeBag)
+                
+        
+        nextButton.rx.tap
+            .do(onNext: { _ in
+                self.nextButtonToggle(isEnabled: false)
+            })
+            .map { CoupleReactor.Action.tapNext }
+            .bind(to: reactor.action)
+            .disposed(by: disposeBag)
+    }
+    
+    private func checkTextField(isNotEmpty: Bool) {
+        if isNotEmpty {
+            iconTextSpacingView.flex.display(.none)
+            checkIcon.flex.display(.flex)
+        } else {
+            iconTextSpacingView.flex.display(.flex)
+            checkIcon.flex.display(.none)
+        }
+        contentsView.flex.layout()
+    }
+    
+    private func nextButtonToggle(isEnabled: Bool) {
+        nextButton.isEnabled = isEnabled
+        nextButton.backgroundColor = isEnabled
+        ? .mainPurple
+        : .grayScale400
+    }
+    
+    private func genderButtonUpdate(isMale: Bool) {
+        if let text = textFiled.text, !text.isEmpty {
+            nextButtonToggle(isEnabled: true)
+        } else {
+            nextButtonToggle(isEnabled: false)
+        }
+        isTappedGenderButton = true
+        maleButton.layer.borderColor = isMale ? UIColor.mainPurple.cgColor : UIColor.grayScale200.cgColor
+        femaleButton.layer.borderColor = isMale ? UIColor.grayScale200.cgColor : UIColor.mainPurple.cgColor
+        reactor?.action.onNext(.genderChanged(isMale ? .male : .female))
     }
     
     @objc private func textFieldDidChange(_ textField: UITextField) {
