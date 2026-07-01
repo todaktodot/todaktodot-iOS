@@ -205,7 +205,7 @@ final class HeatmapContainerView: UIView {
 
         let targetColumn = currentColumn + 1
 
-        let rightPadding = cell * 2 + spacing // 이번주 + 다음주 영역
+        let rightPadding = cell * 4 + spacing * 2 + 2 // 이번달 영역
 
         let x = CGFloat(targetColumn) * step
             - (scrollView.bounds.width - rightPadding)
