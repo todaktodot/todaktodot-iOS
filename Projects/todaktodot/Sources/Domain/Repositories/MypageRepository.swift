@@ -14,4 +14,5 @@ protocol MypageRepository {
     func withdrawal() -> Observable<Bool>
     func deleteDeviceToken() -> Observable<Void>
     func updateTerms(infoAgree: Bool?, marketingAgree: Bool?, advertiesmentAgree: Bool?) -> Observable<Bool>
+    func fetchHeatmap(startDate: String, endDate: String) -> Observable<ActivityHeatmap>
 }

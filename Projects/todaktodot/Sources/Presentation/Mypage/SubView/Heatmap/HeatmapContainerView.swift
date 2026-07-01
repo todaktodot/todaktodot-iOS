@@ -14,6 +14,8 @@ import RxSwift
 
 final class HeatmapContainerView: UIView {
     
+    var displayYear = BehaviorRelay<Int>(value: Calendar.current.component(.year, from: Date()))
+    
     let infoButton = UIButton().then {
         $0.setImage(UIImage(systemName: "questionmark.circle"), for: .normal)
         $0.tintColor = .grayScale400
@@ -48,8 +50,6 @@ final class HeatmapContainerView: UIView {
     
     private let contentView = UIView()
     private let activityHeatmapView = ActivityHeatmapView()
-    
-    private var displayYear = BehaviorRelay<Int>(value: Calendar.current.component(.year, from: Date()))
     
     init() {
         super.init(frame: .zero)
@@ -218,7 +218,7 @@ final class HeatmapContainerView: UIView {
         )
     }
     
-    func configure(year: Int, heatmap: ActivityHeatmap) {
-        activityHeatmapView.configure(year: year, heatmap: heatmap)
+    func configure(heatmap: ActivityHeatmap) {
+        activityHeatmapView.configure(year: displayYear.value, heatmap: heatmap)
     }
 }

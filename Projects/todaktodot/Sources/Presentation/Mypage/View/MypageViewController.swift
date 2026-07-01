@@ -302,6 +302,10 @@ final class MypageViewController: CustomBackViewController, View {
             .take(1)
             .subscribe(onNext: { [weak self] info in
                 guard let self = self else { return }
+                if info.isCouple {
+                    let todayYear = Calendar.current.component(.year, from: Date())
+                    fetchHeatmap(year: todayYear, endDate: Date().toYYYYMMDD())
+                }
                 
                 coupleInfo = info.coupleInfo
                 setMypageInfo(info)
@@ -314,6 +318,15 @@ final class MypageViewController: CustomBackViewController, View {
                 if UserdefaultKey.coupleType == .connected && info.myNickname.isEmpty {
                     NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
                 }
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .map { $0.heatmap }
+            .compactMap { $0 }
+            .subscribe(onNext: { [weak self] heatmap in
+                guard let self = self else { return }
+                heatmapContainerView.configure(heatmap: heatmap)
             })
             .disposed(by: disposeBag)
         
@@ -382,34 +395,6 @@ final class MypageViewController: CustomBackViewController, View {
                 settingSectionView.marketingNotiSwitch.setSwitch(isOn: isOn)
             })
             .disposed(by: disposeBag)
-//        let heatmap = ActivityHeatmap(
-//            startDate: "2026-06-01",
-//            endDate: "2026-06-05",
-//            days: [
-//                .init(
-//                    date: "2026-06-01",
-//                    status: .none
-//                ),
-//                .init(
-//                    date: "2026-06-02",
-//                    status: .meOnly
-//                ),
-//                .init(
-//                    date: "2026-06-03",
-//                    status: .partnerOnly
-//                ),
-//                .init(
-//                    date: "2026-06-04",
-//                    status: .both
-//                ),
-//                .init(
-//                    date: "2026-06-05",
-//                    status: .both
-//                )
-//            ]
-//        )
-//        
-//        heatmapContainerView.configure(year: 2027, heatmap: heatmap)
         
         isCouple
             .subscribe(onNext: { [weak self] in
@@ -428,6 +413,18 @@ final class MypageViewController: CustomBackViewController, View {
                 
                 contentView.flex.layout(mode: .adjustHeight)
                 scrollView.contentSize = contentView.frame.size
+            })
+            .disposed(by: disposeBag)
+        
+        heatmapContainerView.displayYear
+            .distinctUntilChanged()
+            .subscribe(onNext: { [weak self] year in
+                guard let self else { return }
+                if year == Calendar.current.component(.year, from: Date()) {
+                    fetchHeatmap(year: year, endDate: Date().toYYYYMMDD())
+                } else {
+                    fetchHeatmap(year: year, startDate: "\(year)-01-01", endDate: "\(year)-12-31")
+                }
             })
             .disposed(by: disposeBag)
         
@@ -521,13 +518,13 @@ final class MypageViewController: CustomBackViewController, View {
         heatmapContainerView.infoButton.rx.tap
             .subscribe(onNext: { [weak self] in
                 guard let self else { return }
-
+                
                 let popup = HeatmapPopupView()
                 popup.alpha = 0
                 view.addSubview(popup)
-
+                
                 popup.flex.layout()
-
+                
                 let frame = heatmapContainerView.convert(heatmapContainerView.bounds, to: view)
                 
                 popup.pin
@@ -539,6 +536,22 @@ final class MypageViewController: CustomBackViewController, View {
                 }
             })
             .disposed(by: disposeBag)
+    }
+    
+    private func fetchHeatmap(year: Int, startDate: String? = nil, endDate: String) {
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+
+        let startOfYear = Calendar.current.date(
+            from: DateComponents(year: year, month: 1, day: 1)
+        )!
+
+        let result = formatter.string(from: startOfYear)
+
+        reactor?.action.onNext(
+            .fetchHeatmap(startDate ?? result, endDate)
+        )
     }
     
     private func showNotiDisabledAlert(action: @escaping (() -> Void)) {
