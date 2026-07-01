@@ -18,8 +18,9 @@ enum Gender {
 }
 
 final class GenderButton: UIButton {
-    private var icon = UIImageView()
-    private var title = TDLabel().then {
+    private let icon = UIImageView()
+    
+    var title = TDLabel().then {
         $0.textColor = .grayScale900
         $0.font = .pretenMedium(16)
     }

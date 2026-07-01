@@ -302,9 +302,8 @@ final class MypageViewController: CustomBackViewController, View {
             .take(1)
             .subscribe(onNext: { [weak self] info in
                 guard let self = self else { return }
-                if info.isCouple {
-                    let todayYear = Calendar.current.component(.year, from: Date())
-                    fetchHeatmap(year: todayYear, endDate: Date().toYYYYMMDD())
+                if !info.isCouple {
+                    heatmapContainerView.flex.display(.none)
                 }
                 
                 coupleInfo = info.coupleInfo
@@ -348,6 +347,7 @@ final class MypageViewController: CustomBackViewController, View {
             .distinctUntilChanged()
             .subscribe(onNext: { [weak self] state in
                 guard let self = self else { return }
+                UserdefaultKey.isLoggedIn = false
                 UserdefaultKey.resetUserDefaults()
                 self.coordinator?.showSigninFlow(alertType: .disconnect)
             })
@@ -359,6 +359,7 @@ final class MypageViewController: CustomBackViewController, View {
             .distinctUntilChanged()
             .subscribe(onNext: { [weak self] state in
                 guard let self = self else { return }
+                UserdefaultKey.isLoggedIn = false
                 UserdefaultKey.resetUserDefaults()
                 self.coordinator?.showSigninFlow(alertType: .withdrawal)
             })
@@ -416,7 +417,8 @@ final class MypageViewController: CustomBackViewController, View {
             })
             .disposed(by: disposeBag)
         
-        heatmapContainerView.displayYear
+        if UserdefaultKey.coupleType == .connected{
+            heatmapContainerView.displayYear
             .distinctUntilChanged()
             .subscribe(onNext: { [weak self] year in
                 guard let self else { return }
@@ -426,7 +428,8 @@ final class MypageViewController: CustomBackViewController, View {
                     fetchHeatmap(year: year, startDate: "\(year)-01-01", endDate: "\(year)-12-31")
                 }
             })
-            .disposed(by: disposeBag)
+                .disposed(by: disposeBag)
+        }
         
         coupleDisconnectButton.rx.tap
             .subscribe(onNext: { [weak self] in

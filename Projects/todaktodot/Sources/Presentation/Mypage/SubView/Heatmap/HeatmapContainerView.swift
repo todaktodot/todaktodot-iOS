@@ -132,7 +132,7 @@ final class HeatmapContainerView: UIView {
                 .backgroundColor(.grayScale100)
             
             $0.addItem()
-                .height(241)
+                .height(221)
                 .direction(.row)
                 .define {
                     $0.addItem(scrollView)
@@ -171,9 +171,9 @@ final class HeatmapContainerView: UIView {
             x: 0,
             y: 0,
             width: activityHeatmapView.frame.maxX,
-            height: 241
+            height: 221
         )
-
+        
         scrollView.contentSize = contentView.bounds.size
         scrollToCurrentWeek()
     }

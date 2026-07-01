@@ -370,6 +370,7 @@ final class NicknameViewController: UIViewController, View {
     
     private func showNotAdultAlert() {
         showAlert(icon: UIImage(resource: .warning), title: "만 14세 이상만 가입할 수 있어요", primaryButtonTitle: "확인", primaryButtonAction: {
+            UserdefaultKey.isLoggedIn = false
             (UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate)?.changeNavigationRootView(animated: true, alertType: .notAdult)
         })
     }
@@ -399,8 +400,13 @@ final class NicknameViewController: UIViewController, View {
             nextButtonToggle(isEnabled: false)
         }
         isTappedGenderButton = true
+        
         maleButton.layer.borderColor = isMale ? UIColor.mainPurple.cgColor : UIColor.grayScale200.cgColor
+        maleButton.title.textColor =  isMale ? .mainPurple : .grayScale900
+        
         femaleButton.layer.borderColor = isMale ? UIColor.grayScale200.cgColor : UIColor.mainPurple.cgColor
+        femaleButton.title.textColor =  isMale ? .grayScale900 : .mainPurple
+        
         reactor?.action.onNext(.genderChanged(isMale ? .male : .female))
     }
     
