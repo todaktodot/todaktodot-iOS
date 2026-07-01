@@ -952,10 +952,41 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
             $0.textColor = .grayScale800
             $0.numberOfLines = 0
         }
+
+        let saveButton = UIButton().then {
+            $0.setTitle("저장하기", for: .normal)
+            $0.setTitleColor(.mainPurple, for: .normal)
+            $0.titleLabel?.font = .pretenSemiBold(16)
+            $0.backgroundColor = .white
+            $0.layer.borderWidth = 1
+            $0.layer.borderColor = UIColor.mainPurple.cgColor
+            $0.layer.cornerRadius = 6
+        }
+
+        let shareButton = UIButton().then {
+            $0.setTitle("공유하기", for: .normal)
+            $0.setTitleColor(.white, for: .normal)
+            $0.titleLabel?.font = .pretenSemiBold(16)
+            $0.backgroundColor = .mainPurple
+            $0.layer.cornerRadius = 6
+        }
+
         view.flex.paddingTop(12).define { flex in
             flex.addItem(statusLabel)
             flex.addItem(subtitleLabel).marginTop(4)
+            flex.addItem().direction(.row).marginTop(28).define { row in
+                row.addItem(saveButton).grow(1).height(44)
+                row.addItem(shareButton).grow(1).height(44).marginLeft(8)
+            }
         }
+
+        saveButton.rx.tap
+            .subscribe(onNext: { [weak self] in self?.saveTapped() })
+            .disposed(by: disposeBag)
+
+        shareButton.rx.tap
+            .subscribe(onNext: { [weak self] in self?.shareTapped() })
+            .disposed(by: disposeBag)
     }
     
     private func updateFeedbackLabel(_ label: MaskingLabel, with feedback: CardFeedback) {
@@ -986,6 +1017,60 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     func navigateBack() {
         coordinator?.navigateBack()
     }
+
+    // MARK: - 저장/공유 Actions
+
+    private func saveTapped() {
+        // 스크롤 전체 콘텐츠 캡처
+        let savedOffset = scrollView.contentOffset
+        let savedFrame = rootFlexContainer.frame
+        
+        // 전체 콘텐츠 크기로 렌더링
+        let fullSize = rootFlexContainer.bounds.size
+        let renderer = UIGraphicsImageRenderer(size: fullSize)
+        let image = renderer.image { context in
+            rootFlexContainer.layer.render(in: context.cgContext)
+        }
+        
+        UIImageWriteToSavedPhotosAlbum(image, self, #selector(imageSaved(_:didFinishSavingWithError:contextInfo:)), nil)
+    }
+
+    @objc private func imageSaved(_ image: UIImage, didFinishSavingWithError error: Error?, contextInfo: UnsafeRawPointer) {
+        if error != nil {
+            showToast(message: "이미지 저장에 실패했습니다")
+        } else {
+            showToast(message: "이미지가 저장되었습니다")
+        }
+    }
+
+    private func shareTapped() {
+        guard let coupleId = UserdefaultKey.coupleId else { return }
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let dateString = dateFormatter.string(from: Date()) // 공유한 날짜 (7일 유효)
+
+        // 난독화: JSON → Base64
+        let shareData: [String: Any] = [
+            "c": coupleId,
+            "d": dateString,
+            "k": card.coupleCardId
+        ]
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: shareData),
+              let encodedData = jsonData.base64EncodedString().addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return }
+
+        // TODO: 실제 도메인으로 변경 시 https://todaktodot.com/share 로 수정
+        var components = URLComponents(string: "https://da-hye0.github.io/test/share.html")!
+        components.queryItems = [
+            URLQueryItem(name: "data", value: encodedData)
+        ]
+
+        guard let shareURL = components.url else { return }
+
+        let shareItem = ShareLinkItemSource(shareURL: shareURL)
+        let activityVC = UIActivityViewController(activityItems: [shareItem], applicationActivities: nil)
+        present(activityVC, animated: true)
+    }
 }
 
 // MARK: - UIScrollViewDelegate
@@ -996,3 +1081,49 @@ extension HistoryCardDetailViewController: UIScrollViewDelegate {
         }
     }
 }
+
+// MARK: - ShareLinkItemSource
+import LinkPresentation
+
+final class ShareLinkItemSource: NSObject, UIActivityItemSource {
+    private let shareURL: URL
+
+    init(shareURL: URL) {
+        self.shareURL = shareURL
+        super.init()
+    }
+
+    func activityViewControllerPlaceholderItem(_ activityViewController: UIActivityViewController) -> Any {
+        return shareURL
+    }
+
+    func activityViewController(_ activityViewController: UIActivityViewController, itemForActivityType activityType: UIActivity.ActivityType?) -> Any? {
+        return shareURL
+    }
+
+    func activityViewControllerLinkMetadata(_ activityViewController: UIActivityViewController) -> LPLinkMetadata? {
+        let metadata = LPLinkMetadata()
+        metadata.title = "투닥투닷의 데일리카드를 공유해요"
+        metadata.originalURL = shareURL
+        metadata.url = shareURL
+
+        if let appIcon = getAppIcon() {
+            metadata.iconProvider = NSItemProvider(object: appIcon)
+        }
+
+        return metadata
+    }
+
+    private func getAppIcon() -> UIImage? {
+        guard let iconsDictionary = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any],
+              let primaryIconsDictionary = iconsDictionary["CFBundlePrimaryIcon"] as? [String: Any],
+              let iconFiles = primaryIconsDictionary["CFBundleIconFiles"] as? [String],
+              let lastIcon = iconFiles.last else {
+            return nil
+        }
+        return UIImage(named: lastIcon)
+    }
+}
+
+혹시 어떤거 때문에 여쭤보시는걸까요??
+

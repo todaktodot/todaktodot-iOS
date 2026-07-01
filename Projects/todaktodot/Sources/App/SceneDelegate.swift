@@ -26,7 +26,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window?.makeKeyAndVisible()
         
         appCoordinator.start()
-        
+
+        // Universal Link로 앱 실행된 경우 (콜드 스타트)
+        if let userActivity = connectionOptions.userActivities.first,
+           userActivity.activityType == NSUserActivityTypeBrowsingWeb,
+           let url = userActivity.webpageURL {
+            PushRouter.shared.route(url: url)
+        }
+
         // 기존 로직 주석처리
         /*
         let mainCoordinator = TabBarCoordinator(navigationController: navigationController)
@@ -37,18 +44,25 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
         guard let url = URLContexts.first?.url else { return }
-        
+
         print(url)
-        
+
         if (AuthApi.isKakaoTalkLoginUrl(url)) {
             _ = AuthController.rx.handleOpenUrl(url: url)
+            return
         }
-        
+
         if GIDSignIn.sharedInstance.handle(url) {
             print("Google login URL handled.")
             return
         }
-        
+
+        // Custom URL Scheme 딥링크 처리 (todaktodot://share?...)
+        if url.scheme == "todaktodot" {
+            PushRouter.shared.route(url: url)
+            return
+        }
+
 //        if let code = url.queryParameters?["code"] {
 //            SceneDelegate.kakaoCodeRelay.accept(code)
 //        } else if let error = url.queryParameters?["error"] {
@@ -59,10 +73,18 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func sceneWillEnterForeground(_ scene: UIScene) {
 //        AnalyticsService().screenEvent(ScreenName: .splash)
         NotificationCenter.default.post(name: .sceneWillEnterForeground, object: nil)
-        
+
         if !UserdefaultKey.createdMyNickname {
             NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
         }
+    }
+
+    // MARK: - Universal Link 처리
+    func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+        guard userActivity.activityType == NSUserActivityTypeBrowsingWeb,
+              let url = userActivity.webpageURL else { return }
+
+        PushRouter.shared.route(url: url)
     }
 
     // 사용법 :

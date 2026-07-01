@@ -88,6 +88,7 @@ let project = Project(
                         "NSAllowsArbitraryLoads": true
                     ],
                     "ITSAppUsesNonExemptEncryption" : false,
+                    "NSPhotoLibraryAddUsageDescription": "데일리카드를 사진첩에 저장하기 위해 접근 권한이 필요합니다.",
                     "UIBackgroundModes": [
                         "remote-notification"
                     ],
