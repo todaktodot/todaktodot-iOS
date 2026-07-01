@@ -73,6 +73,7 @@ final class MypageViewController: CustomBackViewController, View {
     
     private let notYetConnectedView = DashedBorderView()
     private let ourInfoView = OurInfoView()
+    private let heatmapContainerView = HeatmapContainerView()
     private let settingSectionView = SettingSectionView()
     
     private let myNicknameLabel = TDLabel().then {
@@ -134,6 +135,7 @@ final class MypageViewController: CustomBackViewController, View {
         
         setupViews()
         setupFlexLayout()
+        bindAction()
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -163,8 +165,13 @@ final class MypageViewController: CustomBackViewController, View {
         let topMargin: CGFloat = 28
         contentView.flex.define {
             $0.addItem(profileView)
+            
             $0.addItem(notYetConnectedView)
                 .marginTop(topMargin)
+                .marginHorizontal(20)
+            
+            $0.addItem(heatmapContainerView)
+                .marginTop(20)
                 .marginHorizontal(20)
             
             $0.addItem(settingSectionView)
@@ -375,6 +382,34 @@ final class MypageViewController: CustomBackViewController, View {
                 settingSectionView.marketingNotiSwitch.setSwitch(isOn: isOn)
             })
             .disposed(by: disposeBag)
+//        let heatmap = ActivityHeatmap(
+//            startDate: "2026-06-01",
+//            endDate: "2026-06-05",
+//            days: [
+//                .init(
+//                    date: "2026-06-01",
+//                    status: .none
+//                ),
+//                .init(
+//                    date: "2026-06-02",
+//                    status: .meOnly
+//                ),
+//                .init(
+//                    date: "2026-06-03",
+//                    status: .partnerOnly
+//                ),
+//                .init(
+//                    date: "2026-06-04",
+//                    status: .both
+//                ),
+//                .init(
+//                    date: "2026-06-05",
+//                    status: .both
+//                )
+//            ]
+//        )
+//        
+//        heatmapContainerView.configure(year: 2027, heatmap: heatmap)
         
         isCouple
             .subscribe(onNext: { [weak self] in
@@ -480,6 +515,30 @@ final class MypageViewController: CustomBackViewController, View {
                 reactor.action.onNext(.tapMarketingNoti(true))
             }
         }
+    }
+    
+    private func bindAction() {
+        heatmapContainerView.infoButton.rx.tap
+            .subscribe(onNext: { [weak self] in
+                guard let self else { return }
+
+                let popup = HeatmapPopupView()
+                popup.alpha = 0
+                view.addSubview(popup)
+
+                popup.flex.layout()
+
+                let frame = heatmapContainerView.convert(heatmapContainerView.bounds, to: view)
+                
+                popup.pin
+                    .top(frame.minY)
+                    .hCenter()
+                
+                UIView.animate(withDuration: 0.25) {
+                    popup.alpha = 1
+                }
+            })
+            .disposed(by: disposeBag)
     }
     
     private func showNotiDisabledAlert(action: @escaping (() -> Void)) {
