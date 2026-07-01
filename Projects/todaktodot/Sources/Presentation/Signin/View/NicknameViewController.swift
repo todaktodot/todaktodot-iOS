@@ -64,7 +64,7 @@ final class NicknameViewController: UIViewController, View {
         $0.alpha = 0
     }
     
-    private let birthdayDatePicker = CustomDatePickerView().then {
+    private let birthdayDateTextField = DateTextFieldView().then {
         $0.alpha = 0
     }
     
@@ -95,7 +95,7 @@ final class NicknameViewController: UIViewController, View {
         }
         super.init(nibName: nil, bundle: nil)
         
-        birthdayDatePicker.flex.display(.none)
+        birthdayDateTextField.flex.display(.none)
         genderButtonStackVIew.flex.display(.none)
         checkIcon.flex.display(.none)
         
@@ -172,7 +172,7 @@ final class NicknameViewController: UIViewController, View {
                         .grow(1)
                 }
             
-            $0.addItem(birthdayDatePicker)
+            $0.addItem(birthdayDateTextField)
                 .marginTop(24)
                 .height(56)
             
@@ -246,7 +246,7 @@ final class NicknameViewController: UIViewController, View {
                 currentStep = step
                 switch step {
                 case .birthday:
-                    birthdayDatePicker.flex.display(.flex)
+                    birthdayDateTextField.flex.display(.flex)
 
                     UIView.animate(withDuration: 0.2) {
                         self.contentsView.flex.layout()
@@ -257,7 +257,7 @@ final class NicknameViewController: UIViewController, View {
                         delay: 0.15
                     ) {
                         self.titleLabel.text = "생년월일을 알려주세요"
-                        self.birthdayDatePicker.alpha = 1
+                        self.birthdayDateTextField.alpha = 1
                     }
                 case .gender:
                     genderButtonStackVIew.flex.display(.flex)
@@ -288,7 +288,7 @@ final class NicknameViewController: UIViewController, View {
         
         Observable.combineLatest(
             textFiled.rx.text.orEmpty,
-            birthdayDatePicker.isDateSelected.map { $0 ?? "" },
+            birthdayDateTextField.isCorrectDate,
             reactor.state.map(\.nicknameViewStep),
             reactor.state.map(\.gender)
         )
@@ -300,10 +300,10 @@ final class NicknameViewController: UIViewController, View {
                 return isNotEmpty
 
             case .birthday:
-                return !text.isEmpty && !birthday.isEmpty
+                return !text.isEmpty && birthday
 
             case .gender:
-                return !text.isEmpty && !birthday.isEmpty && gender != nil
+                return !text.isEmpty && birthday && gender != nil
             }
         }
         .distinctUntilChanged()
@@ -312,17 +312,9 @@ final class NicknameViewController: UIViewController, View {
         }
         .disposed(by: disposeBag)
         
-        birthdayDatePicker.isDateSelected
-            .subscribe(onNext: { [weak self] date in
-                guard let self, let date else { return }
-                if let text = textFiled.text, !text.isEmpty {
-                    nextButtonToggle(isEnabled: !date.isEmpty)
-                } else {
-                    nextButtonToggle(isEnabled: false)
-                }
-                
-                reactor.action.onNext(.birthdayChanged(date))
-            })
+        birthdayDateTextField.currentDate
+            .map(CoupleReactor.Action.birthdayChanged)
+            .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
         maleButton.isTap
@@ -343,9 +335,8 @@ final class NicknameViewController: UIViewController, View {
             .subscribe(onNext: { [weak self] in
                 guard let self else { return }
 
-                if currentStep == .birthday {
-                    guard
-                        let birthday = birthdayDatePicker.isDateSelected.value?.toDate(),
+                if currentStep == .birthday || currentStep == .gender {
+                    guard let birthday = birthdayDateTextField.currentDate.value?.toDate(),
                         isOver14YearsOld(birthday)
                     else {
                         showNotAdultAlert()
@@ -394,7 +385,7 @@ final class NicknameViewController: UIViewController, View {
     }
     
     private func genderButtonUpdate(isMale: Bool) {
-        if let text = textFiled.text, !text.isEmpty {
+        if let text = textFiled.text, !text.isEmpty && birthdayDateTextField.isCorrectDate.value {
             nextButtonToggle(isEnabled: true)
         } else {
             nextButtonToggle(isEnabled: false)
