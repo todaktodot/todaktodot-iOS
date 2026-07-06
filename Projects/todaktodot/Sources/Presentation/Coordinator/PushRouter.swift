@@ -110,27 +110,52 @@ final class PushRouter {
                     guard let cardId = response.coupleCardId else { return }
                     self?.fetchAndNavigate(coupleCardId: cardId, coordinator: coordinator)
                 case "EXPIRED":
-                    self?.showAlert(on: homeVC, title: "공유 링크가 만료되었어요.", description: "링크는 7일간 유효해요.")
+                    self?.showShareAlert(
+                        on: homeVC,
+                        title: "만료된 링크예요",
+                        description: "유효기간이 만료되어\n메인 화면으로 이동합니다"
+                    )
                 case "FORBIDDEN":
-                    self?.showAlert(on: homeVC, title: "해당 히스토리 카드를 확인할 수 없어요.", description: response.message ?? "접근 권한이 없습니다.")
+                    self?.showShareAlert(
+                        on: homeVC,
+                        title: "해당 히스토리 카드를 확인할 수 없어요",
+                        description: "상대와 연결된 연인만 볼 수 있어요"
+                    )
                 case "NOT_FOUND":
-                    self?.showAlert(on: homeVC, title: "존재하지 않는 링크예요.", description: response.message ?? "")
+                    self?.showShareAlert(
+                        on: homeVC,
+                        title: "존재하지 않는 링크예요",
+                        description: "링크가 유효하지 않아\n메인 화면으로 이동합니다"
+                    )
                 default:
-                    self?.showAlert(on: homeVC, title: "알 수 없는 오류가 발생했어요.")
+                    self?.showShareAlert(
+                        on: homeVC,
+                        title: "알 수 없는 오류가 발생했어요",
+                        description: "메인 화면으로 이동합니다"
+                    )
                 }
             }, onError: { [weak self] _ in
-                self?.showAlert(on: homeVC, title: "네트워크 오류가 발생했어요.", description: "잠시 후 다시 시도해주세요.")
+                self?.showShareAlert(
+                    on: homeVC,
+                    title: "네트워크 오류가 발생했어요",
+                    description: "잠시 후 다시 시도해주세요"
+                )
             })
             .disposed(by: disposeBag)
     }
 
-    private func showAlert(on viewController: UIViewController, title: String, description: String? = nil) {
+    private func showShareAlert(on viewController: UIViewController, title: String, description: String? = nil) {
         viewController.showAlert(
             icon: UIImage(named: "Bell"),
             title: title,
             description: description,
             primaryButtonTitle: "확인",
-            primaryButtonAction: {}
+            primaryButtonAction: { [weak viewController] in
+                // 홈(메인)으로 이동
+                guard let nav = viewController?.navigationController else { return }
+                nav.popToRootViewController(animated: true)
+            },
+            dimColor: UIColor(hex: "412360")
         )
     }
     
