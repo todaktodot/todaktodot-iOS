@@ -26,12 +26,12 @@ enum CardLoadState {
 final class HomeReactor: Reactor {
     
     private let cardUseCase: CardUseCase
-    private let loginUseCase: LoginUseCase
+    private let signinUseCase: SigninUseCase
     private let coupleUseCase: CoupleUseCase
     
-    init(cardUseCase: CardUseCase, loginUseCase: LoginUseCase, coupleUseCase: CoupleUseCase) {
+    init(cardUseCase: CardUseCase, signinUseCase: SigninUseCase, coupleUseCase: CoupleUseCase) {
         self.cardUseCase = cardUseCase
-        self.loginUseCase = loginUseCase
+        self.signinUseCase = signinUseCase
         self.coupleUseCase = coupleUseCase
     }
     
@@ -163,7 +163,7 @@ final class HomeReactor: Reactor {
                             .just(.setPoked(isPoked))
                         ])
                     case .failure:
-                        return self.loginUseCase.fetchUserInfo()
+                        return self.signinUseCase.fetchUserInfo()
                             .flatMap { userInfo -> Observable<Mutation> in
                                 if userInfo.coupleType != .connected {
                                     NotificationCenter.default.post(name: .logoutRequired, object: nil)
@@ -243,7 +243,7 @@ final class HomeReactor: Reactor {
                 }
         case .checkCoupleConnection:
             guard currentState.isCoupleConnected == false else { return .empty() }
-            return loginUseCase.fetchUserInfo()
+            return signinUseCase.fetchUserInfo()
                 .flatMap { userInfo -> Observable<Mutation> in
                     return .just(.setCoupleConnected(userInfo.coupleType == .connected))
                 }

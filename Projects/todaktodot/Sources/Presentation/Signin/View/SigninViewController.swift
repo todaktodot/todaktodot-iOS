@@ -77,6 +77,10 @@ final class SigninViewController: UIViewController, View {
         setupViews()
         setupFlexLayout()
         onboardingLottie.play()
+        
+        if UserdefaultKey.pendingCoupleDisconnect {
+            self.reactor?.action.onNext(.handlePendingCoupleDisconnect)
+        }
     }
     
     override func viewDidLayoutSubviews() {

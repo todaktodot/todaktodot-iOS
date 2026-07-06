@@ -304,6 +304,16 @@ final class NicknameViewController: UIViewController, View {
             })
             .disposed(by: disposeBag)
         
+        reactor.state
+            .compactMap { $0.isDisconnectSuccess }
+            .subscribe(onNext: { _ in
+                
+                UserdefaultKey.isLoggedIn = false
+                UserdefaultKey.pendingCoupleDisconnect = false
+                (UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate)?.changeNavigationRootView(animated: true, alertType: .notAdult)
+            })
+            .disposed(by: disposeBag)
+        
         nicknameTextField.rx.text.orEmpty
             .distinctUntilChanged()
             .map(CoupleReactor.Action.nicknameChanged)
@@ -436,9 +446,9 @@ final class NicknameViewController: UIViewController, View {
     }
     
     private func showNotAdultAlert() {
+        UserdefaultKey.pendingCoupleDisconnect = true
         showAlert(icon: UIImage(resource: .warning), title: "만 14세 이상만 가입할 수 있어요", primaryButtonTitle: "확인", primaryButtonAction: {
-            UserdefaultKey.isLoggedIn = false
-            (UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate)?.changeNavigationRootView(animated: true, alertType: .notAdult)
+            self.reactor?.action.onNext(.disconnectCouple)
         })
     }
     

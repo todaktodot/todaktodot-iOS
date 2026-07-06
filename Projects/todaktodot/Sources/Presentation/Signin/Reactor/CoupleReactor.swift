@@ -21,6 +21,7 @@ final class CoupleReactor: Reactor {
         var isTermsAgreeSuccess: Bool?
         var isCoupleConnectSuccess: Bool?
         var isSoloStartSuccess: Bool?
+        var isDisconnectSuccess: Bool?
         
         var outputNickname: String? // 닉네임 수정 완료 후 서버에서 받는 값 저장
         var inputNickname: String? // 현재 텍스트필드 닉네임 값
@@ -53,6 +54,7 @@ final class CoupleReactor: Reactor {
         case birthdayChanged(String?)
         case genderChanged(Gender?)
         case isEditingOnly
+        case disconnectCouple
     }
     
     enum Mutation {
@@ -74,6 +76,7 @@ final class CoupleReactor: Reactor {
         case setGender(Gender?)
         
         case setCurrentNickname(String) // 닉네임 텍스트필드 변경될때 작동
+        case setRoot
     }
     
     let initialState = State()
@@ -165,6 +168,17 @@ final class CoupleReactor: Reactor {
             
         case .isEditingOnly:
             return .just(.setStep(.edit))
+        case .disconnectCouple:
+            return Observable.concat([
+                coupleUseCase.disconnectCouple()
+                    .flatMap { _ in
+                        self.coupleUseCase.logout()
+                    }
+                    .map { _ in
+                        .setRoot
+                    }
+            ])
+            
         }
     }
     
@@ -207,6 +221,8 @@ final class CoupleReactor: Reactor {
             
         case .setCurrentNickname(let text):
             newState.inputNickname = text
+        case .setRoot:
+            newState.isDisconnectSuccess = true
         }
         
         return newState

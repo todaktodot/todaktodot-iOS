@@ -24,20 +24,22 @@ final class SigninReactor: Reactor {
         case tapAppleButton
         case stopLoading
         case fetchUserInfo
+        case handlePendingCoupleDisconnect
     }
 
     enum Mutation {
         case setLoading(Bool)
         case setUserInfo(UserInfo)
         case setSigninFail(Bool)
+        case none
     }
     
     let initialState = State()
     
-    private let loginUseCase: LoginUseCase
+    private let signinUseCase: SigninUseCase
 
-    init(loginUseCase: LoginUseCase) {
-        self.loginUseCase = loginUseCase
+    init(signinUseCase: SigninUseCase) {
+        self.signinUseCase = signinUseCase
     }
     
     func mutate(action: Action) -> Observable<Mutation> {
@@ -56,8 +58,21 @@ final class SigninReactor: Reactor {
             return .just(.setLoading(false))
             
         case .fetchUserInfo:
-            return loginUseCase.fetchUserInfo()
+            return signinUseCase.fetchUserInfo()
                 .map { Mutation.setUserInfo($0) }
+        case .handlePendingCoupleDisconnect:
+            return Observable.concat([
+                signinUseCase.disconnectCouple()
+                    .flatMap { _ in
+                        self.signinUseCase.logout()
+                    }
+                    .do(onNext: {
+                        UserdefaultKey.pendingCoupleDisconnect = false
+                    })
+                    .map { _ in
+                        .none
+                    }
+            ])
         }
     }
     
@@ -70,6 +85,8 @@ final class SigninReactor: Reactor {
             newState.signinInfo = info
         case .setSigninFail(let isFail):
             newState.isSigninFail = isFail
+        case .none:
+            break
         }
         return newState
     }
@@ -77,16 +94,16 @@ final class SigninReactor: Reactor {
     private func socialLogin(type: LoginType) -> Observable<Mutation> {
         return Observable.concat([
             .just(.setLoading(true)),
-            loginUseCase.execute(type: type)
+            signinUseCase.execute(type: type)
                 .flatMap { _ in
-                    self.loginUseCase.updateDeviceToken(token: UserdefaultKey.diviceToken)
+                    self.signinUseCase.updateDeviceToken(token: UserdefaultKey.diviceToken)
                         .catch { error in
                             print("FCM token update failed \(error.localizedDescription)")
                             return .just(false)
                         }
                 }
                 .flatMap { _ in
-                    self.loginUseCase.fetchUserInfo()
+                    self.signinUseCase.fetchUserInfo()
                         .map { Mutation.setUserInfo($0) }
                 }
                 .catchAndReturn(.setSigninFail(true)),

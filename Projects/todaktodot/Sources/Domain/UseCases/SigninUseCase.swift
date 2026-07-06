@@ -1,5 +1,5 @@
 //
-//  LoginUseCase.swift
+//  SigninUseCase.swift
 //  todaktodot
 //
 //  Created by 임대진 on 2/3/26.
@@ -14,11 +14,13 @@ enum LoginType: String {
     case apple
 }
 
-final class LoginUseCase {
+final class SigninUseCase {
     private let repository: AuthRepository
+    private let mypageRepository: MypageRepository
 
-    init(repository: AuthRepository) {
+    init(repository: AuthRepository, mypageRepository: MypageRepository) {
         self.repository = repository
+        self.mypageRepository = mypageRepository
     }
     
     func execute(type: LoginType) -> Observable<Bool> {
@@ -31,5 +33,13 @@ final class LoginUseCase {
     
     func updateDeviceToken(token: String?) -> Observable<Bool> {
         return repository.updateDeviceToken(token: token)
+    }
+    
+    func logout() -> Observable<Void> {
+        mypageRepository.logout()
+    }
+    
+    func disconnectCouple() -> Observable<Bool> {
+        mypageRepository.disconnectCouple()
     }
 }
