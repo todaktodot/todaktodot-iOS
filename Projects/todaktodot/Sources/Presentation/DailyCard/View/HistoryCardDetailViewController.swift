@@ -12,6 +12,7 @@ import Then
 import ReactorKit
 import RxSwift
 import Lottie
+import NetworkKit
 
 final class HistoryCardDetailViewController: CustomBackViewController, CustomBackViewControllerDelegate, View {
     
@@ -1044,32 +1045,27 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     }
 
     private func shareTapped() {
-        guard let coupleId = UserdefaultKey.coupleId else { return }
-
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        let dateString = dateFormatter.string(from: Date()) // 공유한 날짜 (7일 유효)
-
-        // 난독화: JSON → Base64
-        let shareData: [String: Any] = [
-            "c": coupleId,
-            "d": dateString,
-            "k": card.coupleCardId
-        ]
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: shareData),
-              let encodedData = jsonData.base64EncodedString().addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return }
-
-        // TODO: 실제 도메인으로 변경 시 https://todaktodot.com/share 로 수정
-        var components = URLComponents(string: "https://da-hye0.github.io/test/share.html")!
-        components.queryItems = [
-            URLQueryItem(name: "data", value: encodedData)
-        ]
-
-        guard let shareURL = components.url else { return }
-
-        let shareItem = ShareLinkItemSource(shareURL: shareURL)
-        let activityVC = UIActivityViewController(activityItems: [shareItem], applicationActivities: nil)
-        present(activityVC, animated: true)
+        // 서버에 공유 링크 생성 요청
+        let endpoint = Endpoint<ShareLinkResponse>(
+            baseURL: .todaktodotAPI,
+            path: "/api/daily-card/history/share-link",
+            method: .post,
+            parameters: ["coupleCardId": card.coupleCardId]
+        )
+        
+        AppDIContainer.shared.makeNetworkManager().request(with: endpoint)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] response in
+                guard let self = self,
+                      let url = URL(string: response.shareUrl) else { return }
+                
+                let shareItem = ShareLinkItemSource(shareURL: url)
+                let activityVC = UIActivityViewController(activityItems: [shareItem], applicationActivities: nil)
+                self.present(activityVC, animated: true)
+            }, onError: { [weak self] _ in
+                self?.showToast(message: "공유 링크 생성에 실패했습니다")
+            })
+            .disposed(by: disposeBag)
     }
 }
 
@@ -1125,5 +1121,5 @@ final class ShareLinkItemSource: NSObject, UIActivityItemSource {
     }
 }
 
-혹시 어떤거 때문에 여쭤보시는걸까요??
+
 

@@ -7,10 +7,11 @@
 
 import UIKit
 import RxSwift
+import NetworkKit
 
 enum PushDeepLink {
     case historyCardDetail(coupleCardId: Int)
-    case shareLink(coupleId: Int, date: String, cardId: Int)
+    case shareLink(token: String)
 
     init?(userInfo: [AnyHashable: Any]) {
         guard let type = userInfo["type"] as? String else { return nil }
@@ -30,20 +31,13 @@ enum PushDeepLink {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
               let queryItems = components.queryItems else { return nil }
 
-        // Custom Scheme: todaktodot://share?...
-        // Universal Link: https://todaktodot.com/share?...
-        let isSharePath = components.host == "share" || components.path.contains("/share")
+        // Universal Link: https://도메인/share/card?token=xxx
+        // Custom Scheme: todaktodot://share/card?token=xxx
+        let isSharePath = components.path.contains("/share/card") || components.host == "share"
         guard isSharePath else { return nil }
 
-        // 난독화된 data 파라미터 디코딩
-        guard let encodedData = queryItems.first(where: { $0.name == "data" })?.value,
-              let decodedData = Data(base64Encoded: encodedData),
-              let json = try? JSONSerialization.jsonObject(with: decodedData) as? [String: Any],
-              let coupleId = json["c"] as? Int,
-              let date = json["d"] as? String,
-              let cardId = json["k"] as? Int else { return nil }
-
-        self = .shareLink(coupleId: coupleId, date: date, cardId: cardId)
+        guard let token = queryItems.first(where: { $0.name == "token" })?.value else { return nil }
+        self = .shareLink(token: token)
     }
 }
 
@@ -95,30 +89,39 @@ final class PushRouter {
         switch deepLink {
         case .historyCardDetail(let coupleCardId):
             fetchAndNavigate(coupleCardId: coupleCardId, coordinator: coordinator)
-        case .shareLink(let coupleId, let dateString, let cardId):
-            // 1. 유효기간 확인 (공유일로부터 7일)
-            if isLinkExpired(dateString: dateString) {
-                showAlert(on: homeVC, title: "공유 링크가 만료되었어요.", description: "링크는 7일간 유효해요.")
-                return
-            }
-            // 2. 현재 로그인된 사용자의 coupleId와 비교
-            guard let myCoupleId = UserdefaultKey.coupleId, myCoupleId == coupleId else {
-                showAlert(on: homeVC, title: "해당 히스토리 카드를 확인할 수 없어요.", description: "상대와 연결된 연인만 볼 수 있어요.")
-                return
-            }
-            fetchAndNavigate(coupleCardId: cardId, coordinator: coordinator)
+        case .shareLink(let token):
+            validateShareLink(token: token, homeVC: homeVC, coordinator: coordinator)
         }
     }
 
-    private func isLinkExpired(dateString: String) -> Bool {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        guard let sharedDate = formatter.date(from: dateString) else { return true }
-
-        let calendar = Calendar.current
-        guard let expirationDate = calendar.date(byAdding: .day, value: 7, to: sharedDate) else { return true }
-
-        return Date() > expirationDate
+    private func validateShareLink(token: String, homeVC: UIViewController, coordinator: HomeCoordinator) {
+        let endpoint = Endpoint<ShareLinkValidateResponse>(
+            baseURL: .todaktodotAPI,
+            path: "/api/daily-card/history/share-link/validate",
+            method: .post,
+            parameters: ["shareToken": token]
+        )
+        
+        container.makeNetworkManager().request(with: endpoint)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] response in
+                switch response.status {
+                case "VALID":
+                    guard let cardId = response.coupleCardId else { return }
+                    self?.fetchAndNavigate(coupleCardId: cardId, coordinator: coordinator)
+                case "EXPIRED":
+                    self?.showAlert(on: homeVC, title: "공유 링크가 만료되었어요.", description: "링크는 7일간 유효해요.")
+                case "FORBIDDEN":
+                    self?.showAlert(on: homeVC, title: "해당 히스토리 카드를 확인할 수 없어요.", description: response.message ?? "접근 권한이 없습니다.")
+                case "NOT_FOUND":
+                    self?.showAlert(on: homeVC, title: "존재하지 않는 링크예요.", description: response.message ?? "")
+                default:
+                    self?.showAlert(on: homeVC, title: "알 수 없는 오류가 발생했어요.")
+                }
+            }, onError: { [weak self] _ in
+                self?.showAlert(on: homeVC, title: "네트워크 오류가 발생했어요.", description: "잠시 후 다시 시도해주세요.")
+            })
+            .disposed(by: disposeBag)
     }
 
     private func showAlert(on viewController: UIViewController, title: String, description: String? = nil) {

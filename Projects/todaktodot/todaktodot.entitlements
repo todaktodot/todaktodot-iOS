@@ -12,6 +12,8 @@
 	<array>
 		<string>applinks:da-hye0.github.io</string>
 		<string>applinks:todaktodot.com</string>
+		<string>applinks:todaktodot-backend.duckdns.org</string>
+		<string>applinks:todaktodot.cloud</string>
 	</array>
 </dict>
 </plist>

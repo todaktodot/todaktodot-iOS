@@ -47,6 +47,13 @@ final class AppDIContainer {
     private lazy var aiReportUseCase = AIReportUseCase(repository: aiReportRepository)
 }
 
+// MARK: - Network Access
+extension AppDIContainer {
+    func makeNetworkManager() -> NetworkManager {
+        networkManager
+    }
+}
+
 // MARK: - Make Reactor
 extension AppDIContainer {
     func makeHomeReactor() -> HomeReactor {
