@@ -15,27 +15,40 @@ import RxRelay
 final class DateTextFieldView: UIView, UITextFieldDelegate {
     let currentDate = BehaviorRelay<String?>(value: nil)
     let isCorrectDate = BehaviorRelay<Bool>(value: false)
+    let hiddenWarning = PublishRelay<Bool>()
     
-    private let dateTextField = UITextField().then {
+    let backgroundView = UIView().then {
+        $0.backgroundColor = .white
+        $0.layer.cornerRadius = 6
+        $0.layer.borderWidth = 1
+        $0.layer.borderColor = UIColor.grayScale200.cgColor
+    }
+    
+    let dateTextField = UITextField().then {
         $0.attributedPlaceholder = NSAttributedString(
             string: "YYYY-MM-DD",
             attributes: [.foregroundColor: UIColor.grayScale400]
         )
         $0.textColor = .grayScale900
-        $0.tintColor = .clear
         $0.font = .pretenMedium(16)
-        $0.keyboardType = .numberPad
     }
-
-    private let disposeBag = DisposeBag()
     
-    private let IconView = UIImageView().then {
-        $0.image = UIImage(resource: .calendarGray)
+    let warningLabel = UILabel().then {
+        $0.textColor = .redErrorColor
+        $0.font = .pretenMedium(12)
+        $0.text = "앗, 생년월일을 다시 확인해 주세요"
+        $0.flex.display(.none)
+        $0.alpha = 0
     }
+    
+    private let disposeBag = DisposeBag()
+
+    private let IconView = UIImageView()
 
     init() {
         super.init(frame: .zero)
         setup()
+        setupFlexLayout()
         bindAction()
     }
 
@@ -43,20 +56,30 @@ final class DateTextFieldView: UIView, UITextFieldDelegate {
         fatalError("init(coder:) has not been implemented")
     }
     
-    override func layoutSubviews() {
-        super.layoutSubviews()
-
-        let width = UIScreen.main.bounds.width
-        IconView.frame = CGRect(x: width - 80, y: 16, width: 24, height: 24)
-        dateTextField.frame = CGRect(x: 20, y: 0, width: bounds.width - 40, height: 56)
-    }
-
     private func setup() {
-        backgroundColor = .white
-        layer.cornerRadius = 8
-        
         addSubview(IconView)
         addSubview(dateTextField)
+    }
+    
+    private func setupFlexLayout() {
+        flex.define {
+            $0.addItem(backgroundView).direction(.row).define {
+                $0.addItem(dateTextField)
+                    .grow(1)
+                    .height(56)
+                    .marginLeft(16)
+                
+                $0.addItem(IconView)
+                    .size(24)
+                    .marginRight(16)
+                    .marginTop(16)
+            }
+            
+            $0.addItem(warningLabel)
+                .marginTop(8)
+                .marginLeft(8)
+                .height(18)
+        }
     }
 
     private func bindAction() {
@@ -95,8 +118,16 @@ final class DateTextFieldView: UIView, UITextFieldDelegate {
         
         let validateDate = validateDate(digits)
         
-        IconView.image = UIImage(resource: validateDate ? .check : .calendarGray)
         isCorrectDate.accept(validateDate)
+        
+        if digits.count == 8 {
+            IconView.image = validateDate ? UIImage(resource: .check) : UIImage(resource: .warningRed)
+            hiddenWarning.accept(validateDate)
+            IconView.isHidden = false
+        } else {
+            hiddenWarning.accept(true)
+            IconView.isHidden = true
+        }
     }
 
     private func validateDate(_ digits: String) -> Bool {

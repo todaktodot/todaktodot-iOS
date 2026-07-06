@@ -41,7 +41,7 @@ final class NicknameViewController: UIViewController, View {
         $0.textColor = .grayScale900
     }
     
-    private let textFiled = UITextField().then {
+    private let nicknameTextField = UITextField().then {
         $0.placeholder = "글자 수는 1~10자까지 입력 가능해요"
         $0.font = .pretenMedium(16)
         $0.textColor = .grayScale900
@@ -64,7 +64,7 @@ final class NicknameViewController: UIViewController, View {
         $0.alpha = 0
     }
     
-    private let birthdayDateTextField = DateTextFieldView().then {
+    private let dateTextFieldView = DateTextFieldView().then {
         $0.alpha = 0
     }
     
@@ -79,6 +79,7 @@ final class NicknameViewController: UIViewController, View {
         $0.backgroundColor = .grayScale400
         $0.layer.cornerRadius = 6
         $0.isEnabled = false
+        $0.isHidden = true
     }
     
     private let checkIcon = UIImageView().then {
@@ -91,11 +92,11 @@ final class NicknameViewController: UIViewController, View {
         self.flowType = flowType
 
         if let nickname {
-            textFiled.text = nickname
+            nicknameTextField.text = nickname
         }
         super.init(nibName: nil, bundle: nil)
         
-        birthdayDateTextField.flex.display(.none)
+        dateTextFieldView.flex.display(.none)
         genderButtonStackVIew.flex.display(.none)
         checkIcon.flex.display(.none)
         
@@ -116,11 +117,10 @@ final class NicknameViewController: UIViewController, View {
         super.viewDidLoad()
         
         hiddenBackButton()
-        textFiled.delegate = self
+        nicknameTextField.delegate = self
         hideKeyboardwhenTappedAround()
         setupViews()
         setupFlexLayout()
-        textFiled.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
         
         if flowType == .create || flowType == .join {
             AnalyticsService.log(.nicknameSetBegin)
@@ -172,11 +172,10 @@ final class NicknameViewController: UIViewController, View {
                         .grow(1)
                 }
             
-            $0.addItem(birthdayDateTextField)
+            $0.addItem(dateTextFieldView)
                 .marginTop(24)
-                .height(56)
             
-            $0.addItem(textFiled)
+            $0.addItem(nicknameTextField)
                 .marginTop(24)
                 .height(56)
             
@@ -212,7 +211,32 @@ final class NicknameViewController: UIViewController, View {
     func bind(reactor: CoupleReactor) {
         if flowType == .edit {
             reactor.action.onNext(.isEditingOnly)
+            nextButton.isHidden = false
         }
+        
+        Observable.combineLatest(
+            nicknameTextField.rx.text.orEmpty,
+            dateTextFieldView.isCorrectDate,
+            reactor.state.map(\.nicknameViewStep),
+            reactor.state.map(\.gender)
+        )
+        .map { text, birthday, step, gender in
+            switch step {
+            case .nickname, .edit:
+                return !text.isEmpty
+
+            case .birthday:
+                return !text.isEmpty && birthday
+
+            case .gender:
+                return !text.isEmpty && birthday && gender != nil
+            }
+        }
+        .distinctUntilChanged()
+        .bind(with: self) { owner, enabled in
+            owner.nextButtonToggle(isEnabled: enabled)
+        }
+        .disposed(by: disposeBag)
         
         reactor.state
             .compactMap { $0.outputNickname }
@@ -246,7 +270,7 @@ final class NicknameViewController: UIViewController, View {
                 currentStep = step
                 switch step {
                 case .birthday:
-                    birthdayDateTextField.flex.display(.flex)
+                    dateTextFieldView.flex.display(.flex)
 
                     UIView.animate(withDuration: 0.2) {
                         self.contentsView.flex.layout()
@@ -257,7 +281,7 @@ final class NicknameViewController: UIViewController, View {
                         delay: 0.15
                     ) {
                         self.titleLabel.text = "생년월일을 알려주세요"
-                        self.birthdayDateTextField.alpha = 1
+                        self.dateTextFieldView.alpha = 1
                     }
                 case .gender:
                     genderButtonStackVIew.flex.display(.flex)
@@ -280,42 +304,95 @@ final class NicknameViewController: UIViewController, View {
             })
             .disposed(by: disposeBag)
         
-        textFiled.rx.text.orEmpty
+        nicknameTextField.rx.text.orEmpty
             .distinctUntilChanged()
             .map(CoupleReactor.Action.nicknameChanged)
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
         
-        Observable.combineLatest(
-            textFiled.rx.text.orEmpty,
-            birthdayDateTextField.isCorrectDate,
-            reactor.state.map(\.nicknameViewStep),
-            reactor.state.map(\.gender)
-        )
-        .map { text, birthday, step, gender in
-            switch step {
-            case .nickname, .edit:
-                let isNotEmpty = !text.isEmpty
-                self.checkTextField(isNotEmpty: isNotEmpty)
-                return isNotEmpty
-
-            case .birthday:
-                return !text.isEmpty && birthday
-
-            case .gender:
-                return !text.isEmpty && birthday && gender != nil
+        nicknameTextField.rx.text.orEmpty
+            .map { !$0.isEmpty }
+            .distinctUntilChanged()
+            .bind(with: self) { owner, isNotEmpty in
+                owner.checkTextField(isNotEmpty: isNotEmpty)
             }
-        }
-        .distinctUntilChanged()
-        .bind(with: self) { owner, enabled in
-            owner.nextButtonToggle(isEnabled: enabled)
-        }
-        .disposed(by: disposeBag)
+            .disposed(by: disposeBag)
         
-        birthdayDateTextField.currentDate
+        nicknameTextField.rx.controlEvent(.editingChanged)
+            .withUnretained(self)
+            .subscribe(onNext: { owner, _ in
+                let textField = owner.nicknameTextField
+
+                if textField.markedTextRange != nil {
+                    return
+                }
+
+                guard let text = textField.text, text.count > 10 else { return }
+
+                let index = text.index(text.startIndex, offsetBy: 10)
+                textField.text = String(text[..<index])
+            })
+            .disposed(by: disposeBag)
+        
+        nicknameTextField.rx.controlEvent(.editingDidEndOnExit)
+            .subscribe(onNext: { [weak self] in
+                guard let self else { return }
+                
+                if self.currentStep == .nickname && self.nicknameTextField.hasText {
+                    self.reactor?.action.onNext(.tapNext)
+                    self.dateTextFieldView.dateTextField.becomeFirstResponder()
+                }
+            })
+            .disposed(by: disposeBag)
+        
+        dateTextFieldView.isCorrectDate
+            .subscribe(onNext: { [weak self] isCorrectDate in
+                guard let self else { return }
+                
+                if self.currentStep == .birthday && isCorrectDate {
+                    self.reactor?.action.onNext(.tapNext)
+                    self.dateTextFieldView.dateTextField.endEditing(true)
+                }
+            })
+            .disposed(by: disposeBag)
+        
+        dateTextFieldView.currentDate
             .map(CoupleReactor.Action.birthdayChanged)
             .bind(to: reactor.action)
             .disposed(by: disposeBag)
+        
+        dateTextFieldView.hiddenWarning
+            .distinctUntilChanged()
+            .subscribe(onNext: { [weak self] hiddenWarning in
+                guard let self else { return }
+                let view = dateTextFieldView
+                view.backgroundView.layer.borderColor = hiddenWarning ? UIColor.grayScale200.cgColor : UIColor.redErrorColor.cgColor
+                view.warningLabel.flex.display(hiddenWarning ? .none : .flex)
+                
+                
+                if hiddenWarning {
+                    UIView.animate(withDuration: 0.2) {
+                        view.warningLabel.alpha = 0
+                    }
+                    UIView.animate(
+                        withDuration: 0.2,
+                        delay: 0.2
+                    ) {
+                        self.contentsView.flex.layout()
+                    }
+                } else {
+                    UIView.animate(withDuration: 0.2) {
+                        self.contentsView.flex.layout()
+                    }
+                    UIView.animate(
+                        withDuration: 0.2,
+                        delay: 0.2
+                    ) {
+                        view.warningLabel.alpha = 1
+                    }
+                }
+            })
+           .disposed(by: disposeBag)
         
         maleButton.isTap
             .subscribe(onNext: { [weak self] _ in
@@ -336,7 +413,7 @@ final class NicknameViewController: UIViewController, View {
                 guard let self else { return }
 
                 if currentStep == .birthday || currentStep == .gender {
-                    guard let birthday = birthdayDateTextField.currentDate.value?.toDate(),
+                    guard let birthday = dateTextFieldView.currentDate.value?.toDate(),
                         isOver14YearsOld(birthday)
                     else {
                         showNotAdultAlert()
@@ -344,7 +421,6 @@ final class NicknameViewController: UIViewController, View {
                     }
                 }
 
-                self.nextButtonToggle(isEnabled: false)
                 self.reactor?.action.onNext(.tapNext)
             })
             .disposed(by: disposeBag)
@@ -367,13 +443,8 @@ final class NicknameViewController: UIViewController, View {
     }
     
     private func checkTextField(isNotEmpty: Bool) {
-        if isNotEmpty {
-            iconTextSpacingView.flex.display(.none)
-            checkIcon.flex.display(.flex)
-        } else {
-            iconTextSpacingView.flex.display(.flex)
-            checkIcon.flex.display(.none)
-        }
+        iconTextSpacingView.flex.display(isNotEmpty ? .none : .flex)
+        checkIcon.flex.display(isNotEmpty ? .flex : .none)
         contentsView.flex.layout()
     }
     
@@ -385,11 +456,7 @@ final class NicknameViewController: UIViewController, View {
     }
     
     private func genderButtonUpdate(isMale: Bool) {
-        if let text = textFiled.text, !text.isEmpty && birthdayDateTextField.isCorrectDate.value {
-            nextButtonToggle(isEnabled: true)
-        } else {
-            nextButtonToggle(isEnabled: false)
-        }
+        nextButton.isHidden = false
         isTappedGenderButton = true
         
         maleButton.layer.borderColor = isMale ? UIColor.mainPurple.cgColor : UIColor.grayScale200.cgColor
@@ -400,24 +467,12 @@ final class NicknameViewController: UIViewController, View {
         
         reactor?.action.onNext(.genderChanged(isMale ? .male : .female))
     }
-    
-    @objc private func textFieldDidChange(_ textField: UITextField) {
-        if textField.markedTextRange != nil {
-            return
-        }
-
-        guard let text = textField.text else { return }
-
-        if text.count > 10 {
-            let index = text.index(text.startIndex, offsetBy: 10)
-            textField.text = String(text[..<index])
-        }
-    }
 }
 
 extension NicknameViewController: UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        textField.resignFirstResponder()
+        if let text = textField.text, text.isEmpty { return false }
+        
         return true
     }
     
