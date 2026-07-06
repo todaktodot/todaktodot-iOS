@@ -10,9 +10,8 @@
 	</array>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<string>applinks:da-hye0.github.io</string>
-		<string>applinks:todaktodot.com</string>
 		<string>applinks:todaktodot-backend.duckdns.org</string>
+		<string>applinks:todaktodot-backend.duckdns.org?mode=developer</string>
 		<string>applinks:todaktodot.cloud</string>
 	</array>
 </dict>

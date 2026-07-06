@@ -8,6 +8,7 @@
 import UIKit
 import FlexLayout
 import PinLayout
+import Photos
 import Then
 import ReactorKit
 import RxSwift
@@ -35,6 +36,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     
     private let scrollView = UIScrollView()
     private let rootFlexContainer = UIView()
+    private var buttonRows: [UIView] = []
     
     private let mainCardContainer = UIView().then {
         $0.backgroundColor = .subPurple
@@ -656,10 +658,10 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         partnerAnswerContainer.flex.layout()
         rootFlexContainer.flex.layout(mode: .adjustHeight)
         scrollView.contentSize = rootFlexContainer.frame.size
+        layoutTail()
     }
     
     private func updateMyAnswerEmojiUI(emoji: EmojiType?) {
-        // myAnswerContainer에서 tag 998로 이모지 row를 찾아 업데이트
         let existingRow = myAnswerContainer.viewWithTag(998)
         
         if let emoji {
@@ -712,6 +714,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         myAnswerContainer.flex.markDirty()
         rootFlexContainer.flex.layout(mode: .adjustHeight)
         scrollView.contentSize = rootFlexContainer.frame.size
+        layoutTail()
         
         if let row = myAnswerContainer.viewWithTag(998) {
             row.alpha = 0
@@ -972,14 +975,16 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
             $0.layer.cornerRadius = 6
         }
 
+        let buttonRow = UIView()
         view.flex.paddingTop(12).define { flex in
             flex.addItem(statusLabel)
             flex.addItem(subtitleLabel).marginTop(4)
-            flex.addItem().direction(.row).marginTop(28).define { row in
+            flex.addItem(buttonRow).direction(.row).marginTop(28).define { row in
                 row.addItem(saveButton).grow(1).height(44)
                 row.addItem(shareButton).grow(1).height(44).marginLeft(8)
             }
         }
+        self.buttonRows.append(buttonRow)
 
         saveButton.rx.tap
             .subscribe(onNext: { [weak self] in self?.saveTapped() })
@@ -1022,16 +1027,35 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     // MARK: - 저장/공유 Actions
 
     private func saveTapped() {
-        // 스크롤 전체 콘텐츠 캡처
-        let savedOffset = scrollView.contentOffset
-        let savedFrame = rootFlexContainer.frame
+        PHPhotoLibrary.requestAuthorization(for: .addOnly) { [weak self] status in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                switch status {
+                case .authorized, .limited:
+                    self.captureAndSave()
+                default:
+                    self.showToast(message: "사진 접근 권한이 필요합니다")
+                }
+            }
+        }
+    }
+    
+    private func captureAndSave() {
+        buttonRows.forEach { $0.isHidden = true }
+        rootFlexContainer.flex.paddingTop(40).paddingBottom(20)
+        rootFlexContainer.flex.layout(mode: .adjustHeight)
+        layoutTail()
         
-        // 전체 콘텐츠 크기로 렌더링
         let fullSize = rootFlexContainer.bounds.size
         let renderer = UIGraphicsImageRenderer(size: fullSize)
-        let image = renderer.image { context in
-            rootFlexContainer.layer.render(in: context.cgContext)
+        let image = renderer.image { _ in
+            rootFlexContainer.drawHierarchy(in: CGRect(origin: .zero, size: fullSize), afterScreenUpdates: true)
         }
+        
+        buttonRows.forEach { $0.isHidden = false }
+        rootFlexContainer.flex.paddingTop(10).paddingBottom(70)
+        rootFlexContainer.flex.layout(mode: .adjustHeight)
+        layoutTail()
         
         UIImageWriteToSavedPhotosAlbum(image, self, #selector(imageSaved(_:didFinishSavingWithError:contextInfo:)), nil)
     }
