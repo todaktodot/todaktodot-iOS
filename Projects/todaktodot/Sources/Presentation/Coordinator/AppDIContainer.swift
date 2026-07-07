@@ -40,11 +40,12 @@ final class AppDIContainer {
     )
     
     // MARK: - Use Cases
-    private lazy var signinUseCase = SigninUseCase(repository: authRepository, mypageRepository: mypageRepository)
+    private lazy var signinUseCase = SigninUseCase(repository: authRepository)
     private lazy var cardUseCase = CardUseCase(repository: cardRepository)
-    private lazy var coupleUseCase = CoupleUseCase(repository: coupleRepository, mypageRepository: mypageRepository)
+    private lazy var coupleUseCase = CoupleUseCase(repository: coupleRepository)
     private lazy var mypageUseCase = MypageUseCase(repository: mypageRepository)
     private lazy var aiReportUseCase = AIReportUseCase(repository: aiReportRepository)
+    private lazy var onboardingUseCase = OnboardingUseCase(repository: mypageRepository)
 }
 
 // MARK: - Make Reactor
@@ -54,11 +55,11 @@ extension AppDIContainer {
     }
     
     func makeSigninReactor() -> SigninReactor {
-        SigninReactor(signinUseCase: signinUseCase)
+        SigninReactor(signinUseCase: signinUseCase, onboardingUseCase: onboardingUseCase)
     }
     
     func makeCoupleReactor() -> CoupleReactor {
-        CoupleReactor(coupleUseCase: coupleUseCase)
+        CoupleReactor(coupleUseCase: coupleUseCase, onboardingUseCase: onboardingUseCase)
     }
     
     func makeDailyCardReactor(dailyCards: [QuestionCard], selectedType: CardType) -> DailyCardReactor {

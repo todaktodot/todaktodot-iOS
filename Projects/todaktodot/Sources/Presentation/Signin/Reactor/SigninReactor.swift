@@ -37,9 +37,11 @@ final class SigninReactor: Reactor {
     let initialState = State()
     
     private let signinUseCase: SigninUseCase
+    private let onboardingUseCase: OnboardingUseCase
 
-    init(signinUseCase: SigninUseCase) {
+    init(signinUseCase: SigninUseCase, onboardingUseCase: OnboardingUseCase) {
         self.signinUseCase = signinUseCase
+        self.onboardingUseCase = onboardingUseCase
     }
     
     func mutate(action: Action) -> Observable<Mutation> {
@@ -62,9 +64,9 @@ final class SigninReactor: Reactor {
                 .map { Mutation.setUserInfo($0) }
         case .handlePendingCoupleDisconnect:
             return Observable.concat([
-                signinUseCase.disconnectCouple()
+                onboardingUseCase.disconnectCouple()
                     .flatMap { _ in
-                        self.signinUseCase.logout()
+                        self.onboardingUseCase.logout()
                     }
                     .do(onNext: {
                         UserdefaultKey.pendingCoupleDisconnect = false

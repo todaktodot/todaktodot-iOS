@@ -16,11 +16,9 @@ enum LoginType: String {
 
 final class SigninUseCase {
     private let repository: AuthRepository
-    private let mypageRepository: MypageRepository
 
-    init(repository: AuthRepository, mypageRepository: MypageRepository) {
+    init(repository: AuthRepository) {
         self.repository = repository
-        self.mypageRepository = mypageRepository
     }
     
     func execute(type: LoginType) -> Observable<Bool> {
@@ -33,13 +31,5 @@ final class SigninUseCase {
     
     func updateDeviceToken(token: String?) -> Observable<Bool> {
         return repository.updateDeviceToken(token: token)
-    }
-    
-    func logout() -> Observable<Void> {
-        mypageRepository.logout()
-    }
-    
-    func disconnectCouple() -> Observable<Bool> {
-        mypageRepository.disconnectCouple()
     }
 }

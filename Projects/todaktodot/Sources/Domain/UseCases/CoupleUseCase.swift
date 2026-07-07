@@ -10,11 +10,9 @@ import RxSwift
 
 final class CoupleUseCase {
     private let repository: CoupleRepository
-    private let mypageRepository: MypageRepository
 
-    init(repository: CoupleRepository, mypageRepository: MypageRepository) {
+    init(repository: CoupleRepository) {
         self.repository = repository
-        self.mypageRepository = mypageRepository
     }
     
     func issueCode() -> Observable<CoupleCode> {
@@ -47,17 +45,5 @@ final class CoupleUseCase {
     
     func setOnboarding(info: OnboardingInfo) -> Observable<String> {
         repository.setOnboarding(info: info)
-    }
-    
-    func logout() -> Observable<Void> {
-        mypageRepository.logout()
-    }
-    
-    func disconnectCouple() -> Observable<Bool> {
-        mypageRepository.disconnectCouple()
-    }
-    
-    func fetchInfo() -> Observable<MypageInfo> {
-        mypageRepository.fetchInfo()
     }
 }

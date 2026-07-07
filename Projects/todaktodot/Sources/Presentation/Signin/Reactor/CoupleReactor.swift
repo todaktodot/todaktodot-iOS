@@ -83,9 +83,11 @@ final class CoupleReactor: Reactor {
     let initialState = State()
     
     private let coupleUseCase: CoupleUseCase
+    private let onboardingUseCase: OnboardingUseCase
     
-    init(coupleUseCase: CoupleUseCase) {
+    init(coupleUseCase: CoupleUseCase, onboardingUseCase: OnboardingUseCase) {
         self.coupleUseCase = coupleUseCase
+        self.onboardingUseCase = onboardingUseCase
     }
     
     func mutate(action: Action) -> Observable<Mutation> {
@@ -171,9 +173,9 @@ final class CoupleReactor: Reactor {
             return .just(.setStep(.edit))
         case .disconnectCouple:
             return Observable.concat([
-                coupleUseCase.disconnectCouple()
+                onboardingUseCase.disconnectCouple()
                     .flatMap { _ in
-                        self.coupleUseCase.logout()
+                        self.onboardingUseCase.logout()
                     }
                     .map { _ in
                         .setRoot
@@ -245,7 +247,7 @@ final class CoupleReactor: Reactor {
                 gender: gender
             ))
             .flatMap { _ in
-                self.coupleUseCase.fetchInfo()
+                self.onboardingUseCase.fetchInfo()
             }
             .map {
                 .setInfo($0)
