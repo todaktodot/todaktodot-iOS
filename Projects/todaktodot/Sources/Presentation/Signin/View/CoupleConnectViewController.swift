@@ -323,7 +323,16 @@ final class CoupleConnectViewController: UIViewController, View {
         ))
         AnalyticsService.log(.coupleConnectCompleted)
         showAlert(icon: UIImage(resource: .heart), title: "커플 연결 완료!", description: "이제 둘만의 대화를 시작할 수 있어요\n닉네임을 입력하러 가볼까요?", primaryButtonTitle: "확인", primaryButtonAction: {
-            self.coordinator?.showNickname()
+            switch (UserdefaultKey.createdMyNickname, UserdefaultKey.createdCoupleInfo) {
+            case (true, true):
+                self.coordinator?.navigateToMain()
+
+            case (true, false):
+                self.coordinator?.showCoupleInfo()
+
+            case (false, _):
+                self.coordinator?.showProfile()
+            }
         })
     }
 }

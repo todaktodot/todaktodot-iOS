@@ -1,5 +1,5 @@
 //
-//  CoupleDatePickerView.swift
+//  CustomDatePickerView.swift
 //  todaktodot
 //
 //  Created by 임대진 on 12/9/25.
@@ -12,13 +12,13 @@ import PinLayout
 import RxSwift
 import RxRelay
 
-final class CoupleDatePickerView: UIView {
+final class CustomDatePickerView: UIView {
     
     let isDateSelected = BehaviorRelay<String?>(value: nil)
     
     private let dateTextField = UITextField().then {
         $0.attributedPlaceholder = NSAttributedString(
-            string: "YY-MM-DD",
+            string: "YYYY-MM-DD",
             attributes: [.foregroundColor: UIColor.grayScale400]
         )
         $0.textColor = .grayScale900
@@ -88,6 +88,8 @@ final class CoupleDatePickerView: UIView {
 
     private func setup() {
         dateTextField.inputView = pickerContainer
+        backgroundColor = .white
+        layer.cornerRadius = 8
         
         addSubview(IconView)
         addSubview(dateTextField)

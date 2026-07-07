@@ -15,4 +15,5 @@ protocol CoupleRepository {
     func setTerms(infoAgree: Bool?, marketingAgree: Bool?, advertiesmentAgree: Bool?) -> Observable<Bool>
     func soloStart() -> Observable<Bool>
     func assignCards(startDate: String, endDate: String) -> Observable<Bool>
+    func setOnboarding(info: OnboardingInfo) -> Observable<String>
 }

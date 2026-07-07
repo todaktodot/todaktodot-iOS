@@ -45,6 +45,7 @@ struct TodotColors {
     // MARK: - System Colors
     struct System {
         static let red = UIColor(hex: "FF3B30")              // Error
+        static let redError = UIColor(hex: "E93528")              // Error
         static let green = UIColor(hex: "34C759")            // Success
     }
     
@@ -107,6 +108,7 @@ extension UIColor {
     
     // MARK: System Colors
     static let errorColor = TodotColors.System.red
+    static let redErrorColor = TodotColors.System.redError
     static let successColor = TodotColors.System.green
     static let whiteColor = TodotColors.Grayscale.white
 }

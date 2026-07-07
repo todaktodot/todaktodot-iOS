@@ -61,14 +61,14 @@ final class MypageCoordinator: Coordinator {
         navigationController.present(webVC, animated: true, completion: nil)
     }
     
-    func showNickname(nickname: String? = nil) {
+    func showProfile(nickname: String? = nil) {
         let signinCoordinator = SigninCoordinator(navigationController: navigationController)
         signinCoordinator.parentCoordinator = tabBarCoordinator
         addChild(signinCoordinator)
         signinCoordinator.onNicknameUpdated = { [weak self] nickname in
             self?.onNicknameUpdated?(nickname)
         }
-        signinCoordinator.showNickname(flowType: .edit, nickname: nickname)
+        signinCoordinator.showProfile(isNicknameEdit: true, nickname: nickname)
     }
     
     func showCoupleInfo(info: CoupleInfo?) {

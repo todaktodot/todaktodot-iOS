@@ -38,4 +38,8 @@ final class MypageUseCase {
     func updateTerms(infoAgree: Bool? = nil, marketingAgree: Bool? = nil, advertiesmentAgree: Bool? = nil) -> Observable<Bool> {
         repository.updateTerms(infoAgree: infoAgree, marketingAgree: marketingAgree, advertiesmentAgree: advertiesmentAgree)
     }
+    
+    func fetchHeatmap(startDate: String, endDate: String) -> Observable<ActivityHeatmap> {
+        repository.fetchHeatmap(startDate: startDate, endDate: endDate)
+    }
 }

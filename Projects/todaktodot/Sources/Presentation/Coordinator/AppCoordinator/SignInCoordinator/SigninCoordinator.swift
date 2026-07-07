@@ -27,21 +27,21 @@ final class SigninCoordinator: Coordinator {
         navigationController.setViewControllers([signinViewController], animated: true)
     }
     
-    func showCoupleConnect() {
+    func showCoupleConnect(skipOnboarding: Bool? = nil) {
         let coupleConnectViewController = CoupleConnectViewController()
         coupleConnectViewController.coordinator = self
         coupleConnectViewController.reactor = container.makeCoupleReactor()
         navigationController.pushViewController(coupleConnectViewController, animated: true)
     }
     
-    func showNickname(flowType: ConnectFlowType? = nil, nickname: String? = nil) {
-        let nicknameViewController = NicknameViewController(flowType: flowType, nickname: nickname)
+    func showProfile(isNicknameEdit: Bool = false, nickname: String? = nil) {
+        let nicknameViewController = ProfileViewController(isNicknameEdit: isNicknameEdit, nickname: nickname)
         nicknameViewController.coordinator = self
         nicknameViewController.reactor = container.makeCoupleReactor()
-        if flowType == nil {
-            navigationController.setViewControllers([nicknameViewController], animated: true)
-        } else {
+        if isNicknameEdit {
             navigationController.pushViewController(nicknameViewController, animated: true)
+        } else {
+            navigationController.setViewControllers([nicknameViewController], animated: true)
         }
     }
     

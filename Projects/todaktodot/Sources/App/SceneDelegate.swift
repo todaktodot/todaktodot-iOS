@@ -73,8 +73,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func sceneWillEnterForeground(_ scene: UIScene) {
 //        AnalyticsService().screenEvent(ScreenName: .splash)
         NotificationCenter.default.post(name: .sceneWillEnterForeground, object: nil)
-
-        if !UserdefaultKey.createdMyNickname {
+      
+        if UserdefaultKey.coupleType == .connected && !UserdefaultKey.createdMyNickname {
             NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
         }
     }

@@ -127,4 +127,22 @@ final class CoupleRepositoryImpl: CoupleRepository {
                 return true
             }
     }
+    
+    func setOnboarding(info: OnboardingInfo) -> Observable<String> {
+        let endpoint = Endpoint<OnboardingInfoDTO>(
+            baseURL: .todaktodotAPI,
+            path: "/api/profile/onboarding",
+            method: .patch,
+            parameters: [
+                "nickname": info.nickname,
+                "birthDate": info.birthDate,
+                "gender": info.gender == .male ? "M" : "F"
+            ]
+        )
+        
+        return networkManager.request(with: endpoint)
+            .map {
+                $0.toInfo().nickname
+            }
+    }
 }

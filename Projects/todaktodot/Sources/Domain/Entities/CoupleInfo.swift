@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct CoupleInfo: Codable {
+struct CoupleInfo: Codable, Equatable {
     let firstMetDate: String
     let sinceMetDate: String
     let stage: String
