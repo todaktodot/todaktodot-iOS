@@ -166,7 +166,7 @@ final class HomeReactor: Reactor {
                         return self.signinUseCase.fetchUserInfo()
                             .flatMap { userInfo -> Observable<Mutation> in
                                 if userInfo.coupleType != .connected {
-                                    NotificationCenter.default.post(name: .logoutRequired, object: nil)
+                                    NotificationCenter.default.post(name: .coupleDisconnected, object: nil)
                                 }
                                 return .just(.setHistoryCardsWithStatus([], .bothUnanswered))
                             }

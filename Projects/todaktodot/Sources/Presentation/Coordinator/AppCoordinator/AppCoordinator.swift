@@ -87,7 +87,14 @@ final class AppCoordinator: Coordinator {
         NotificationCenter.default.rx.notification(.logoutRequired)
             .observe(on: MainScheduler.asyncInstance)
             .subscribe(onNext: { [weak self] _ in
-                self?.forceLogout()
+                self?.forceLogout(title: "로그인 정보가 만료되었습니다\n다시 로그인 해주세요")
+            })
+            .disposed(by: disposeBag)
+        
+        NotificationCenter.default.rx.notification(.coupleDisconnected)
+            .observe(on: MainScheduler.asyncInstance)
+            .subscribe(onNext: { [weak self] _ in
+                self?.forceLogout(title: "커플 연결이 해제됐어요", description: "그동한 작성한 기록은 모두 삭제됐어요")
             })
             .disposed(by: disposeBag)
     }
@@ -116,11 +123,11 @@ final class AppCoordinator: Coordinator {
             .disposed(by: disposeBag)
     }
     
-    private func forceLogout() {
+    private func forceLogout(title: String, description: String? = nil) {
         UserdefaultKey.resetAuthUserDefaults()
         
         showSigninFlow()
-        navigationController.viewControllers.first?.showAlert(icon: UIImage(resource: .warning), title: "로그인 정보가 만료되었습니다\n다시 로그인 해주세요", primaryButtonTitle: "확인", primaryButtonAction: {})
+        navigationController.viewControllers.first?.showAlert(icon: UIImage(resource: .warning), title: title, description: description, primaryButtonTitle: "확인", primaryButtonAction: {})
     }
     
     private func showConnectedCoupleAlert() {
@@ -149,8 +156,6 @@ final class AppCoordinator: Coordinator {
             title = "정상적으로 커플 연결이 해제됐어요\n다시 로그인이 필요해요"
         case .withdrawal:
             title = "정상적으로 탈퇴 되었어요"
-        case .notAdult:
-            return
         }
         
         self.navigationController.showAlert(icon: UIImage(resource: .check), title: title, primaryButtonTitle: "확인", primaryButtonAction: {})

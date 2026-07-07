@@ -297,7 +297,7 @@ final class ProfileViewController: UIViewController, View {
                 
                 UserdefaultKey.isLoggedIn = false
                 UserdefaultKey.pendingCoupleDisconnect = false
-                (UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate)?.changeNavigationRootView(animated: true, alertType: .notAdult)
+                NotificationCenter.default.post(name: .coupleDisconnected, object: nil)
             })
             .disposed(by: disposeBag)
         

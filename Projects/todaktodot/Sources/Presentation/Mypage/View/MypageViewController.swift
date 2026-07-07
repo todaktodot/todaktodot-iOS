@@ -15,7 +15,7 @@ import UserNotifications
 import ReactorKit
 
 enum LogoutType {
-    case logout, disconnect, withdrawal, notAdult
+    case logout, disconnect, withdrawal
 }
 
 final class MypageViewController: CustomBackViewController, View {
