@@ -14,6 +14,7 @@ final class MyPageReactor: Reactor {
     
     struct State {
         var info: MypageInfo?
+        var heatmap: ActivityHeatmap?
         var isLoading: Bool = true
         var isLogout: Bool?
         var isDisconnectCouple: Bool?
@@ -25,6 +26,7 @@ final class MyPageReactor: Reactor {
     
     enum Action {
         case fetchInfo
+        case fetchHeatmap(String, String)
         case tapLogout
         case tapDisconnectCouple
         case tapWitdrawal
@@ -35,6 +37,7 @@ final class MyPageReactor: Reactor {
 
     enum Mutation {
         case setInfo(MypageInfo)
+        case setHeatmap(ActivityHeatmap)
         case setLoading(Bool)
         case setLogout(Bool)
         case setDisconnectCouple(Bool)
@@ -91,6 +94,9 @@ final class MyPageReactor: Reactor {
         case .tapMarketingNoti(let isOn):
             return useCase.updateTerms(marketingAgree: isOn)
                 .map { .setMarketingNoti($0) }
+        case .fetchHeatmap(let startDate, let endDate):
+            return useCase.fetchHeatmap(startDate: startDate, endDate: endDate)
+                .map { .setHeatmap($0) }
         }
     }
     
@@ -113,6 +119,8 @@ final class MyPageReactor: Reactor {
             newState.isAdvertNoti = isOn
         case .setMarketingNoti(let isOn):
             newState.isMarketingNoti = isOn
+        case .setHeatmap(let heatmap):
+            newState.heatmap = heatmap
         }
         return newState
     }

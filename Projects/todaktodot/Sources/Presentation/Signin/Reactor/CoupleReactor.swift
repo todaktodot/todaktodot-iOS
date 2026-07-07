@@ -14,51 +14,80 @@ final class CoupleReactor: Reactor {
     
     struct State {
         var mycode: String?
-        var isLoading: Bool = false
         var isJoined: Bool?
+        var info: MypageInfo?
         
         var isAlreadyCouple: Bool?
         var isTermsAgreeSuccess: Bool?
         var isCoupleConnectSuccess: Bool?
         var isSoloStartSuccess: Bool?
+        var isDisconnectSuccess: Bool?
         
-        var updateNickname: String?
+        var outputNickname: String? // 닉네임 수정 완료 후 서버에서 받는 값 저장
+        var inputNickname: String? // 현재 텍스트필드 닉네임 값
         var updateCoupleInfo: CoupleInfo?
+        var gender: Gender? // M or F
+        var birthday: String?
         var error: Error?
+        
+        var nicknameViewStep: NicknameViewStep = .nickname
+    }
+    
+    enum NicknameViewStep {
+        case nickname
+        case birthday
+        case gender
+        case edit
     }
     
     enum Action {
         case issueCoupleCode
         case checkIsJoined
+        
         case tapTemrsAgreeButton(Bool, Bool)
         case tapConnectButton(String)
-        case tapNicknameButton(String)
         case tapStartButton(String, String)
         case tapSoloStartButton
+        
+        case tapNext
+        case nicknameChanged(String)
+        case birthdayChanged(String?)
+        case genderChanged(Gender?)
+        case isEditingOnly
+        case disconnectCouple
     }
     
     enum Mutation {
         case setSoloStart(Bool)
-        case setLoading(Bool)
         case setIsJoined(Bool)
         
         case setTermsAgreeSuccess(Bool)
         case setCoupleConnectSuccess(Bool)
         
         case setMyCode(String)
-        case setNickname(String)
+        case setNickname(String) // 닉네임 수정 후 저장
         case setCoupleInfo(CoupleInfo)
         
         case setAlreadyCouple
         case setError(Error?)
+        
+        case setStep(NicknameViewStep)
+        case setBirthday(String?)
+        case setGender(Gender?)
+        
+        case setCurrentNickname(String) // 닉네임 텍스트필드 변경될때 작동
+        case setRoot
+        case setInfo(MypageInfo)
     }
     
     let initialState = State()
     
     private let coupleUseCase: CoupleUseCase
+    private let onboardingUseCase: OnboardingUseCase
     
-    init(coupleUseCase: CoupleUseCase) {
+    init(coupleUseCase: CoupleUseCase, onboardingUseCase: OnboardingUseCase) {
         self.coupleUseCase = coupleUseCase
+        self.onboardingUseCase = onboardingUseCase
     }
     
     func mutate(action: Action) -> Observable<Mutation> {
@@ -85,10 +114,6 @@ final class CoupleReactor: Reactor {
                         .catch { .just(.setError($0)) }
                 }
                 .catchAndReturn(.setCoupleConnectSuccess(false))
-            
-        case .tapNicknameButton(let nickname):
-            return coupleUseCase.updateNickname(nickname: nickname)
-                .map { Mutation.setNickname($0) }
             
         case .tapStartButton(let date, let stage):
             return coupleUseCase.updateCoupleInfo(date: date, stage: stage)
@@ -119,6 +144,43 @@ final class CoupleReactor: Reactor {
                         return .just(.setError($0))
                     }
             }
+            
+        case .tapNext:
+            switch currentState.nicknameViewStep {
+            case .nickname:
+                return .just(.setStep(.birthday))
+
+            case .birthday:
+                return .just(.setStep(.gender))
+
+            case .gender:
+                return submitOnboarding()
+
+            case .edit:
+                return updateNickname()
+            }
+            
+        case let .nicknameChanged(text):
+            return .just(.setCurrentNickname(text))
+
+        case let .birthdayChanged(date):
+            return .just(.setBirthday(date))
+
+        case let .genderChanged(gender):
+            return .just(.setGender(gender))
+            
+        case .isEditingOnly:
+            return .just(.setStep(.edit))
+        case .disconnectCouple:
+            return Observable.concat([
+                onboardingUseCase.disconnectCouple()
+                    .flatMap { _ in
+                        self.onboardingUseCase.logout()
+                    }
+                    .map { _ in
+                        .setRoot
+                    }
+            ])
         }
     }
     
@@ -126,9 +188,6 @@ final class CoupleReactor: Reactor {
         var newState = state
         
         switch mutation {
-        case .setLoading(let isLoading):
-            newState.isLoading = isLoading
-            
         case .setMyCode(let code):
             newState.mycode = code
             
@@ -139,7 +198,7 @@ final class CoupleReactor: Reactor {
             newState.isCoupleConnectSuccess = isSuccess
             
         case .setNickname(let nickname):
-            newState.updateNickname = nickname
+            newState.outputNickname = nickname
             
         case .setCoupleInfo(let info):
             newState.updateCoupleInfo = info
@@ -155,9 +214,54 @@ final class CoupleReactor: Reactor {
             
         case .setError(let error):
             newState.error = error
+        case .setStep(let step):
+            newState.nicknameViewStep = step
+        case .setBirthday(let birthday):
+            newState.birthday = birthday
+        case .setGender(let gender):
+            newState.gender = gender
+            
+        case .setCurrentNickname(let text):
+            newState.inputNickname = text
+        case .setRoot:
+            newState.isDisconnectSuccess = true
+        case .setInfo(let info):
+            newState.info = info
         }
         
         return newState
+    }
+    
+    private func submitOnboarding() -> Observable<Mutation> {
+        guard let nickname = currentState.inputNickname,
+              let birthday = currentState.birthday,
+              let gender = currentState.gender
+        else {
+            return .empty()
+        }
+
+        return coupleUseCase
+            .setOnboarding(info: .init(
+                nickname: nickname,
+                birthDate: birthday,
+                gender: gender
+            ))
+            .flatMap { _ in
+                self.onboardingUseCase.fetchInfo()
+            }
+            .map {
+                .setInfo($0)
+            }
+    }
+
+    private func updateNickname() -> Observable<Mutation> {
+        guard let nickname = currentState.inputNickname else {
+            return .empty()
+        }
+
+        return coupleUseCase
+            .updateNickname(nickname: nickname)
+            .map(Mutation.setNickname)
     }
     
     private func assignCards() -> Observable<Bool> {

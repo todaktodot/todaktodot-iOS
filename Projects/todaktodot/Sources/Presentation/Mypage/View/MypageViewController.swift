@@ -73,6 +73,7 @@ final class MypageViewController: CustomBackViewController, View {
     
     private let notYetConnectedView = DashedBorderView()
     private let ourInfoView = OurInfoView()
+    private let heatmapContainerView = HeatmapContainerView()
     private let settingSectionView = SettingSectionView()
     
     private let myNicknameLabel = TDLabel().then {
@@ -135,6 +136,7 @@ final class MypageViewController: CustomBackViewController, View {
         
         setupViews()
         setupFlexLayout()
+        bindAction()
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -164,8 +166,13 @@ final class MypageViewController: CustomBackViewController, View {
         let topMargin: CGFloat = 28
         contentView.flex.define {
             $0.addItem(profileView)
+            
             $0.addItem(notYetConnectedView)
                 .marginTop(topMargin)
+                .marginHorizontal(20)
+            
+            $0.addItem(heatmapContainerView)
+                .marginTop(20)
                 .marginHorizontal(20)
             
             $0.addItem(settingSectionView)
@@ -296,6 +303,10 @@ final class MypageViewController: CustomBackViewController, View {
             .take(1)
             .subscribe(onNext: { [weak self] info in
                 guard let self = self else { return }
+                if !info.isCouple {
+                    heatmapContainerView.flex.display(.none)
+                    coupleDisconnectButton.isEnabled = false
+                }
                 
                 coupleInfo = info.coupleInfo
                 setMypageInfo(info)
@@ -308,6 +319,15 @@ final class MypageViewController: CustomBackViewController, View {
                 if UserdefaultKey.coupleType == .connected && info.myNickname.isEmpty {
                     NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
                 }
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .map { $0.heatmap }
+            .compactMap { $0 }
+            .subscribe(onNext: { [weak self] heatmap in
+                guard let self = self else { return }
+                heatmapContainerView.configure(heatmap: heatmap)
             })
             .disposed(by: disposeBag)
         
@@ -329,6 +349,7 @@ final class MypageViewController: CustomBackViewController, View {
             .distinctUntilChanged()
             .subscribe(onNext: { [weak self] state in
                 guard let self = self else { return }
+                UserdefaultKey.isLoggedIn = false
                 UserdefaultKey.resetUserDefaults()
                 self.coordinator?.showSigninFlow(alertType: .disconnect)
             })
@@ -340,6 +361,7 @@ final class MypageViewController: CustomBackViewController, View {
             .distinctUntilChanged()
             .subscribe(onNext: { [weak self] state in
                 guard let self = self else { return }
+                UserdefaultKey.isLoggedIn = false
                 UserdefaultKey.resetUserDefaults()
                 self.coordinator?.showSigninFlow(alertType: .withdrawal)
             })
@@ -397,6 +419,20 @@ final class MypageViewController: CustomBackViewController, View {
             })
             .disposed(by: disposeBag)
         
+        if UserdefaultKey.coupleType == .connected{
+            heatmapContainerView.displayYear
+            .distinctUntilChanged()
+            .subscribe(onNext: { [weak self] year in
+                guard let self else { return }
+                if year == Calendar.current.component(.year, from: Date()) {
+                    fetchHeatmap(year: year, endDate: Date().toYYYYMMDD())
+                } else {
+                    fetchHeatmap(year: year, startDate: "\(year)-01-01", endDate: "\(year)-12-31")
+                }
+            })
+                .disposed(by: disposeBag)
+        }
+        
         coupleDisconnectButton.rx.tap
             .subscribe(onNext: { [weak self] in
                 self?.showAlert(icon: UIImage(resource: .warning), title: "정말 커플 연결을 해제하시겠어요?", description: "즉시 연결이 해제되며\n그동안 작성하신 기록은 모두 삭제되어\n되돌릴 수 없으니 신중히 결정해주세요",primaryButtonTitle: "커플 해제", primaryButtonAction: {
@@ -433,7 +469,7 @@ final class MypageViewController: CustomBackViewController, View {
         
         nicknameEditButton.rx.tap
             .subscribe(onNext: { [weak self] in
-                self?.coordinator?.showNickname(nickname: self?.myNicknameLabel.text ?? nil)
+                self?.coordinator?.showProfile(nickname: self?.myNicknameLabel.text ?? nil)
             })
             .disposed(by: disposeBag)
         
@@ -483,6 +519,46 @@ final class MypageViewController: CustomBackViewController, View {
         }
     }
     
+    private func bindAction() {
+        heatmapContainerView.infoButton.rx.tap
+            .subscribe(onNext: { [weak self] in
+                guard let self else { return }
+                
+                let popup = HeatmapPopupView()
+                popup.alpha = 0
+                view.addSubview(popup)
+                
+                popup.flex.layout()
+                
+                let frame = heatmapContainerView.convert(heatmapContainerView.bounds, to: view)
+                
+                popup.pin
+                    .top(frame.minY)
+                    .hCenter()
+                
+                UIView.animate(withDuration: 0.25) {
+                    popup.alpha = 1
+                }
+            })
+            .disposed(by: disposeBag)
+    }
+    
+    private func fetchHeatmap(year: Int, startDate: String? = nil, endDate: String) {
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+
+        let startOfYear = Calendar.current.date(
+            from: DateComponents(year: year, month: 1, day: 1)
+        )!
+
+        let result = formatter.string(from: startOfYear)
+
+        reactor?.action.onNext(
+            .fetchHeatmap(startDate ?? result, endDate)
+        )
+    }
+    
     private func showNotiDisabledAlert(action: @escaping (() -> Void)) {
         showAlert(icon: UIImage(resource: .warning), title: "알림 수신을 중단할까요?", description: "혜택이나 중요한 안내를 놓칠 수 있어요.", primaryButtonTitle: "그대로 둘게요", primaryButtonAction: {}, secondaryButtonTitle: "알림 끄기", secondaryButtonAction: action)
     }
@@ -506,14 +582,15 @@ final class MypageViewController: CustomBackViewController, View {
             
             updateSplitY()
             layoutViews()
+            contentView.flex.layout()
         }
         
         coordinator?.onCoupleInfoUpdated = { [weak self] info in
-            self?.ourInfoView.setOurInfo(info: info)
-            self?.coupleInfo = info
+            guard let self = self else { return }
+            ourInfoView.setOurInfo(info: info)
+            coupleInfo = info
+            contentView.flex.layout()
         }
-        
-        contentView.flex.layout()
     }
     
     private func updateSplitY() {

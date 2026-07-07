@@ -1,5 +1,5 @@
 //
-//  LoginUseCase.swift
+//  SigninUseCase.swift
 //  todaktodot
 //
 //  Created by 임대진 on 2/3/26.
@@ -14,7 +14,7 @@ enum LoginType: String {
     case apple
 }
 
-final class LoginUseCase {
+final class SigninUseCase {
     private let repository: AuthRepository
 
     init(repository: AuthRepository) {

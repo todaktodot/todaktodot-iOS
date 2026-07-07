@@ -8,10 +8,12 @@
 import UIKit
 import FlexLayout
 import PinLayout
+import Photos
 import Then
 import ReactorKit
 import RxSwift
 import Lottie
+import NetworkKit
 
 final class HistoryCardDetailViewController: CustomBackViewController, CustomBackViewControllerDelegate, View {
     
@@ -34,6 +36,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     
     private let scrollView = UIScrollView()
     private let rootFlexContainer = UIView()
+    private var buttonRows: [UIView] = []
     
     private let mainCardContainer = UIView().then {
         $0.backgroundColor = .subPurple
@@ -572,6 +575,25 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
                 self?.updateMyAnswerEmojiUI(emoji: emoji)
             })
             .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$shareURL)
+            .compactMap { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] urlString in
+                guard let self = self, let url = URL(string: urlString) else { return }
+                let shareItem = ShareLinkItemSource(shareURL: url)
+                let activityVC = UIActivityViewController(activityItems: [shareItem], applicationActivities: nil)
+                self.present(activityVC, animated: true)
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$shareError)
+            .compactMap { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] _ in
+                self?.showToast(message: "공유 링크 생성에 실패했습니다")
+            })
+            .disposed(by: disposeBag)
     }
     
     private func updatePartnerEmojiUI(emoji: EmojiType?) {
@@ -655,10 +677,10 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         partnerAnswerContainer.flex.layout()
         rootFlexContainer.flex.layout(mode: .adjustHeight)
         scrollView.contentSize = rootFlexContainer.frame.size
+        layoutTail()
     }
     
     private func updateMyAnswerEmojiUI(emoji: EmojiType?) {
-        // myAnswerContainer에서 tag 998로 이모지 row를 찾아 업데이트
         let existingRow = myAnswerContainer.viewWithTag(998)
         
         if let emoji {
@@ -711,6 +733,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         myAnswerContainer.flex.markDirty()
         rootFlexContainer.flex.layout(mode: .adjustHeight)
         scrollView.contentSize = rootFlexContainer.frame.size
+        layoutTail()
         
         if let row = myAnswerContainer.viewWithTag(998) {
             row.alpha = 0
@@ -952,10 +975,43 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
             $0.textColor = .grayScale800
             $0.numberOfLines = 0
         }
+
+        let saveButton = UIButton().then {
+            $0.setTitle("저장하기", for: .normal)
+            $0.setTitleColor(.mainPurple, for: .normal)
+            $0.titleLabel?.font = .pretenSemiBold(16)
+            $0.backgroundColor = .white
+            $0.layer.borderWidth = 1
+            $0.layer.borderColor = UIColor.mainPurple.cgColor
+            $0.layer.cornerRadius = 6
+        }
+
+        let shareButton = UIButton().then {
+            $0.setTitle("공유하기", for: .normal)
+            $0.setTitleColor(.white, for: .normal)
+            $0.titleLabel?.font = .pretenSemiBold(16)
+            $0.backgroundColor = .mainPurple
+            $0.layer.cornerRadius = 6
+        }
+
+        let buttonRow = UIView()
         view.flex.paddingTop(12).define { flex in
             flex.addItem(statusLabel)
             flex.addItem(subtitleLabel).marginTop(4)
+            flex.addItem(buttonRow).direction(.row).marginTop(28).define { row in
+                row.addItem(saveButton).grow(1).height(44)
+                row.addItem(shareButton).grow(1).height(44).marginLeft(8)
+            }
         }
+        self.buttonRows.append(buttonRow)
+
+        saveButton.rx.tap
+            .subscribe(onNext: { [weak self] in self?.saveTapped() })
+            .disposed(by: disposeBag)
+
+        shareButton.rx.tap
+            .subscribe(onNext: { [weak self] in self?.shareTapped() })
+            .disposed(by: disposeBag)
     }
     
     private func updateFeedbackLabel(_ label: MaskingLabel, with feedback: CardFeedback) {
@@ -986,6 +1042,54 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     func navigateBack() {
         coordinator?.navigateBack()
     }
+
+    // MARK: - 저장/공유 Actions
+
+    private func saveTapped() {
+        PHPhotoLibrary.requestAuthorization(for: .addOnly) { [weak self] status in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                switch status {
+                case .authorized, .limited:
+                    self.captureAndSave()
+                default:
+                    self.showToast(message: "사진 접근 권한이 필요합니다")
+                }
+            }
+        }
+    }
+    
+    private func captureAndSave() {
+        buttonRows.forEach { $0.isHidden = true }
+        rootFlexContainer.flex.paddingTop(40).paddingBottom(20)
+        rootFlexContainer.flex.layout(mode: .adjustHeight)
+        layoutTail()
+        
+        let fullSize = rootFlexContainer.bounds.size
+        let renderer = UIGraphicsImageRenderer(size: fullSize)
+        let image = renderer.image { _ in
+            rootFlexContainer.drawHierarchy(in: CGRect(origin: .zero, size: fullSize), afterScreenUpdates: true)
+        }
+        
+        buttonRows.forEach { $0.isHidden = false }
+        rootFlexContainer.flex.paddingTop(10).paddingBottom(70)
+        rootFlexContainer.flex.layout(mode: .adjustHeight)
+        layoutTail()
+        
+        UIImageWriteToSavedPhotosAlbum(image, self, #selector(imageSaved(_:didFinishSavingWithError:contextInfo:)), nil)
+    }
+
+    @objc private func imageSaved(_ image: UIImage, didFinishSavingWithError error: Error?, contextInfo: UnsafeRawPointer) {
+        if error != nil {
+            showToast(message: "이미지 저장에 실패했습니다")
+        } else {
+            showToast(message: "이미지가 저장되었습니다")
+        }
+    }
+
+    private func shareTapped() {
+        reactor?.action.onNext(.createShareLink)
+    }
 }
 
 // MARK: - UIScrollViewDelegate
@@ -996,3 +1100,49 @@ extension HistoryCardDetailViewController: UIScrollViewDelegate {
         }
     }
 }
+
+// MARK: - ShareLinkItemSource
+import LinkPresentation
+
+final class ShareLinkItemSource: NSObject, UIActivityItemSource {
+    private let shareURL: URL
+
+    init(shareURL: URL) {
+        self.shareURL = shareURL
+        super.init()
+    }
+
+    func activityViewControllerPlaceholderItem(_ activityViewController: UIActivityViewController) -> Any {
+        return shareURL
+    }
+
+    func activityViewController(_ activityViewController: UIActivityViewController, itemForActivityType activityType: UIActivity.ActivityType?) -> Any? {
+        return shareURL
+    }
+
+    func activityViewControllerLinkMetadata(_ activityViewController: UIActivityViewController) -> LPLinkMetadata? {
+        let metadata = LPLinkMetadata()
+        metadata.title = "투닥투닷의 데일리카드를 공유해요"
+        metadata.originalURL = shareURL
+        metadata.url = shareURL
+
+        if let appIcon = getAppIcon() {
+            metadata.iconProvider = NSItemProvider(object: appIcon)
+        }
+
+        return metadata
+    }
+
+    private func getAppIcon() -> UIImage? {
+        guard let iconsDictionary = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any],
+              let primaryIconsDictionary = iconsDictionary["CFBundlePrimaryIcon"] as? [String: Any],
+              let iconFiles = primaryIconsDictionary["CFBundleIconFiles"] as? [String],
+              let lastIcon = iconFiles.last else {
+            return nil
+        }
+        return UIImage(named: lastIcon)
+    }
+}
+
+
+

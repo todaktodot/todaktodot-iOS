@@ -10,6 +10,7 @@ import NetworkKit
 import Alamofire
 
 final class MypageRepositoryImpl: MypageRepository {
+    
     private let networkManager: NetworkManager
     
     init(
@@ -117,6 +118,26 @@ final class MypageRepositoryImpl: MypageRepository {
         return networkManager.request(with: endpoint)
             .map { _ in
                 return result
+            }
+    }
+    
+    func fetchHeatmap(startDate: String, endDate: String) -> Observable<ActivityHeatmap> {
+        
+        let parameters: [String: Any] = [
+            "startDate": startDate,
+            "endDate": endDate
+        ]
+
+        let endpoint = Endpoint<ActivityHeatmapDTO>(
+            baseURL: .todaktodotAPI,
+            path: "/api/daily-card/grass",
+            method: .get,
+            parameters: parameters
+        )
+
+        return networkManager.request(with: endpoint)
+            .map {
+                return $0.toHeatmap()
             }
     }
 }

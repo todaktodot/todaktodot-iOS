@@ -87,7 +87,14 @@ final class AppCoordinator: Coordinator {
         NotificationCenter.default.rx.notification(.logoutRequired)
             .observe(on: MainScheduler.asyncInstance)
             .subscribe(onNext: { [weak self] _ in
-                self?.forceLogout()
+                self?.forceLogout(title: "로그인 정보가 만료되었습니다\n다시 로그인 해주세요")
+            })
+            .disposed(by: disposeBag)
+        
+        NotificationCenter.default.rx.notification(.coupleDisconnected)
+            .observe(on: MainScheduler.asyncInstance)
+            .subscribe(onNext: { [weak self] _ in
+                self?.forceLogout(title: "커플 연결이 해제됐어요", description: "그동한 작성한 기록은 모두 삭제됐어요")
             })
             .disposed(by: disposeBag)
     }
@@ -99,7 +106,7 @@ final class AppCoordinator: Coordinator {
                 guard let self else { return }
 
                 if let topVC = self.navigationController.topViewController,
-                   topVC is NicknameViewController || topVC is SigninViewController {
+                   topVC is ProfileViewController || topVC is SigninViewController {
                     self.isShowingConnectionAlert = false
                     return
                 }
@@ -109,17 +116,18 @@ final class AppCoordinator: Coordinator {
                 }
 
                 self.isShowingConnectionAlert = true
-                UserdefaultKey.createdMyNickname = false
-                self.showConnectedCoupleAlert()
+                if !UserdefaultKey.createdMyNickname {
+                    self.showConnectedCoupleAlert()
+                }
             })
             .disposed(by: disposeBag)
     }
     
-    private func forceLogout() {
+    private func forceLogout(title: String, description: String? = nil) {
         UserdefaultKey.resetAuthUserDefaults()
         
         showSigninFlow()
-        navigationController.viewControllers.first?.showAlert(icon: UIImage(resource: .warning), title: "로그인 정보가 만료되었습니다\n다시 로그인 해주세요", primaryButtonTitle: "확인", primaryButtonAction: {})
+        navigationController.viewControllers.first?.showAlert(icon: UIImage(resource: .warning), title: title, description: description, primaryButtonTitle: "확인", primaryButtonAction: {})
     }
     
     private func showConnectedCoupleAlert() {
@@ -133,7 +141,8 @@ final class AppCoordinator: Coordinator {
             signinCoordinator.parentCoordinator = self
             addChild(signinCoordinator)
             currentCoordinator = signinCoordinator
-            signinCoordinator.showNickname(flowType: .join)
+            
+            signinCoordinator.showProfile()
         })
     }
     
@@ -159,7 +168,7 @@ final class AppCoordinator: Coordinator {
             
             useCase.fetchInfo()
                 .observe(on: MainScheduler.instance)
-                .subscribe(onNext: { result in
+                .subscribe(onNext: { _ in
                     NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
                 })
                 .disposed(by: disposeBag)

@@ -79,6 +79,9 @@ enum UserdefaultKey {
     @UserDefault(key: "skipUpdateAlertToday", defaultValue: nil)
     static var skipUpdateAlertToday: Date?
     
+    @UserDefault(key: "pendingCoupleDisconnect", defaultValue: false)
+    static var pendingCoupleDisconnect: Bool
+    
     // MARK: - AI 피드백 폴링/재생성 이력
     // key: dailyweek_{lastWeeklyCardDate}, value: { "2026-04-05": ["polled", "regenerated"] }
     @UserDefault(key: "feedbackActionHistory", defaultValue: [:])

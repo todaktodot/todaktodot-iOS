@@ -69,6 +69,7 @@ final class HistoryCardDetailReactor: Reactor {
     }
     
     private let cardUseCase: CardUseCase
+    private let shareLinkUseCase: ShareLinkUseCase
     private let pollingInterval: RxTimeInterval = .seconds(3)
     
     private static let webhookURL: String = {
@@ -91,12 +92,15 @@ final class HistoryCardDetailReactor: Reactor {
         case saveEmoji(EmojiType)
         case deleteEmoji
         case refreshPartnerEmoji
+        case createShareLink
     }
     
     enum Mutation {
         case setFeedbackState(FeedbackState)
         case setEmoji(EmojiType?)
         case setPartnerEmoji(EmojiType?)
+        case setShareURL(String)
+        case setShareError
     }
     
     struct State {
@@ -104,12 +108,15 @@ final class HistoryCardDetailReactor: Reactor {
         @Pulse var feedbackState: FeedbackState
         @Pulse var myEmoji: EmojiType?
         @Pulse var partnerEmoji: EmojiType?
+        @Pulse var shareURL: String?
+        @Pulse var shareError: Bool?
     }
     
     let initialState: State
     
-    init(cardUseCase: CardUseCase, card: QuestionCard) {
+    init(cardUseCase: CardUseCase, shareLinkUseCase: ShareLinkUseCase, card: QuestionCard) {
         self.cardUseCase = cardUseCase
+        self.shareLinkUseCase = shareLinkUseCase
         
         let id = card.coupleCardId
         let initialFeedback: FeedbackState
@@ -128,7 +135,14 @@ final class HistoryCardDetailReactor: Reactor {
             initialFeedback = .generating
         }
         
-        self.initialState = State(card: card, feedbackState: initialFeedback, myEmoji: card.questions.first(where: { $0.type == .multipleChoice })?.user2Emoji, partnerEmoji: card.questions.first(where: { $0.type == .multipleChoice })?.user1Emoji)
+        self.initialState = State(
+            card: card,
+            feedbackState: initialFeedback,
+            myEmoji: card.questions.first(where: { $0.type == .multipleChoice })?.user2Emoji,
+            partnerEmoji: card.questions.first(where: { $0.type == .multipleChoice })?.user1Emoji,
+            shareURL: nil,
+            shareError: nil
+        )
     }
     
     func mutate(action: Action) -> Observable<Mutation> {
@@ -192,6 +206,18 @@ final class HistoryCardDetailReactor: Reactor {
                         return .just(.setPartnerEmoji(emoji))
                     case .failure:
                         return .empty()
+                    }
+                }
+            
+        case .createShareLink:
+            let coupleCardId = currentState.card.coupleCardId
+            return shareLinkUseCase.createShareLink(coupleCardId: coupleCardId)
+                .flatMap { result -> Observable<Mutation> in
+                    switch result {
+                    case .success(let shareLink):
+                        return .just(.setShareURL(shareLink.shareUrl))
+                    case .failure:
+                        return .just(.setShareError)
                     }
                 }
         }
@@ -280,6 +306,10 @@ final class HistoryCardDetailReactor: Reactor {
             newState.myEmoji = emoji
         case .setPartnerEmoji(let emoji):
             newState.partnerEmoji = emoji
+        case .setShareURL(let url):
+            newState.shareURL = url
+        case .setShareError:
+            newState.shareError = true
         }
         return newState
     }

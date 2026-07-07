@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct MypageInfo {
+struct MypageInfo: Equatable {
     let myNickname: String
     let partnerNickname: String?
     let isCouple: Bool
