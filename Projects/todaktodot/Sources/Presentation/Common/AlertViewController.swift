@@ -49,6 +49,7 @@ final class AlertViewController: UIViewController {
         let secondaryButtonTitle: String?
         let secondaryButtonAction: (() -> Void)?
         let isUpdateAlert: AppUpdateType?
+        let dimColor: UIColor
     }
     
     private let dimmedView = UIView()
@@ -129,7 +130,7 @@ final class AlertViewController: UIViewController {
     private func setupUI() {
         view.backgroundColor = .clear
         
-        dimmedView.backgroundColor = UIColor.black.withAlphaComponent(0.5)
+        dimmedView.backgroundColor = config.dimColor
         view.addSubview(dimmedView)
         
         alertContainer.backgroundColor = .white
@@ -309,7 +310,8 @@ extension UIViewController {
         primaryButtonAction: @escaping () -> Void,
         secondaryButtonTitle: String? = nil,
         secondaryButtonAction: (() -> Void)? = nil,
-        isUpdate: AppUpdateType? = nil
+        isUpdate: AppUpdateType? = nil,
+        dimColor: UIColor = UIColor.black.withAlphaComponent(0.5)
     ) {
         let config = AlertViewController.Configuration(
             icon: icon,
@@ -320,7 +322,8 @@ extension UIViewController {
             primaryButtonAction: primaryButtonAction,
             secondaryButtonTitle: secondaryButtonTitle,
             secondaryButtonAction: secondaryButtonAction,
-            isUpdateAlert: isUpdate
+            isUpdateAlert: isUpdate,
+            dimColor: dimColor
         )
         
         let alertVC = AlertViewController(config: config)

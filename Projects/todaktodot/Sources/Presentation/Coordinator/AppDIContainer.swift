@@ -39,6 +39,10 @@ final class AppDIContainer {
         networkManager: networkManager
     )
     
+    private lazy var shareLinkRepository: ShareLinkRepository = ShareLinkRepositoryImpl(
+        networkManager: networkManager
+    )
+    
     // MARK: - Use Cases
     private lazy var signinUseCase = SigninUseCase(repository: authRepository)
     private lazy var cardUseCase = CardUseCase(repository: cardRepository)
@@ -46,6 +50,14 @@ final class AppDIContainer {
     private lazy var mypageUseCase = MypageUseCase(repository: mypageRepository)
     private lazy var aiReportUseCase = AIReportUseCase(repository: aiReportRepository)
     private lazy var onboardingUseCase = OnboardingUseCase(repository: mypageRepository)
+    private lazy var shareLinkUseCase = ShareLinkUseCase(repository: shareLinkRepository)
+}
+
+// MARK: - Network Access
+extension AppDIContainer {
+    func makeNetworkManager() -> NetworkManager {
+        networkManager
+    }
 }
 
 // MARK: - Make Reactor
@@ -67,7 +79,11 @@ extension AppDIContainer {
     }
     
     func makeHistoryCardDetailReactor(card: QuestionCard) -> HistoryCardDetailReactor {
-        HistoryCardDetailReactor(cardUseCase: cardUseCase, card: card)
+        HistoryCardDetailReactor(cardUseCase: cardUseCase, shareLinkUseCase: shareLinkUseCase, card: card)
+    }
+    
+    func makeShareLinkUseCase() -> ShareLinkUseCase {
+        shareLinkUseCase
     }
     
     func makeCardUseCase() -> CardUseCase {
