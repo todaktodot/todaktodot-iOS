@@ -197,13 +197,12 @@ final class HeatmapContainerView: UIView {
     private func scrollToCurrentWeek() {
         let today = Date()
 
-        let currentColumn = column(for: today)
-
         let cell: CGFloat = 20
         let spacing: CGFloat = 6
         let step = cell + spacing
 
-        let targetColumn = currentColumn + 1
+        let monthStart = calendar.date(from: DateComponents(year: displayYear.value, month: calendar.component(.month, from: today), day: 1))!
+        let targetColumn = column(for: monthStart) + 1
 
         let rightPadding = cell * 4 + spacing * 2 + 2 // 이번달 영역
 
