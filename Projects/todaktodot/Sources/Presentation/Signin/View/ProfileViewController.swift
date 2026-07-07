@@ -434,7 +434,7 @@ final class ProfileViewController: UIViewController, View {
     
     private func showNotAdultAlert() {
         UserdefaultKey.pendingCoupleDisconnect = true
-        showAlert(icon: UIImage(resource: .warning), title: "만 14세 이상만 가입할 수 있어요", primaryButtonTitle: "확인", primaryButtonAction: {
+        showAlert(icon: UIImage(resource: .warning), title: "만 14세 이상만 가입할 수 있어요", description: "커플 해제 후 로그인 페이지로 이동합니다", primaryButtonTitle: "확인했어요", primaryButtonAction: {
             self.reactor?.action.onNext(.disconnectCouple)
         })
     }
