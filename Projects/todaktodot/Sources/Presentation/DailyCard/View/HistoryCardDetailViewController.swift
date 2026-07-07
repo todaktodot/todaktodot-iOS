@@ -1061,6 +1061,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     
     private func captureAndSave() {
         buttonRows.forEach { $0.isHidden = true }
+        rootFlexContainer.backgroundColor = .lightPurple
         rootFlexContainer.flex.paddingTop(40).paddingBottom(20)
         rootFlexContainer.flex.layout(mode: .adjustHeight)
         layoutTail()
@@ -1072,6 +1073,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
         }
         
         buttonRows.forEach { $0.isHidden = false }
+        rootFlexContainer.backgroundColor = .clear
         rootFlexContainer.flex.paddingTop(10).paddingBottom(70)
         rootFlexContainer.flex.layout(mode: .adjustHeight)
         layoutTail()
