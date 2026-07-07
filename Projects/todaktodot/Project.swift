@@ -77,6 +77,10 @@ let project = Project(
                             "CFBundleTypeRole": "Editor",
                             "CFBundleURLSchemes": ["$(GOOGLE_URL_KEY)"]
                         ],
+                        [
+                            "CFBundleTypeRole": "Editor",
+                            "CFBundleURLSchemes": ["todaktodot"]
+                        ],
                     ],
                     "CFBundleDisplayName" : "투닥투닷",
                     "KAKAO_URL_KEY": "$(KAKAO_URL_KEY)",
@@ -88,6 +92,7 @@ let project = Project(
                         "NSAllowsArbitraryLoads": true
                     ],
                     "ITSAppUsesNonExemptEncryption" : false,
+                    "NSPhotoLibraryAddUsageDescription": "데일리카드를 사진첩에 저장하기 위해 접근 권한이 필요합니다.",
                     "UIBackgroundModes": [
                         "remote-notification"
                     ],
