@@ -77,6 +77,10 @@ let project = Project(
                             "CFBundleTypeRole": "Editor",
                             "CFBundleURLSchemes": ["$(GOOGLE_URL_KEY)"]
                         ],
+                        [
+                            "CFBundleTypeRole": "Editor",
+                            "CFBundleURLSchemes": ["todaktodot"]
+                        ],
                     ],
                     "CFBundleDisplayName" : "투닥투닷",
                     "KAKAO_URL_KEY": "$(KAKAO_URL_KEY)",

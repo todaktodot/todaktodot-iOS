@@ -575,6 +575,25 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
                 self?.updateMyAnswerEmojiUI(emoji: emoji)
             })
             .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$shareURL)
+            .compactMap { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] urlString in
+                guard let self = self, let url = URL(string: urlString) else { return }
+                let shareItem = ShareLinkItemSource(shareURL: url)
+                let activityVC = UIActivityViewController(activityItems: [shareItem], applicationActivities: nil)
+                self.present(activityVC, animated: true)
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.pulse(\.$shareError)
+            .compactMap { $0 }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] _ in
+                self?.showToast(message: "공유 링크 생성에 실패했습니다")
+            })
+            .disposed(by: disposeBag)
     }
     
     private func updatePartnerEmojiUI(emoji: EmojiType?) {
@@ -1069,27 +1088,7 @@ final class HistoryCardDetailViewController: CustomBackViewController, CustomBac
     }
 
     private func shareTapped() {
-        // 서버에 공유 링크 생성 요청
-        let endpoint = Endpoint<ShareLinkResponse>(
-            baseURL: .todaktodotAPI,
-            path: "/api/daily-card/history/share-link",
-            method: .post,
-            parameters: ["coupleCardId": card.coupleCardId]
-        )
-        
-        AppDIContainer.shared.makeNetworkManager().request(with: endpoint)
-            .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] response in
-                guard let self = self,
-                      let url = URL(string: response.shareUrl) else { return }
-                
-                let shareItem = ShareLinkItemSource(shareURL: url)
-                let activityVC = UIActivityViewController(activityItems: [shareItem], applicationActivities: nil)
-                self.present(activityVC, animated: true)
-            }, onError: { [weak self] _ in
-                self?.showToast(message: "공유 링크 생성에 실패했습니다")
-            })
-            .disposed(by: disposeBag)
+        reactor?.action.onNext(.createShareLink)
     }
 }
 

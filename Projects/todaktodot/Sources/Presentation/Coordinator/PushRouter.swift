@@ -7,7 +7,6 @@
 
 import UIKit
 import RxSwift
-import NetworkKit
 
 enum PushDeepLink {
     case historyCardDetail(coupleCardId: Int)
@@ -95,51 +94,46 @@ final class PushRouter {
     }
 
     private func validateShareLink(token: String, homeVC: UIViewController, coordinator: HomeCoordinator) {
-        let endpoint = Endpoint<ShareLinkValidateResponse>(
-            baseURL: .todaktodotAPI,
-            path: "/api/daily-card/history/share-link/validate",
-            method: .post,
-            parameters: ["shareToken": token]
-        )
-        
-        container.makeNetworkManager().request(with: endpoint)
+        container.makeShareLinkUseCase().validateShareLink(token: token)
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] response in
-                switch response.status {
-                case "VALID":
-                    guard let cardId = response.coupleCardId else { return }
-                    self?.fetchAndNavigate(coupleCardId: cardId, coordinator: coordinator)
-                case "EXPIRED":
+            .subscribe(onNext: { [weak self] result in
+                switch result {
+                case .success(let status):
+                    switch status {
+                    case .valid(let cardId):
+                        self?.fetchAndNavigate(coupleCardId: cardId, coordinator: coordinator)
+                    case .expired:
+                        self?.showShareAlert(
+                            on: homeVC,
+                            title: "만료된 링크예요",
+                            description: "유효기간이 만료되어\n메인 화면으로 이동합니다"
+                        )
+                    case .forbidden:
+                        self?.showShareAlert(
+                            on: homeVC,
+                            title: "해당 히스토리 카드를 확인할 수 없어요",
+                            description: "상대와 연결된 연인만 볼 수 있어요"
+                        )
+                    case .notFound:
+                        self?.showShareAlert(
+                            on: homeVC,
+                            title: "존재하지 않는 링크예요",
+                            description: "링크가 유효하지 않아\n메인 화면으로 이동합니다"
+                        )
+                    case .unknown:
+                        self?.showShareAlert(
+                            on: homeVC,
+                            title: "알 수 없는 오류가 발생했어요",
+                            description: "메인 화면으로 이동합니다"
+                        )
+                    }
+                case .failure:
                     self?.showShareAlert(
                         on: homeVC,
-                        title: "만료된 링크예요",
-                        description: "유효기간이 만료되어\n메인 화면으로 이동합니다"
-                    )
-                case "FORBIDDEN":
-                    self?.showShareAlert(
-                        on: homeVC,
-                        title: "해당 히스토리 카드를 확인할 수 없어요",
-                        description: "상대와 연결된 연인만 볼 수 있어요"
-                    )
-                case "NOT_FOUND":
-                    self?.showShareAlert(
-                        on: homeVC,
-                        title: "존재하지 않는 링크예요",
-                        description: "링크가 유효하지 않아\n메인 화면으로 이동합니다"
-                    )
-                default:
-                    self?.showShareAlert(
-                        on: homeVC,
-                        title: "알 수 없는 오류가 발생했어요",
-                        description: "메인 화면으로 이동합니다"
+                        title: "네트워크 오류가 발생했어요",
+                        description: "잠시 후 다시 시도해주세요"
                     )
                 }
-            }, onError: { [weak self] _ in
-                self?.showShareAlert(
-                    on: homeVC,
-                    title: "네트워크 오류가 발생했어요",
-                    description: "잠시 후 다시 시도해주세요"
-                )
             })
             .disposed(by: disposeBag)
     }
