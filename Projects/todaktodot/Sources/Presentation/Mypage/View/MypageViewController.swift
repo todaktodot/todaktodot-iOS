@@ -304,6 +304,7 @@ final class MypageViewController: CustomBackViewController, View {
                 guard let self = self else { return }
                 if !info.isCouple {
                     heatmapContainerView.flex.display(.none)
+                    coupleDisconnectButton.isEnabled = false
                 }
                 
                 coupleInfo = info.coupleInfo
@@ -467,7 +468,7 @@ final class MypageViewController: CustomBackViewController, View {
         
         nicknameEditButton.rx.tap
             .subscribe(onNext: { [weak self] in
-                self?.coordinator?.showNickname(nickname: self?.myNicknameLabel.text ?? nil)
+                self?.coordinator?.showProfile(nickname: self?.myNicknameLabel.text ?? nil)
             })
             .disposed(by: disposeBag)
         
@@ -580,14 +581,15 @@ final class MypageViewController: CustomBackViewController, View {
             
             updateSplitY()
             layoutViews()
+            contentView.flex.layout()
         }
         
         coordinator?.onCoupleInfoUpdated = { [weak self] info in
-            self?.ourInfoView.setOurInfo(info: info)
-            self?.coupleInfo = info
+            guard let self = self else { return }
+            ourInfoView.setOurInfo(info: info)
+            coupleInfo = info
+            contentView.flex.layout()
         }
-        
-        contentView.flex.layout()
     }
     
     private func updateSplitY() {

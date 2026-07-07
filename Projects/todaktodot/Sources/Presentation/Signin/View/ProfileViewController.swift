@@ -1,5 +1,5 @@
 //
-//  NicknameViewController.swift
+//  ProfileViewController.swift
 //  todaktodot
 //
 //  Created by 임대진 on 12/9/25.
@@ -13,20 +13,11 @@ import RxSwift
 import RxRelay
 import ReactorKit
 
-enum ConnectFlowType {
-    /// 닉네임 -> 기본정보 -> 메인
-    case create
-    /// 닉네임 -> 메인
-    case join
-    /// 닉네임 수정
-    case edit
-}
-
-final class NicknameViewController: UIViewController, View {
+final class ProfileViewController: UIViewController, View {
     var disposeBag = DisposeBag()
     weak var coordinator: SigninCoordinator?
     
-    private var flowType: ConnectFlowType?
+    private var isNicknameEdit: Bool
     private var currentStep: CoupleReactor.NicknameViewStep?
     private var isTappedGenderButton = false
     
@@ -88,8 +79,8 @@ final class NicknameViewController: UIViewController, View {
     
     private let iconTextSpacingView = UIView()
     
-    init(flowType: ConnectFlowType? = nil, nickname: String? = nil) {
-        self.flowType = flowType
+    init(isNicknameEdit: Bool, nickname: String? = nil) {
+        self.isNicknameEdit = isNicknameEdit
 
         if let nickname {
             nicknameTextField.text = nickname
@@ -99,14 +90,6 @@ final class NicknameViewController: UIViewController, View {
         dateTextFieldView.flex.display(.none)
         genderButtonStackVIew.flex.display(.none)
         checkIcon.flex.display(.none)
-        
-        if flowType == nil {
-            if UserdefaultKey.createdCoupleInfo {
-                self.flowType = .join
-            } else {
-                self.flowType = .create
-            }
-        }
     }
     
     required init?(coder: NSCoder) {
@@ -118,11 +101,10 @@ final class NicknameViewController: UIViewController, View {
         
         hiddenBackButton()
         nicknameTextField.delegate = self
-        hideKeyboardwhenTappedAround()
         setupViews()
         setupFlexLayout()
         
-        if flowType == .create || flowType == .join {
+        if !isNicknameEdit {
             AnalyticsService.log(.nicknameSetBegin)
         }
     }
@@ -209,7 +191,7 @@ final class NicknameViewController: UIViewController, View {
     }
     
     func bind(reactor: CoupleReactor) {
-        if flowType == .edit {
+        if isNicknameEdit {
             reactor.action.onNext(.isEditingOnly)
             nextButton.isHidden = false
         }
@@ -239,26 +221,31 @@ final class NicknameViewController: UIViewController, View {
         .disposed(by: disposeBag)
         
         reactor.state
+            .compactMap { $0.info }
+            .distinctUntilChanged()
+            .subscribe(onNext: { [weak self] info in
+                guard let self = self else { return }
+                
+                if info.coupleInfo.firstMetDate.isEmpty {
+                    self.coordinator?.showCoupleInfo()
+                } else {
+                    self.coordinator?.navigateToMain()
+                }
+                
+                UserdefaultKey.createdMyNickname = true
+                AnalyticsService.log(.nicknameSetCompleted)
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state
             .compactMap { $0.outputNickname }
             .subscribe(onNext: { [weak self] nickname in
                 guard let self = self else { return }
                 
                 coordinator?.onNicknameUpdated?(nickname)
                 
-                if let type = flowType {
-                    switch type {
-                    case .create:
-                        self.coordinator?.showCoupleInfo()
-                    case .join:
-                        self.coordinator?.navigateToMain()
-                    case .edit:
-                        self.coordinator?.navigateBack()
-                    }
-                }
-                
-                if flowType != .edit {
-                    UserdefaultKey.createdMyNickname = true
-                    AnalyticsService.log(.nicknameSetCompleted)
+                if isNicknameEdit {
+                    self.coordinator?.navigateBack()
                 }
             })
             .disposed(by: disposeBag)
@@ -479,7 +466,7 @@ final class NicknameViewController: UIViewController, View {
     }
 }
 
-extension NicknameViewController: UITextFieldDelegate {
+extension ProfileViewController: UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         if let text = textField.text, text.isEmpty { return false }
         

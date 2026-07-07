@@ -56,4 +56,8 @@ final class CoupleUseCase {
     func disconnectCouple() -> Observable<Bool> {
         mypageRepository.disconnectCouple()
     }
+    
+    func fetchInfo() -> Observable<MypageInfo> {
+        mypageRepository.fetchInfo()
+    }
 }

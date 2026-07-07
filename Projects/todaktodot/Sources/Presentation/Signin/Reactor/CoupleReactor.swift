@@ -15,7 +15,7 @@ final class CoupleReactor: Reactor {
     struct State {
         var mycode: String?
         var isJoined: Bool?
-        var flowType: ConnectFlowType = .create
+        var info: MypageInfo?
         
         var isAlreadyCouple: Bool?
         var isTermsAgreeSuccess: Bool?
@@ -77,6 +77,7 @@ final class CoupleReactor: Reactor {
         
         case setCurrentNickname(String) // 닉네임 텍스트필드 변경될때 작동
         case setRoot
+        case setInfo(MypageInfo)
     }
     
     let initialState = State()
@@ -178,7 +179,6 @@ final class CoupleReactor: Reactor {
                         .setRoot
                     }
             ])
-            
         }
     }
     
@@ -223,6 +223,8 @@ final class CoupleReactor: Reactor {
             newState.inputNickname = text
         case .setRoot:
             newState.isDisconnectSuccess = true
+        case .setInfo(let info):
+            newState.info = info
         }
         
         return newState
@@ -242,7 +244,12 @@ final class CoupleReactor: Reactor {
                 birthDate: birthday,
                 gender: gender
             ))
-            .map(Mutation.setNickname)
+            .flatMap { _ in
+                self.coupleUseCase.fetchInfo()
+            }
+            .map {
+                .setInfo($0)
+            }
     }
 
     private func updateNickname() -> Observable<Mutation> {

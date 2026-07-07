@@ -99,7 +99,7 @@ final class AppCoordinator: Coordinator {
                 guard let self else { return }
 
                 if let topVC = self.navigationController.topViewController,
-                   topVC is NicknameViewController || topVC is SigninViewController {
+                   topVC is ProfileViewController || topVC is SigninViewController {
                     self.isShowingConnectionAlert = false
                     return
                 }
@@ -109,8 +109,9 @@ final class AppCoordinator: Coordinator {
                 }
 
                 self.isShowingConnectionAlert = true
-                UserdefaultKey.createdMyNickname = false
-                self.showConnectedCoupleAlert()
+                if !UserdefaultKey.createdMyNickname {
+                    self.showConnectedCoupleAlert()
+                }
             })
             .disposed(by: disposeBag)
     }
@@ -133,7 +134,8 @@ final class AppCoordinator: Coordinator {
             signinCoordinator.parentCoordinator = self
             addChild(signinCoordinator)
             currentCoordinator = signinCoordinator
-            signinCoordinator.showNickname(flowType: .join)
+            
+            signinCoordinator.showProfile()
         })
     }
     
@@ -161,7 +163,7 @@ final class AppCoordinator: Coordinator {
             
             useCase.fetchInfo()
                 .observe(on: MainScheduler.instance)
-                .subscribe(onNext: { result in
+                .subscribe(onNext: { _ in
                     NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
                 })
                 .disposed(by: disposeBag)
