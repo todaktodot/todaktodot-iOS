@@ -168,8 +168,10 @@ final class AppCoordinator: Coordinator {
             
             useCase.fetchInfo()
                 .observe(on: MainScheduler.instance)
-                .subscribe(onNext: { _ in
-                    NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
+                .subscribe(onNext: { info in
+                    if info.isCouple {
+                        NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
+                    }
                 })
                 .disposed(by: disposeBag)
         }
