@@ -329,6 +329,12 @@ extension UIViewController {
         let alertVC = AlertViewController(config: config)
         alertVC.modalPresentationStyle = .overFullScreen
         alertVC.modalTransitionStyle = .crossDissolve
-        present(alertVC, animated: false)
+        if let presentedVC = presentedViewController {
+            presentedVC.dismiss(animated: false) { [weak self] in
+                self?.present(alertVC, animated: false)
+            }
+        } else {
+            present(alertVC, animated: false)
+        }
     }
 }
