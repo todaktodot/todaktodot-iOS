@@ -60,6 +60,7 @@ final class CodeBoxView: UIView {
         if let isMyCode = isMyCode, isMyCode {
             backgroundColor = .lightPurple
             layer.borderWidth = 0
+            textField.isEnabled = false
         }
     }
     

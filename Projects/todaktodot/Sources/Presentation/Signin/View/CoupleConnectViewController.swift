@@ -35,7 +35,7 @@ final class CoupleConnectViewController: UIViewController, View {
     }
     
     private let dividerView = UIView().then {
-        $0.backgroundColor = .grayScale800.withAlphaComponent(0.95)
+        $0.backgroundColor = .grayScale200
     }
     
     private let titleLabel = TDLabel().then {
@@ -79,7 +79,7 @@ final class CoupleConnectViewController: UIViewController, View {
     }
     
     private let myCodeTextField = CodeTextFieldView()
-    private let partnerCodeTextField = CodeTextFieldView(isPartnerCode: true)
+    private let partnerCodeTextField = CodeTextFieldView()
     
     private let copyButton = ImageTextButton(imageSize: 20).then {
         $0.customText.text = "복사하기"

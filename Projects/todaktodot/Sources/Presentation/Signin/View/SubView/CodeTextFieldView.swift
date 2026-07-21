@@ -15,10 +15,9 @@ final class CodeTextFieldView: UIView {
     let isCodeFull = PublishRelay<Bool>()
     let isPaste = BehaviorRelay<Bool>(value: false)
     
-    
     private var codeBoxes: [CodeBoxView] = []
     
-    init(frame: CGRect = .zero, isPartnerCode: Bool? = nil) {
+    override init(frame: CGRect = .zero) {
         self.codeBoxes = (0..<6).map { _ in CodeBoxView() }
         super.init(frame: frame)
         setupFlexLayout()
@@ -36,7 +35,7 @@ final class CodeTextFieldView: UIView {
         guard let code else { return }
         for (i, char) in Array(code).enumerated() {
             if i < codeBoxes.count {
-                codeBoxes[i].textField.text = String(char)
+                codeBoxes[i].configure(char: char, isMyCode: true)
             }
         }
         updateBoxesState(isMyCode: code)
