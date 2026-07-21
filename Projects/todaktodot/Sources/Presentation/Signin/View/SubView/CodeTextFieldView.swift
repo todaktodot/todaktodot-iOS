@@ -35,7 +35,7 @@ final class CodeTextFieldView: UIView {
         guard let code else { return }
         for (i, char) in Array(code).enumerated() {
             if i < codeBoxes.count {
-                codeBoxes[i].configure(char: char, isMyCode: true)
+                codeBoxes[i].configure(char: char, isReadOnlyField: true)
             }
         }
         updateBoxesState(isMyCode: code)

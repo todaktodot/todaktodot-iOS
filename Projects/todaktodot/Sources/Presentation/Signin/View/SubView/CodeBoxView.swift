@@ -49,7 +49,7 @@ final class CodeBoxView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
-    func configure(char: Character?, isMyCode: Bool? = false) {
+    func configure(char: Character?, isReadOnlyField: Bool? = false) {
         if let char = char {
             textField.text = String(char).uppercased()
         } else {
@@ -57,7 +57,7 @@ final class CodeBoxView: UIView {
         }
         textField.flex.markDirty()
         
-        if let isMyCode = isMyCode, isMyCode {
+        if let isReadOnlyField, isReadOnlyField {
             backgroundColor = .lightPurple
             layer.borderWidth = 0
             textField.isEnabled = false
