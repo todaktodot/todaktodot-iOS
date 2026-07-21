@@ -132,6 +132,7 @@ let project = Project(
                     "CURRENT_PROJECT_VERSION": "1",
                     "MARKETING_VERSION": "1.0.0",
                     "DEBUG_INFORMATION_FORMAT": "dwarf-with-dsym",
+                    "ASSETCATALOG_COMPILER_APPICON_NAME" : "$(ASSETCATALOG_COMPILER_APPICON_NAME)"
                 ],
                 configurations: [
                     .debug(name: "Debug", xcconfig: "Config/Debug.xcconfig"),
