@@ -80,7 +80,7 @@ jobs:
           
           printf "" > Projects/todaktodot/Config/Debug.xcconfig
           
-          printf "KAKAO_APP_KEY = %s\nKAKAO_URL_KEY = %s\nGOOGLE_URL_KEY = %s\nTODAKTODOT_API = %s\nDISCORD_WEBHOOK_URL = %s\nPRODUCT_BUNDLE_IDENTIFIER = %s\nAPP_DISPLAY_NAME = %s\n" \
+          printf "KAKAO_APP_KEY = %s\nKAKAO_URL_KEY = %s\nGOOGLE_URL_KEY = %s\nTODAKTODOT_API = %s\nDISCORD_WEBHOOK_URL = %s\nPRODUCT_BUNDLE_IDENTIFIER = %s\nAPP_DISPLAY_NAME = %s\nAPP_DISPLAY_NAME = %s\nASSETCATALOG_COMPILER_APPICON_NAME = %s\n" \
           "${{ secrets.KAKAO_APP_KEY }}" \
           "${{ secrets.KAKAO_URL_KEY }}" \
           "${{ secrets.GOOGLE_URL_KEY }}" \
@@ -88,6 +88,7 @@ jobs:
           "${{ secrets.DISCORD_WEBHOOK_URL_FEEDBACK }}" \
           "info.todaktodot" \
           "투닥투닷" \
+          "AppIcon" \
           > Projects/todaktodot/Config/Release.xcconfig
 
       - name: Decode GoogleService-Info Release.plist
@@ -102,7 +103,7 @@ jobs:
 
       - name: Update xcconfig files
         run: |
-          printf "KAKAO_APP_KEY = %s\nKAKAO_URL_KEY = %s\nGOOGLE_URL_KEY = %s\nTODAKTODOT_API = %s\nDISCORD_WEBHOOK_URL = %s\nPRODUCT_BUNDLE_IDENTIFIER = %s\nAPP_DISPLAY_NAME = %s\n" \
+          printf "KAKAO_APP_KEY = %s\nKAKAO_URL_KEY = %s\nGOOGLE_URL_KEY = %s\nTODAKTODOT_API = %s\nDISCORD_WEBHOOK_URL = %s\nPRODUCT_BUNDLE_IDENTIFIER = %s\nAPP_DISPLAY_NAME = %s\nAPP_DISPLAY_NAME = %s\nASSETCATALOG_COMPILER_APPICON_NAME = %s\n" \
           "${{ secrets.KAKAO_APP_KEY_DEV }}" \
           "${{ secrets.KAKAO_URL_KEY_DEV }}" \
           "${{ secrets.GOOGLE_URL_KEY_DEV }}" \
@@ -110,6 +111,7 @@ jobs:
           "${{ secrets.DISCORD_WEBHOOK_URL_FEEDBACK }}" \
           "info.todaktodot.dev" \
           "투닥투닷 dev" \
+          "AppIcon-Dev" \
           > Projects/todaktodot/Config/Release.xcconfig
 
       - name: Update GoogleService-Info Debug.plist
