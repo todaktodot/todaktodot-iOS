@@ -69,8 +69,12 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         print("📩 Silent Push Received")
         print("userInfo:", userInfo)
         
-        if let type = userInfo["type"] as? String, type == "CONNECT_COUPLE" {
-            NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
+        if let type = userInfo["type"] as? String {
+            if type == "CONNECT_COUPLE" {
+                NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
+            } else if type == "DISCONNECT_COUPLE" {
+                NotificationCenter.default.post(name: .coupleDisconnected, object: nil)
+            }
         }
         
         completionHandler(.newData)
