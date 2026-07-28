@@ -22,16 +22,25 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Install Tuist
-        run: |
-          curl -Ls https://install.tuist.io | bash
-          tuist version
+      - name: Cache mise tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/mise
+            ~/.cache/mise
+          key: ${{ runner.os }}-mise-${{ hashFiles('.mise.toml') }}
+
+      - name: Setup mise
+        uses: jdx/mise-action@v2
+
+      - name: Install Tools via mise
+        run: mise install
 
       - name: Install dependencies
-        run: tuist install
+        run: mise exec -- tuist install
 
       - name: Generate project
-        run: tuist generate --no-open
+        run: mise exec -- tuist generate --no-open
 
       - name: Run NetworkKit Tests
         run: |
