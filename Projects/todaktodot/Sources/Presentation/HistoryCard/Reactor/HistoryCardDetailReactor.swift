@@ -72,11 +72,6 @@ final class HistoryCardDetailReactor: Reactor {
     private let shareLinkUseCase: ShareLinkUseCase
     private let pollingInterval: RxTimeInterval = .seconds(3)
     
-    private static let webhookURL: String = {
-        guard let value = Bundle.main.infoDictionary?["DISCORD_WEBHOOK_URL"] as? String else { return "" }
-        return value.removingPercentEncoding ?? value
-    }()
-    
     enum FeedbackState {
         case none
         case locked
@@ -263,28 +258,15 @@ final class HistoryCardDetailReactor: Reactor {
         let date = card.date.toYYYYMMDD()
         guard !hasAction("webhook", for: date) else { return }
         markAction("webhook", for: date)
-       
-        guard let url = URL(string: webhookURL) else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let body: [String: Any] = [
-            "embeds": [[
-                "title": "📍 AI 피드백 생성 실패",
-                "color": 15158332,
-                "timestamp": ISO8601DateFormatter().string(from: Date()),
-                "footer": ["text": "🍎 iOS"],
-                "fields": [
-                    ["name": "원인", "value": "\(reason)", "inline": false],
-                    ["name": "요청 API", "value": "/api/feedback/generate", "inline": false],
-                    ["name": "coupleId", "value": "\(UserdefaultKey.coupleId ?? -1)", "inline": false],
-                    ["name": "request body", "value": "```json\n{\n  \"coupleCardId\": \(card.coupleCardId),\n  \"cardId\": \(card.id),\n  \"issuedDate\": \"\(date)\"\n}\n```", "inline": false],
-                    ["name": "response", "value": "```json\n{\n  \"statusCode\": \(statusCode),\n  \"message\": \"\(message)\"\n}\n```", "inline": false],
-                ]
-            ]]
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        URLSession.shared.dataTask(with: request).resume()
+        
+        WebhookManager.sendFeedbackError(
+            reason: reason,
+            coupleCardId: card.coupleCardId,
+            cardId: card.id,
+            issuedDate: date,
+            statusCode: statusCode,
+            message: message
+        )
     }
     
     private func isCurrentWeek(card: QuestionCard) -> Bool {
