@@ -23,8 +23,8 @@ final class CustomTabBarView: UIView {
     
     let selectedTabIndex = PublishRelay<Int>()
     
-    private let tabBarHeight: CGFloat = 60
-    private let horizontalMargin: CGFloat = 44
+    private let tabBarHeight: CGFloat = 56
+    private let horizontalMargin: CGFloat = 20
     private let indicatorInset: CGFloat = 4
     
     override init(frame: CGRect) {
@@ -58,10 +58,9 @@ final class CustomTabBarView: UIView {
         flexContainer.flex
             .direction(.row)
             .justifyContent(.spaceAround)
-            .alignItems(.center)
             .define { flex in
                 tabViews.forEach { tabView in
-                    flex.addItem(tabView).grow(1).shrink(1)
+                    flex.addItem(tabView)
                 }
             }
         
@@ -189,7 +188,7 @@ private final class TabItemView: UIView {
             .direction(.row)
             .justifyContent(.center)
             .alignItems(.center)
-            .paddingLeft(22)
+            .width(75)
             .define { flex in
                 flex.addItem(iconImageView).width(tabType.iconSize.width).height(tabType.iconSize.height)
                 flex.addItem(titleLabel).marginLeft(8)

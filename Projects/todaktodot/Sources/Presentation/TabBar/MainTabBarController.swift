@@ -53,7 +53,7 @@ final class MainTabBarController: UIViewController {
         } else {
             customTabBar.isHidden = false
             blurEffectView.isHidden = false
-            customTabBar.pin.bottom().left().right().height(120)
+            customTabBar.pin.bottom().left().right().height(56 + 34)
             blurEffectView.pin.top(to: customTabBar.edge.top).bottom().left().right()
             
             let gradientLayer = CAGradientLayer()
