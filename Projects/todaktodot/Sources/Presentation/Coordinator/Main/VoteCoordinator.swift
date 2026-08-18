@@ -26,7 +26,23 @@ final class VoteCoordinator: Coordinator {
     }
     
     func showMakeVote() {
-        let vc = UIViewController()
-        navigationController.pushViewController(vc, animated: true)
+        let vc = MakeVoteViewController()
+        vc.coordinator = self
+        vc.reactor = MakeVoteReactor(mode: .create, useCase: container.makeVoteUseCase())
+        let nav = UINavigationController(rootViewController: vc)
+        nav.setNavigationBarHidden(true, animated: false)
+        nav.modalPresentationStyle = .fullScreen
+        navigationController.present(nav, animated: true)
+    }
+    
+    // TODO: 나중에 데이터 넘기는걸로 변경
+    func showEditVote(voteId: String) {
+        let vc = MakeVoteViewController()
+        vc.coordinator = self
+        vc.reactor = MakeVoteReactor(mode: .edit(voteId: voteId), useCase: container.makeVoteUseCase())
+        let nav = UINavigationController(rootViewController: vc)
+        nav.setNavigationBarHidden(true, animated: false)
+        nav.modalPresentationStyle = .fullScreen
+        navigationController.present(nav, animated: true)
     }
 }
