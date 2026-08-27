@@ -8,4 +8,6 @@
 import RxSwift
 
 protocol VoteRepository {
+    func voteSelect(voteId: Int, optionId: Int?, isWithdrawal: Bool) -> Observable<VoteInfo>
+    func fetchVoteList(category: CardSubject?, status: Bool?, isMine: Bool?, sortLatest: Bool, cursor: Int?, size: Int?) -> Observable<VoteList>
 }
