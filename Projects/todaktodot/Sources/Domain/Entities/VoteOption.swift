@@ -12,6 +12,6 @@ struct VoteOption: Codable, Equatable {
     let content: String // 답변 내용
     let voteCnt: Int? // 득표 수
     let voteRate: CGFloat? // 득표 비율
-    let selected: Bool // 해당 옵션을 선택했는지 여부
+    let isSelected: Bool // 해당 옵션을 선택했는지 여부
 }
 

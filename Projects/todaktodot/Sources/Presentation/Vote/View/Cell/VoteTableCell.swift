@@ -189,7 +189,7 @@ final class VoteTableCell: UITableViewCell {
         if isFirst {
             divider.removeFromSuperview()
         }
-        if info.mine {
+        if info.isMine {
             dotView.removeFromSuperview()
             isMineLabel.removeFromSuperview()
         }
@@ -256,7 +256,7 @@ final class VoteTableCell: UITableViewCell {
             let state: VoteOptionState
 
             if info.hasVoted {
-                state = option.selected ? .selected : .unSelected
+                state = option.isSelected ? .selected : .unSelected
             } else {
                 state = .normal
             }

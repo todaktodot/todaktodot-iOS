@@ -107,8 +107,8 @@ final class VoteOptionView: UIView {
         }
         
         updateState(
-            isClosed ? voteOption.selected ? .selected : .unSelected :
-            hasVoted ? voteOption.selected ? .selected : .unSelected : .normal,
+            isClosed ? voteOption.isSelected ? .selected : .unSelected :
+            hasVoted ? voteOption.isSelected ? .selected : .unSelected : .normal,
             percent: voteOption.voteRate ?? 0, count: voteOption.voteCnt ?? 0,
             isConfig: true
         )
