@@ -23,6 +23,62 @@ final class VoteTableCell: UITableViewCell {
     private var optionViews: [VoteOptionView] = []
     private var voteId: Int?
 
+    // MARK: - Skeleton
+    private let skeletonContainer = UIView().then {
+        $0.backgroundColor = .white
+        $0.isHidden = true
+    }
+    
+    private let nicknameSkeleton = UIView().then {
+        $0.backgroundColor = .grayScale200
+    }
+    
+    private let moreButtonSkeleton = UIImageView().then {
+        $0.tintColor = .grayScale200
+        $0.image = UIImage(resource: .ellipsis)
+    }
+    
+    private let contentSkeleton1 = UIView().then {
+        $0.backgroundColor = .grayScale200
+    }
+    
+    private let contentSkeleton2 = UIView().then {
+        $0.backgroundColor = .grayScale200
+    }
+    
+    private let topicSkeleton = UIView().then {
+        $0.backgroundColor = .grayScale200
+    }
+    
+    private let timeSkeleton = UIView().then {
+        $0.backgroundColor = .grayScale200
+    }
+    
+    private let option1Skeleton = UIView().then {
+        $0.backgroundColor = .grayScale200
+    }
+    
+    private let option2Skeleton = UIView().then {
+        $0.backgroundColor = .grayScale200
+    }
+    
+    private let heartSkeleton = UIView().then {
+        $0.backgroundColor = .grayScale200
+    }
+    
+    private let heartCountSkeleton = UIView().then {
+        $0.backgroundColor = .grayScale200
+    }
+    
+    private let participantSkeleton = UIView().then {
+        $0.backgroundColor = .grayScale200
+    }
+
+    // MARK: - UI
+    private let voteContainer = UIView().then {
+        $0.backgroundColor = .white
+    }
+    
     private let nicknameLabel = UILabel().then {
         $0.textColor = .grayScale400
         $0.font = .pretenSemiBold(12)
@@ -80,22 +136,49 @@ final class VoteTableCell: UITableViewCell {
         $0.customText.font = .pretenRegular(13)
         $0.customText.textColor = .grayScale400
     }
-
+    
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
 
         setupUI()
+        setupSkeletonUI()
         bindAction()
     }
 
     required init?(coder: NSCoder) {
         fatalError()
     }
-
+    
+//    override func prepareForReuse() {
+//        super.prepareForReuse()
+//        disposeBag = DisposeBag()
+//        
+//        if let isLoading, isLoading {
+//            skeletonContainer.isHidden = !isLoading
+//            skeletonContainer.flex.display(isLoading ? .flex : .none)
+//            voteContainer.isHidden = isLoading
+//            voteContainer.flex.display(isLoading ? .none : .flex)
+//            contentView.flex.markDirty()
+//            setNeedsLayout()
+//            layoutIfNeeded()
+//        }
+//    }
+    
     override func layoutSubviews() {
         super.layoutSubviews()
-
+        
         contentView.flex.layout(mode: .adjustHeight)
+        
+        if !skeletonContainer.isHidden {
+            skeletonContainer.pin.all()
+            skeletonContainer.flex.layout()
+        } else {
+            voteContainer.pin
+                .top(1)
+                .horizontally()
+                .bottom()
+            voteContainer.flex.layout()
+        }
         divider.pin.horizontally().top().height(1)
     }
 
@@ -113,7 +196,8 @@ final class VoteTableCell: UITableViewCell {
     private func setupUI() {
         selectionStyle = .none
         contentView.addSubview(divider)
-        contentView.flex
+        contentView.addSubview(voteContainer)
+        voteContainer.flex
             .direction(.column)
             .padding(20)
             .define { flex in
@@ -176,6 +260,135 @@ final class VoteTableCell: UITableViewCell {
             }
     }
     
+    private func setupSkeletonUI() {
+        contentView.addSubview(skeletonContainer)
+        
+        skeletonContainer.flex
+            .direction(.column)
+            .padding(20)
+            .define { flex in
+                flex.addItem()
+                    .direction(.row)
+                    .alignItems(.end)
+                    .define { flex in
+                        flex.addItem(nicknameSkeleton)
+                            .width(83)
+                            .height(10.5)
+                            .cornerRadius(5.25)
+                        
+                        flex.addItem().grow(1)
+                        
+                        flex.addItem(moreButtonSkeleton)
+                            .width(20)
+                    }
+                flex.addItem(contentSkeleton1)
+                    .width(229)
+                    .height(14)
+                    .cornerRadius(7)
+                    .marginTop(12.5)
+                
+                flex.addItem(contentSkeleton2)
+                    .width(296)
+                    .height(14)
+                    .cornerRadius(7)
+                    .marginTop(6)
+                
+                flex.addItem()
+                    .direction(.row)
+                    .marginTop(22)
+                    .define { flex in
+                        flex.addItem(topicSkeleton)
+                            .width(34)
+                            .height(11.38)
+                            .cornerRadius(5.69)
+                        
+                        flex.addItem().grow(1)
+                        
+                        flex.addItem(timeSkeleton)
+                            .width(23)
+                            .height(9)
+                            .cornerRadius(4.5)
+                    }
+                
+                flex.addItem(option1Skeleton)
+                    .height(44)
+                    .width(100%)
+                    .marginTop(24)
+                    .cornerRadius(8)
+                
+                flex.addItem(option2Skeleton)
+                    .height(44)
+                    .width(100%)
+                    .marginTop(8)
+                    .cornerRadius(8)
+                
+                flex.addItem()
+                    .direction(.row)
+                    .marginTop(19)
+                    .alignItems(.center)
+                    .define { flex in
+                        flex.addItem(heartSkeleton)
+                            .width(15)
+                            .height(13.33)
+                            .cornerRadius(6.66)
+                        
+                        flex.addItem(heartCountSkeleton)
+                            .width(16)
+                            .height(11.38)
+                            .cornerRadius(5.69)
+                            .marginLeft(4.5)
+                        
+                        flex.addItem().grow(1)
+                        
+                        flex.addItem(participantSkeleton)
+                            .width(59)
+                            .height(11.38)
+                            .cornerRadius(5.69)
+                    }
+            }
+        skeletonContainer.flex.display(.none)
+    }
+
+    func showSkeleton() {
+        isUserInteractionEnabled = false
+        
+        voteContainer.isHidden = true
+        voteContainer.flex.display(.none)
+        
+        skeletonContainer.isHidden = false
+        skeletonContainer.flex.display(.flex)
+        
+        contentView.flex.markDirty()
+        setNeedsLayout()
+        layoutIfNeeded()
+        startSkeletonAnimation()
+    }
+
+    func hideSkeleton() {
+        guard !skeletonContainer.isHidden else { return }
+        isUserInteractionEnabled = true
+        stopSkeletonAnimation()
+        
+        skeletonContainer.isHidden = true
+        skeletonContainer.flex.display(.none)
+        
+        voteContainer.isHidden = false
+        voteContainer.flex.display(.flex)
+        
+        //TODO: 페이드인 효과
+//        voteContainer.alpha = 0.0
+//        voteContainer.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
+        
+        contentView.flex.markDirty()
+        setNeedsLayout()
+        layoutIfNeeded()
+        
+//        UIView.animate(withDuration: 0.2, delay: 0, options: .curveEaseOut) {
+//            self.voteContainer.alpha = 1.0
+//            self.voteContainer.transform = .identity
+//        }
+    }
+
     private func bindAction() {
         moreButton.rx.tap
             .subscribe { [weak self] _ in
@@ -185,10 +398,35 @@ final class VoteTableCell: UITableViewCell {
             .disposed(by: disposeBag)
     }
     
+    private func startSkeletonAnimation() {
+        skeletonContainer.alpha = 1.0
+        
+        UIView.animate(
+            withDuration: 0.6,
+            delay: 0,
+            options: [.autoreverse, .repeat, .allowUserInteraction, .curveEaseInOut],
+            animations: {
+                self.skeletonContainer.alpha = 0.4
+            },
+            completion: nil
+        )
+    }
+    
+    private func stopSkeletonAnimation() {
+        skeletonContainer.layer.removeAllAnimations()
+        skeletonContainer.alpha = 1.0
+    }
+    
     func configure(info: VoteInfo, isFirst: Bool) {
-        if isFirst {
-            divider.removeFromSuperview()
+        skeletonContainer.isHidden = true
+        skeletonContainer.flex.display(.none)
+        voteContainer.isHidden = false
+        voteContainer.flex.display(.flex)
+        
+        if info.title.isEmpty {
+            voteContainer.isHidden = true
         }
+        divider.isHidden = isFirst
         if info.isMine {
             dotView.removeFromSuperview()
             isMineLabel.removeFromSuperview()
@@ -205,10 +443,8 @@ final class VoteTableCell: UITableViewCell {
             .direction(.column)
             .gap(8)
             .define { flex in
-                
                 info.options.forEach { option in
                     let view = VoteOptionView()
-
                     view.configure(voteOption: option, hasVoted: info.hasVoted, isClosed: info.time == "마감")
                     
                     view.onTap = { [weak self] optionId, isSelected in
@@ -223,6 +459,11 @@ final class VoteTableCell: UITableViewCell {
                         .height(44)
                 }
             }
+        
+        voteContainer.flex.markDirty()
+        contentView.flex.markDirty()
+        setNeedsLayout()
+        layoutIfNeeded()
     }
     
     private func setData(info: VoteInfo) {
@@ -250,9 +491,7 @@ final class VoteTableCell: UITableViewCell {
         
         optionViews.enumerated().forEach { index, optionView in
             guard index < info.options.count else { return }
-
             let option = info.options[index]
-
             let state: VoteOptionState
 
             if info.hasVoted {

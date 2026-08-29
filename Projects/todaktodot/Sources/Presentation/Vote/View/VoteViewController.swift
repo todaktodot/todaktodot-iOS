@@ -17,6 +17,12 @@ import Lottie
 
 final class VoteViewController: BaseViewController, View {
     
+    enum VoteListItem: Equatable {
+        case vote(VoteInfo)
+        case skeleton(VoteInfo)
+        case empty
+    }
+    
     var disposeBag = DisposeBag()
     weak var coordinator: VoteCoordinator?
     
@@ -27,17 +33,36 @@ final class VoteViewController: BaseViewController, View {
     private var SortLatest: Bool?
     private var cursor: Int?
     private var size: Int?
-        
-    private let tableView = UITableView()
-    private let makeVoteButton = MakeVoteButton()
-    private let voteHeaderView = VoteHeaderView()
-    private let refreshControl = UIRefreshControl()
+    
+    private let tableView = UITableView().then {
+        $0.rowHeight = UITableView.automaticDimension
+        $0.estimatedRowHeight = 270
+        $0.separatorStyle = .none
+        $0.sectionHeaderTopPadding = 0
+        $0.register(
+            VoteTableCell.self,
+            forCellReuseIdentifier: "VoteTableCell"
+        )
+        $0.register(
+            VoteEmptyCell.self,
+            forCellReuseIdentifier: "VoteEmptyCell"
+        )
+    }
+    
+    private let errorView = VoteErrorView().then {
+        $0.isHidden = true
+    }
+    
     private let lottie = LottieAnimationView(name: "voteLoadingSpinner").then {
         $0.loopMode = .loop
         $0.contentMode = .scaleAspectFit
         $0.play()
         $0.alpha = 0
     }
+    
+    private let makeVoteButton = MakeVoteButton()
+    private let voteHeaderView = VoteHeaderView()
+    private let refreshControl = UIRefreshControl()
     
     init() {
         super.init(nibName: nil, bundle: nil)
@@ -61,27 +86,18 @@ final class VoteViewController: BaseViewController, View {
     }
     
     private func setupViews() {
+        
         tableView.delegate = self
-        tableView.rowHeight = UITableView.automaticDimension
-        tableView.estimatedRowHeight = 270
-        tableView.separatorStyle = .none
-        tableView.sectionHeaderTopPadding = 0
-        tableView.showsVerticalScrollIndicator = false
-
-        tableView.register(
-            VoteTableCell.self,
-            forCellReuseIdentifier: "VoteTableCell"
-        )
-
         refreshControl.tintColor = .clear
         hideDefaultRefreshSpinner(in: refreshControl)
         refreshControl.addSubview(lottie)
         refreshControl.bringSubviewToFront(lottie)
         tableView.refreshControl = refreshControl
-
+        
         view.addSubview(tableView)
         view.addSubview(makeVoteButton)
     }
+    
     private func hideDefaultRefreshSpinner(in view: UIView) {
         for subview in view.subviews {
             if let spinner = subview as? UIActivityIndicatorView {
@@ -112,36 +128,92 @@ final class VoteViewController: BaseViewController, View {
     }
     
     private func refresh() {
-        reactor?.action.onNext(.refreshVotes(category: nil, status: true, isMine: false, sortLatest: true, cursor: nil, size: 10))
+        reactor?.action.onNext(.isLoading(true))
+        reactor?.action.onNext(.fetchVotes(category: nil, status: true, isMine: false, sortLatest: true, cursor: nil, size: 10))
     }
     
     private func showCloseAlert() {
         showAlert(icon: UIImage(resource: .warning), title: "방금 마감된 투표예요", description: "결과만 확인할 수 있어요", primaryButtonTitle: "확인", primaryButtonAction: {
         })
     }
-    
     func bind(reactor: VoteReactor) {
         
         reactor.state
-            .compactMap { $0.voteList }
+            .map { state -> [VoteListItem] in
+                if state.voteList == nil {
+                    return (0..<10).map { _ in
+                            .skeleton(VoteInfo.dummy)
+                    }
+                }
+                
+                let votes = state.voteList?.data ?? []
+                
+                if votes.isEmpty {
+                    return [.empty]
+                }
+                
+                return votes.map {
+                    .vote($0)
+                }
+            }
             .distinctUntilChanged()
             .bind(
-                to: tableView.rx.items(
-                    cellIdentifier: "VoteTableCell",
-                    cellType: VoteTableCell.self
-                )
-            ) { index, info, cell in
-                cell.configure(
-                    info: info,
-                    isFirst: index == 0
-                )
-                cell.onTapOption = { [weak self] voteId, optionId, isSelected in
-                    self?.reactor?.action.onNext(.tapOption(voteId: voteId, optionId: optionId, isWithdrawal: isSelected))
-                }
-                cell.onTapMore = { [weak self] voteId in
-                    guard let self else { return }
-
-                    self.coordinator?.showModal(type: .menu)
+                to: tableView.rx.items
+            ) { [weak self] tableView, index, item in
+                
+                let indexPath = IndexPath(row: index, section: 0)
+                
+                switch item {
+                case .empty:
+                    let cell = tableView.dequeueReusableCell(
+                        withIdentifier: "VoteEmptyCell",
+                        for: indexPath
+                    ) as! VoteEmptyCell
+                    
+                    return cell
+                    
+                case .vote(let info):
+                    let cell = tableView.dequeueReusableCell(
+                        withIdentifier: "VoteTableCell",
+                        for: indexPath
+                    ) as! VoteTableCell
+                    
+                    cell.configure(
+                        info: info,
+                        isFirst: index == 0
+                    )
+                    
+                    cell.onTapOption = { [weak self] voteId, optionId, isSelected in
+                        self?.reactor?.action.onNext(
+                            .tapOption(
+                                voteId: voteId,
+                                optionId: optionId,
+                                isWithdrawal: isSelected
+                            )
+                        )
+                    }
+                    
+                    cell.onTapMore = { [weak self] voteId in
+                        guard let self else { return }
+                        
+                        self.coordinator?.showModal(type: .menu)
+                    }
+                    
+                    return cell
+                    
+                case .skeleton(let info):
+                    let cell = tableView.dequeueReusableCell(
+                        withIdentifier: "VoteTableCell",
+                        for: indexPath
+                    ) as! VoteTableCell
+                    
+                    cell.configure(
+                        info: info,
+                        isFirst: index == 0
+                    )
+                    cell.showSkeleton()
+                    
+                    return cell
                 }
             }
             .disposed(by: disposeBag)
@@ -150,23 +222,23 @@ final class VoteViewController: BaseViewController, View {
             .compactMap { $0.selectedVote }
             .subscribe(onNext: { [weak self] selectedVote in
                 guard let self else { return }
-
+                
                 let voteList = self.reactor?.currentState.voteList?.data ?? []
-
+                
                 guard let row = voteList.firstIndex(where: {
                     $0.voteId == selectedVote.voteId
                 }) else {
                     return
                 }
-
+                
                 let indexPath = IndexPath(row: row, section: 0)
-
+                
                 guard let cell = self.tableView.cellForRow(
                     at: indexPath
                 ) as? VoteTableCell else {
                     return
                 }
-
+                
                 cell.updateOption(
                     info: selectedVote
                 )
@@ -174,19 +246,65 @@ final class VoteViewController: BaseViewController, View {
             .disposed(by: disposeBag)
         
         reactor.state
-            .compactMap { $0.endRefreshing }
-            .filter { $0 }
-            .subscribe(onNext: { [weak self] list in
-                self?.refreshControl.endRefreshing()
-                self?.lottie.alpha = 0
-                self?.isRefreshing = false
+            .compactMap { $0.isLoading }
+            .subscribe(onNext: { [weak self] isLoading in
+                guard let self else { return }
+                
+                if !isLoading {
+                    refreshControl.endRefreshing()
+                    lottie.alpha = 0
+                    isRefreshing = false
+                }
+                
+                tableView.isScrollEnabled = !isLoading
+                
+                let listCount = reactor.currentState.voteList?.data.count ?? 0
+                
+                for i in 0..<listCount {
+                    let indexPath = IndexPath(row: i, section: 0)
+                    guard let cell = tableView.cellForRow(
+                        at: indexPath
+                    ) as? VoteTableCell else {
+                        return
+                    }
+                    if isLoading {
+                        cell.showSkeleton()
+                    } else {
+                        cell.hideSkeleton()
+                    }
+                }
+            })
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .compactMap { $0.isError }
+            .subscribe(onNext: { [weak self] error in
+                guard let self else { return }
+                
+                switch error {
+                case .empty:
+                    return
+                case .network:
+                    tableView.isHidden = true
+                    errorView.isHidden = false
+                    
+                    view.addSubview(errorView)
+                    errorView.pin
+                        .width(248)
+                        .height(117)
+                        .center()
+                    
+                case .voteFailure:
+                    showToast(message: "잠시 후 다시 시도해주세요")
+                }
+                
             })
             .disposed(by: disposeBag)
         
         reactor.state
             .compactMap { $0.isClosedVote }
             .subscribe(onNext: { [weak self] _ in
-                guard let self = self else { return }
+                guard let self else { return }
                 self.showCloseAlert()
             })
             .disposed(by: disposeBag)
@@ -216,6 +334,7 @@ final class VoteViewController: BaseViewController, View {
             }
             .disposed(by: disposeBag)
         
+        reactor.action.onNext(.isLoading(true))
         reactor.action.onNext(.fetchVotes(category: nil, status: true, isMine: false, sortLatest: true, cursor: nil, size: 10))
     }
 }
@@ -264,10 +383,20 @@ extension VoteViewController: UIScrollViewDelegate {
 }
 
 extension VoteViewController: UITableViewDelegate {
+    func tableView(
+        _ tableView: UITableView,
+        heightForRowAt indexPath: IndexPath
+    ) -> CGFloat {
+        if reactor?.currentState.voteList?.data.isEmpty == true {
+            return tableView.bounds.height - (54 + 72)
+        }
+        
+        return UITableView.automaticDimension
+    }
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         voteHeaderView
     }
-
+    
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         54
     }

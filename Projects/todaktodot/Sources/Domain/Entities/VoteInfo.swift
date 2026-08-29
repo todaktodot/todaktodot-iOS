@@ -23,7 +23,7 @@ struct VoteInfo: Codable, Equatable {
     let hasVoted: Bool // 내가 투표했는지 여부
     let hasLiked: Bool // 내가 좋아요를 눌렀는지 여부
     let createdAt: String // 투표 등록 시간
-
+    
     var categoryName: String {
         switch category {
         case "LOVE": "연애관"
@@ -37,179 +37,23 @@ struct VoteInfo: Codable, Equatable {
         remainingTime == "마감" ? "마감" : "\(remainingTime)시간 남음"
     }
     
-    static let dummy = VoteInfo(
-        voteId: 4,
-        nickname: "닉네임",
-        category: "취향",
-        status: "CLOSED",
-        title: "여름 휴가로 가장 가고 싶은 곳은?",
-        options: [
-            VoteOption(
-                optionId: 7,
-                content: "바다",
-                voteCnt: 92,
-                voteRate: 0.46,
-                isSelected: false
-            ),
-            VoteOption(
-                optionId: 8,
-                content: "산",
-                voteCnt: 38,
-                voteRate: 0.19,
-                isSelected: false
-            ),
-            VoteOption(
-                optionId: 9,
-                content: "해외여행",
-                voteCnt: 70,
-                voteRate: 0.35,
-                isSelected: false
-            )
-        ],
-        likeCnt: 27,
-        participantCnt: 200,
-        reportCnt: 0,
-        remainingTime: "투표 종료",
-        isMine: false,
-        hasVoted: false,
-        hasLiked: true,
-        createdAt: "2026-08-10T09:00:00"
-    )
-    
-    static let dummyList: [VoteInfo] = [
-        VoteInfo(
-            voteId: 1,
-            nickname: "닉네임",
-            category: "연애관",
-            status: "ACTIVE",
-            title: "애인이 이성 동창 모임에 가서 새벽 1시까지 술을 마신다면?",
+    static var dummy: VoteInfo {
+        return VoteInfo(
+            voteId: -1,
+            nickname: "",
+            category: "",
+            status: "",
+            title: "",
             options: [
-                VoteOption(
-                    optionId: 1,
-                    content: "쿨하게 잘 다녀오라고 한다",
-                    voteCnt: 88,
-                    voteRate: 0.8,
-                    isSelected: true
-                ),
-                VoteOption(
-                    optionId: 2,
-                    content: "12시 전에 들어오라고 한다",
-                    voteCnt: 22,
-                    voteRate: 0.2,
-                    isSelected: false
-                )
             ],
-            likeCnt: 42,
-            participantCnt: 110,
+            likeCnt: 0,
+            participantCnt: 0,
             reportCnt: 0,
-            remainingTime: "22시간 남음",
-            isMine: true,
-            hasVoted: true,
-            hasLiked: true,
-            createdAt: "2026-08-14T10:00:00"
-        ),
-        
-        VoteInfo(
-            voteId: 2,
-            nickname: "닉네임",
-            category: "음식",
-            status: "ACTIVE",
-            title: "평생 하나의 음식만 먹어야 한다면?",
-            options: [
-                VoteOption(
-                    optionId: 3,
-                    content: "치킨",
-                    voteCnt: 145,
-                    voteRate: 0.65,
-                    isSelected: false
-                ),
-                VoteOption(
-                    optionId: 4,
-                    content: "피자",
-                    voteCnt: 78,
-                    voteRate: 0.35,
-                    isSelected: false
-                )
-            ],
-            likeCnt: 31,
-            participantCnt: 223,
-            reportCnt: 0,
-            remainingTime: "1일 남음",
+            remainingTime: "",
             isMine: false,
             hasVoted: false,
             hasLiked: false,
-            createdAt: "2026-08-13T18:30:00"
-        ),
-        
-        VoteInfo(
-            voteId: 3,
-            nickname: "닉네임",
-            category: "일상",
-            status: "ACTIVE",
-            title: "주말에 집에만 있기 vs 밖에 나가기",
-            options: [
-                VoteOption(
-                    optionId: 5,
-                    content: "집에서 푹 쉬기",
-                    voteCnt: 54,
-                    voteRate: 0.42,
-                    isSelected: true
-                ),
-                VoteOption(
-                    optionId: 6,
-                    content: "밖에 나가서 놀기",
-                    voteCnt: 74,
-                    voteRate: 0.58,
-                    isSelected: false
-                )
-            ],
-            likeCnt: 18,
-            participantCnt: 128,
-            reportCnt: 1,
-            remainingTime: "3일 남음",
-            isMine: false,
-            hasVoted: true,
-            hasLiked: false,
-            createdAt: "2026-08-12T14:20:00"
-        ),
-        
-        VoteInfo(
-            voteId: 4,
-            nickname: "닉네임",
-            category: "취향",
-            status: "CLOSED",
-            title: "여름 휴가로 가장 가고 싶은 곳은?",
-            options: [
-                VoteOption(
-                    optionId: 7,
-                    content: "바다",
-                    voteCnt: 92,
-                    voteRate: 0.46,
-                    isSelected: false
-                ),
-                VoteOption(
-                    optionId: 8,
-                    content: "산",
-                    voteCnt: 38,
-                    voteRate: 0.19,
-                    isSelected: false
-                ),
-                VoteOption(
-                    optionId: 9,
-                    content: "해외여행",
-                    voteCnt: 70,
-                    voteRate: 0.35,
-                    isSelected: false
-                )
-            ],
-            likeCnt: 27,
-            participantCnt: 200,
-            reportCnt: 0,
-            remainingTime: "투표 종료",
-            isMine: false,
-            hasVoted: false,
-            hasLiked: true,
-            createdAt: "2026-08-10T09:00:00"
+            createdAt: ""
         )
-    ]
+    }
 }
