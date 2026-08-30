@@ -9,6 +9,11 @@ import UIKit
 import NetworkKit
 
 final class VoteCoordinator: Coordinator {
+    
+    enum ModalType {
+        case filter, menu, report, complete
+    }
+    
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
     weak var tabBarCoordinator: TabBarCoordinator?
@@ -28,5 +33,43 @@ final class VoteCoordinator: Coordinator {
     func showMakeVote() {
         let vc = UIViewController()
         navigationController.pushViewController(vc, animated: true)
+    }
+    
+    func showModal(type: ModalType) {
+        let viewController: UIViewController
+
+        switch type {
+        case .filter:
+            let vc = VoteFilterModalViewController()
+            vc.coordinator = self
+            vc.reactor = container.makeVoteReactor()
+            viewController = vc
+
+        case .menu:
+            let vc = MenuModalViewController()
+            vc.coordinator = self
+            viewController = vc
+
+        case .report:
+            navigationController.dismiss(animated: true)
+            let vc = ReportModalViewController()
+            vc.coordinator = self
+            viewController = vc
+            
+        case .complete:
+            navigationController.dismiss(animated: true)
+            let vc = ReportCompleteModalViewController()
+            vc.coordinator = self
+            viewController = vc
+        }
+
+        viewController.modalPresentationStyle = .overFullScreen
+        viewController.modalTransitionStyle = .crossDissolve
+
+        navigationController.present(viewController, animated: true)
+    }
+    
+    func dismissModal(topic: CardSubject? = nil, isClosed: Bool? = nil, onlyMine: Bool = false) {
+        navigationController.dismiss(animated: true)
     }
 }
