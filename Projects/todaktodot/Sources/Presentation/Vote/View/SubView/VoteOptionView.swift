@@ -20,9 +20,6 @@ enum VoteOptionState: Codable, Equatable {
 final class VoteOptionView: UIView {
 
     var onTap: ((Int, Bool) -> Void)?
-    private var needsProgressLayout = true
-    private var shouldAnimateProgress = false
-    private var lastLaidOutSize = CGSize.zero
     var optionId: Int?
     private var percent: CGFloat?
 
@@ -41,10 +38,12 @@ final class VoteOptionView: UIView {
     private let titleLabel = UILabel().then {
         $0.font = .pretenSemiBold(14)
     }
+    
     private let percentLabel = UILabel().then {
         $0.font = .pretenMedium(13)
         $0.text = ""
     }
+    
     private let voteCountLabel = UILabel().then {
         $0.font = .pretenMedium(13)
     }
@@ -87,13 +86,7 @@ final class VoteOptionView: UIView {
         super.layoutSubviews()
 
         trackView.pin.all()
-
-        guard needsProgressLayout || lastLaidOutSize != bounds.size else { return }
-
         setProgress()
-        needsProgressLayout = false
-        shouldAnimateProgress = false
-        lastLaidOutSize = bounds.size
     }
     
     func configure(voteOption: VoteOption, hasVoted: Bool, isClosed: Bool) {
@@ -114,7 +107,6 @@ final class VoteOptionView: UIView {
         )
         
         flex.markDirty()
-        setNeedsLayout()
     }
     
     func updateState(
@@ -175,7 +167,7 @@ final class VoteOptionView: UIView {
                     x: 0,
                     y: 0,
                     width: targetWidth,
-                    height: self.bounds.height
+                    height: 44
                 )
             }
         }
@@ -197,7 +189,7 @@ final class VoteOptionView: UIView {
             x: 0,
             y: 0,
             width: progressWidth,
-            height: bounds.height
+            height: 44
         )
         progressView.frame = frame
     }
