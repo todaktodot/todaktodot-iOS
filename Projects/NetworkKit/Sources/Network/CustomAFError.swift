@@ -11,6 +11,7 @@ internal import Alamofire
 public struct CustomAFError: Error {
     let underlyingError: AFError
     public let message: String
+    public let errorCode: String?
     public let statusCode: Int?
     
     public var isAlreadyCouple: Bool {
@@ -20,10 +21,15 @@ public struct CustomAFError: Error {
     public var isAleardySolo: Bool {
         return message == APIErrorMessages.aleardySolo.rawValue
     }
+    
+    public var isClosedVote: Bool {
+        return errorCode == "V1001"
+    }
 }
 
 struct APIErrorResponse: Decodable {
     let message: String
+    let code: String?
 }
 
 public enum APIErrorMessages: String {
