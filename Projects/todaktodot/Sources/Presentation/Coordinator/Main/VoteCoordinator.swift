@@ -11,7 +11,10 @@ import NetworkKit
 final class VoteCoordinator: Coordinator {
     
     enum ModalType {
-        case filter, menu, report, complete
+        case filter
+        case menu(vote: VoteInfo)
+        case report
+        case complete
     }
     
     var childCoordinators: [Coordinator] = []
@@ -30,6 +33,25 @@ final class VoteCoordinator: Coordinator {
         navigationController.pushViewController(vc, animated: true)
     }
     
+    /// 투표 게시/수정 완료 시 호출 - 피드에 토스트 + 리스트 새로고침
+    func didFinishMakeVote(message: String) {
+        if let voteVC = navigationController.viewControllers
+            .compactMap({ $0 as? VoteViewController })
+            .last {
+            voteVC.reloadAndToast(message: message)
+        }
+    }
+    
+    /// 투표 삭제 완료 시 호출 - 모달 닫고 피드에서 즉시 제거 + 토스트
+    func didDeleteVote(voteId: Int) {
+        navigationController.dismiss(animated: true)
+        if let voteVC = navigationController.viewControllers
+            .compactMap({ $0 as? VoteViewController })
+            .last {
+            voteVC.removeVoteAndToast(voteId: voteId, message: "투표가 삭제되었어요")
+        }
+    }
+    
     func showMakeVote() {
         let vc = MakeVoteViewController()
         vc.coordinator = self
@@ -40,11 +62,10 @@ final class VoteCoordinator: Coordinator {
         navigationController.present(nav, animated: true)
     }
     
-    // TODO: 나중에 데이터 넘기는걸로 변경
-    func showEditVote(voteId: String) {
+    func showEditVote(vote: VoteInfo) {
         let vc = MakeVoteViewController()
         vc.coordinator = self
-        vc.reactor = MakeVoteReactor(mode: .edit(voteId: voteId), useCase: container.makeVoteUseCase())
+        vc.reactor = MakeVoteReactor(mode: .edit(vote: vote), useCase: container.makeVoteUseCase())
         let nav = UINavigationController(rootViewController: vc)
         nav.setNavigationBarHidden(true, animated: false)
         nav.modalPresentationStyle = .fullScreen
@@ -61,9 +82,10 @@ final class VoteCoordinator: Coordinator {
             vc.reactor = container.makeVoteReactor()
             viewController = vc
 
-        case .menu:
+        case .menu(let vote):
             let vc = MenuModalViewController()
             vc.coordinator = self
+            vc.reactor = MenuModalReactor(vote: vote, useCase: container.makeVoteUseCase())
             viewController = vc
 
         case .report:
