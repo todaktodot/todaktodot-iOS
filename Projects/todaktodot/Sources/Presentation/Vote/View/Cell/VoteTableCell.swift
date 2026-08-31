@@ -149,21 +149,6 @@ final class VoteTableCell: UITableViewCell {
         fatalError()
     }
     
-//    override func prepareForReuse() {
-//        super.prepareForReuse()
-//        disposeBag = DisposeBag()
-//        
-//        if let isLoading, isLoading {
-//            skeletonContainer.isHidden = !isLoading
-//            skeletonContainer.flex.display(isLoading ? .flex : .none)
-//            voteContainer.isHidden = isLoading
-//            voteContainer.flex.display(isLoading ? .none : .flex)
-//            contentView.flex.markDirty()
-//            setNeedsLayout()
-//            layoutIfNeeded()
-//        }
-//    }
-    
     override func layoutSubviews() {
         super.layoutSubviews()
         
@@ -172,14 +157,7 @@ final class VoteTableCell: UITableViewCell {
         if !skeletonContainer.isHidden {
             skeletonContainer.pin.all()
             skeletonContainer.flex.layout()
-        } else {
-            voteContainer.pin
-                .top(1)
-                .horizontally()
-                .bottom()
-            voteContainer.flex.layout()
         }
-        divider.pin.horizontally().top().height(1)
     }
 
     override func systemLayoutSizeFitting(
@@ -203,6 +181,8 @@ final class VoteTableCell: UITableViewCell {
             voteContainer.isHidden = true
         }
         divider.isHidden = isFirst
+        divider.flex.display(isFirst ? .none : .flex)
+        
         dotView.isHidden = !info.isMine
         isMineLabel.isHidden = !info.isMine
         
@@ -303,8 +283,12 @@ final class VoteTableCell: UITableViewCell {
     
     private func setupUI() {
         selectionStyle = .none
-        contentView.addSubview(divider)
-        contentView.addSubview(voteContainer)
+        
+        contentView.flex.define { flex in
+                flex.addItem(divider).height(1)
+                flex.addItem(voteContainer)
+            }
+        
         voteContainer.flex
             .direction(.column)
             .padding(20)

@@ -27,7 +27,9 @@ final class VoteViewController: BaseViewController, View {
     weak var coordinator: VoteCoordinator?
     
     private var shouldScrollToTop = false
-    private var isRefreshing: Bool = false
+    private var isLoading: Bool = false
+    private var isPaginating = false
+    private var isFetchingNextPage: Bool = false
     private var topic: CardSubject?
     private var isClosed: Bool?
     private var isMine: Bool?
@@ -69,7 +71,7 @@ final class VoteViewController: BaseViewController, View {
     
     init() {
         super.init(nibName: nil, bundle: nil)
-        isRefreshing = false
+        isLoading = false
     }
     
     required init?(coder: NSCoder) {
@@ -91,27 +93,38 @@ final class VoteViewController: BaseViewController, View {
     func bind(reactor: VoteReactor) {
         
         reactor.state
-            .map { state -> [VoteListItem] in
-                if state.voteList == nil {
+            .map { $0.voteList }
+            .distinctUntilChanged()
+            .map { [weak self] voteListResponse -> [VoteListItem] in
+                guard let self = self else { return [] }
+                
+                let votes = voteListResponse?.data
+                
+                if votes == nil {
                     return (0..<10).map { _ in
                             .skeleton(VoteInfo.dummy)
                     }
                 }
                 
-                let votes = state.voteList?.data ?? []
-                
-                if votes.isEmpty {
-                    return [.empty]
+                if self.isPaginating {
+                    self.voteList = (self.voteList ?? []) + (votes ?? [])
+                } else {
+                    self.voteList = votes
                 }
                 
-                self.cursor = state.voteList?.nextCursor
-                self.hasNext = state.voteList?.hasNext
+                self.cursor = voteListResponse?.nextCursor
+                self.hasNext = voteListResponse?.hasNext
                 
-                return votes.map {
+                guard let voteList = self.voteList, !voteList.isEmpty else {
+
+                    return [.empty]
+
+                }
+                
+                return voteList.map {
                     .vote($0)
                 }
             }
-            .distinctUntilChanged()
             .bind(
                 to: tableView.rx.items
             ) { [weak self] tableView, index, item in
@@ -208,13 +221,14 @@ final class VoteViewController: BaseViewController, View {
                 if !isLoading {
                     refreshControl.endRefreshing()
                     lottie.alpha = 0
-                    isRefreshing = false
+                    self.isLoading = false
+                    self.isFetchingNextPage = false
                     scrollToTop()
                 }
                 
                 tableView.isScrollEnabled = !isLoading
                 
-                let listCount = reactor.currentState.voteList?.data.count ?? 0
+                let listCount = reactor.currentState.voteList?.data?.count ?? 0
                 
                 for i in 0..<listCount {
                     let indexPath = IndexPath(row: i, section: 0)
@@ -286,7 +300,7 @@ final class VoteViewController: BaseViewController, View {
                 
                 sortLatest = true
                 voteHeaderView.updateSort(isLatest: true)
-                fetchVotes(category: topic, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: nil, size: 10)
+                fetchVotes(cursor: nil)
             }
             .disposed(by: disposeBag)
         
@@ -296,7 +310,7 @@ final class VoteViewController: BaseViewController, View {
                 
                 sortLatest = false
                 voteHeaderView.updateSort(isLatest: false)
-                fetchVotes(category: topic, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: nil, size: 10)
+                fetchVotes(cursor: nil)
             }
             .disposed(by: disposeBag)
         
@@ -307,10 +321,10 @@ final class VoteViewController: BaseViewController, View {
             self.isClosed = isClosed
             self.isMine = isMine
             
-            fetchVotes(category: topic, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: nil, size: 10)
+            fetchVotes(cursor: nil)
         }
         
-        fetchVotes(category: topic, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: nil, size: 10)
+        fetchVotes(cursor: nil)
     }
     
     private func scrollToTop(animated: Bool = true) {
@@ -324,10 +338,12 @@ final class VoteViewController: BaseViewController, View {
         shouldScrollToTop = false
     }
     
-    private func fetchVotes(category: CardSubject?, isClosed: Bool?, isMine: Bool?, sortLatest: Bool?, cursor: String?, size: Int?, scrollToTop: Bool = true) {
+    private func fetchVotes(cursor: String?, scrollToTop: Bool = true, paginating: Bool = false) {
         shouldScrollToTop = scrollToTop
+        isPaginating = paginating
+        
         reactor?.action.onNext(.isLoading(true))
-        reactor?.action.onNext(.fetchVotes(category: category, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: cursor, size: 10))
+        reactor?.action.onNext(.fetchVotes(category: topic, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: cursor, size: size))
     }
     
     private func showCloseAlert() {
@@ -399,19 +415,17 @@ extension VoteViewController: UIScrollViewDelegate {
 
         guard contentHeight > 0 else { return }
         guard hasNext == true else { return }
-        guard reactor?.currentState.isLoading == false else { return }
+        guard reactor?.currentState.isLoading == false && !isFetchingNextPage else { return }
 
         let threshold = contentHeight * 0.8
 
         if offsetY + visibleHeight >= threshold {
+            isFetchingNextPage = true
+            
             fetchVotes(
-                category: topic,
-                isClosed: isClosed,
-                isMine: isMine,
-                sortLatest: sortLatest,
                 cursor: cursor,
-                size: 10,
-                scrollToTop: false
+                scrollToTop: false,
+                paginating: true
             )
         }
     }
@@ -421,16 +435,16 @@ extension VoteViewController: UIScrollViewDelegate {
         willDecelerate decelerate: Bool
     ) {
         if scrollView.contentOffset.y <= -60 {
-            if !isRefreshing {
-                isRefreshing = true
+            if !isLoading {
+                isLoading = true
                 refreshControl.beginRefreshing()
-                fetchVotes(category: topic, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: nil, size: 10)
+                fetchVotes(cursor: nil)
             }
         } else {
-            if isRefreshing {
+            if isLoading {
                 DispatchQueue.main.async {
                     self.refreshControl.endRefreshing()
-                    self.isRefreshing = false
+                    self.isLoading = false
                     self.tableView.setContentOffset(
                         CGPoint(
                             x: 0,
@@ -449,7 +463,7 @@ extension VoteViewController: UITableViewDelegate {
         _ tableView: UITableView,
         heightForRowAt indexPath: IndexPath
     ) -> CGFloat {
-        if reactor?.currentState.voteList?.data.isEmpty == true {
+        if reactor?.currentState.voteList?.data?.isEmpty == true {
             return tableView.bounds.height - (54 + 72)
         }
         
