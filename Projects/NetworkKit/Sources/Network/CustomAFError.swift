@@ -22,8 +22,24 @@ public struct CustomAFError: Error {
         return message == APIErrorMessages.aleardySolo.rawValue
     }
     
-    public var isClosedVote: Bool {
-        return errorCode == "V1001"
+    /// 서버 에러 코드 (enum)
+    public var apiErrorCode: APIErrorCode? {
+        guard let errorCode else { return nil }
+        return APIErrorCode(rawValue: errorCode)
+    }
+    
+    /// 네트워크 미연결 여부 (오프라인)
+    public var isNotConnected: Bool {
+        if case .sessionTaskFailed(let error) = underlyingError,
+           let urlError = error as? URLError {
+            switch urlError.code {
+            case .notConnectedToInternet, .networkConnectionLost, .cannotConnectToHost, .timedOut:
+                return true
+            default:
+                return false
+            }
+        }
+        return false
     }
 }
 

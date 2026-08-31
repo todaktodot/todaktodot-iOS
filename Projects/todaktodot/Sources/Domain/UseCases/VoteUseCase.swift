@@ -22,4 +22,20 @@ final class VoteUseCase {
     func fetchVotes(category: CardSubject?, status: Bool?, isMine: Bool?, sortLatest: Bool, cursor: Int?, size: Int?) -> Observable<VoteList> {
         repository.fetchVoteList(category: category, status: status, isMine: isMine, sortLatest: sortLatest, cursor: cursor, size: size)
     }
+    
+    func createVote(request: VoteCreateRequest) -> Observable<Result<VoteCreateResult, Error>> {
+        repository.createVote(request: request)
+    }
+    
+    func updateVote(request: VoteUpdateRequest) -> Observable<Result<Void, Error>> {
+        repository.updateVote(request: request)
+    }
+    
+    func fetchVoteDetail(voteId: Int) -> Observable<Result<VoteInfo, Error>> {
+        repository.fetchVoteDetail(voteId: voteId)
+    }
+    
+    func deleteVote(voteId: Int) -> Observable<Result<Void, Error>> {
+        repository.deleteVote(voteId: voteId)
+    }
 }
