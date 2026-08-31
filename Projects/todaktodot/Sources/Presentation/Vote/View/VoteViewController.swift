@@ -26,13 +26,16 @@ final class VoteViewController: BaseViewController, View {
     var disposeBag = DisposeBag()
     weak var coordinator: VoteCoordinator?
     
+    private var shouldScrollToTop = false
     private var isRefreshing: Bool = false
-    private var category: CardSubject?
-    private var status: Bool?
+    private var topic: CardSubject?
+    private var isClosed: Bool?
     private var isMine: Bool?
-    private var SortLatest: Bool?
-    private var cursor: Int?
+    private var sortLatest: Bool?
+    private var cursor: String?
     private var size: Int?
+    private var hasNext: Bool?
+    private var voteList: [VoteInfo]?
     
     private let tableView = UITableView().then {
         $0.rowHeight = UITableView.automaticDimension
@@ -85,57 +88,6 @@ final class VoteViewController: BaseViewController, View {
         layoutViews()
     }
     
-    private func setupViews() {
-        
-        tableView.delegate = self
-        refreshControl.tintColor = .clear
-        hideDefaultRefreshSpinner(in: refreshControl)
-        refreshControl.addSubview(lottie)
-        refreshControl.bringSubviewToFront(lottie)
-        tableView.refreshControl = refreshControl
-        
-        view.addSubview(tableView)
-        view.addSubview(makeVoteButton)
-    }
-    
-    private func hideDefaultRefreshSpinner(in view: UIView) {
-        for subview in view.subviews {
-            if let spinner = subview as? UIActivityIndicatorView {
-                spinner.alpha = 0
-                spinner.isHidden = true
-            } else {
-                hideDefaultRefreshSpinner(in: subview)
-            }
-        }
-    }
-    private func layoutViews() {
-        
-        tableView.pin
-            .top(view.pin.safeArea.top)
-            .horizontally()
-            .bottom()
-        
-        makeVoteButton.pin
-            .bottom(112)
-            .right(20)
-        
-        lottie.pin
-            .width(150)
-            .height(75)
-            .center()
-        
-        view.flex.layout()
-    }
-    
-    private func refresh() {
-        reactor?.action.onNext(.isLoading(true))
-        reactor?.action.onNext(.fetchVotes(category: nil, status: true, isMine: false, sortLatest: true, cursor: nil, size: 10))
-    }
-    
-    private func showCloseAlert() {
-        showAlert(icon: UIImage(resource: .warning), title: "방금 마감된 투표예요", description: "결과만 확인할 수 있어요", primaryButtonTitle: "확인", primaryButtonAction: {
-        })
-    }
     func bind(reactor: VoteReactor) {
         
         reactor.state
@@ -151,6 +103,9 @@ final class VoteViewController: BaseViewController, View {
                 if votes.isEmpty {
                     return [.empty]
                 }
+                
+                self.cursor = state.voteList?.nextCursor
+                self.hasNext = state.voteList?.hasNext
                 
                 return votes.map {
                     .vote($0)
@@ -254,6 +209,7 @@ final class VoteViewController: BaseViewController, View {
                     refreshControl.endRefreshing()
                     lottie.alpha = 0
                     isRefreshing = false
+                    scrollToTop()
                 }
                 
                 tableView.isScrollEnabled = !isLoading
@@ -318,24 +274,108 @@ final class VoteViewController: BaseViewController, View {
         
         voteHeaderView.filterButton.rx.tap
             .subscribe { [weak self] _ in
-                self?.coordinator?.showModal(type: .filter)
+                guard let self else { return }
+                
+                coordinator?.showModal(type: .filter, topic: topic, isClosed: isClosed, isMine: isMine)
             }
             .disposed(by: disposeBag)
         
         voteHeaderView.latestButton.rx.tap
             .subscribe { [weak self] _ in
-                self?.voteHeaderView.updateSort(isLatest: true)
+                guard let self else { return }
+                
+                sortLatest = true
+                voteHeaderView.updateSort(isLatest: true)
+                fetchVotes(category: topic, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: nil, size: 10)
             }
             .disposed(by: disposeBag)
         
         voteHeaderView.popularButton.rx.tap
             .subscribe { [weak self] _ in
-                self?.voteHeaderView.updateSort(isLatest: false)
+                guard let self else { return }
+                
+                sortLatest = false
+                voteHeaderView.updateSort(isLatest: false)
+                fetchVotes(category: topic, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: nil, size: 10)
             }
             .disposed(by: disposeBag)
         
-        reactor.action.onNext(.isLoading(true))
-        reactor.action.onNext(.fetchVotes(category: nil, status: true, isMine: false, sortLatest: true, cursor: nil, size: 10))
+        coordinator?.onFilter = { [weak self] topic, isClosed, isMine in
+            guard let self else { return }
+            
+            self.topic = topic
+            self.isClosed = isClosed
+            self.isMine = isMine
+            
+            fetchVotes(category: topic, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: nil, size: 10)
+        }
+        
+        fetchVotes(category: topic, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: nil, size: 10)
+    }
+    
+    private func scrollToTop(animated: Bool = true) {
+        guard shouldScrollToTop else { return }
+        
+        tableView.scrollToRow(
+            at: IndexPath(row: 0, section: 0),
+            at: .top,
+            animated: animated
+        )
+        shouldScrollToTop = false
+    }
+    
+    private func fetchVotes(category: CardSubject?, isClosed: Bool?, isMine: Bool?, sortLatest: Bool?, cursor: String?, size: Int?, scrollToTop: Bool = true) {
+        shouldScrollToTop = scrollToTop
+        reactor?.action.onNext(.isLoading(true))
+        reactor?.action.onNext(.fetchVotes(category: category, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: cursor, size: 10))
+    }
+    
+    private func showCloseAlert() {
+        showAlert(icon: UIImage(resource: .warning), title: "방금 마감된 투표예요", description: "결과만 확인할 수 있어요", primaryButtonTitle: "확인", primaryButtonAction: {
+        })
+    }
+    
+    private func setupViews() {
+        
+        tableView.delegate = self
+        refreshControl.tintColor = .clear
+        hideDefaultRefreshSpinner(in: refreshControl)
+        refreshControl.addSubview(lottie)
+        refreshControl.bringSubviewToFront(lottie)
+        tableView.refreshControl = refreshControl
+        
+        view.addSubview(tableView)
+        view.addSubview(makeVoteButton)
+    }
+    
+    private func hideDefaultRefreshSpinner(in view: UIView) {
+        for subview in view.subviews {
+            if let spinner = subview as? UIActivityIndicatorView {
+                spinner.alpha = 0
+                spinner.isHidden = true
+            } else {
+                hideDefaultRefreshSpinner(in: subview)
+            }
+        }
+    }
+    
+    private func layoutViews() {
+        
+        tableView.pin
+            .top(view.pin.safeArea.top)
+            .horizontally()
+            .bottom()
+        
+        makeVoteButton.pin
+            .bottom(112)
+            .right(20)
+        
+        lottie.pin
+            .width(150)
+            .height(75)
+            .center()
+        
+        view.flex.layout()
     }
 }
 
@@ -348,10 +388,32 @@ extension VoteViewController: BaseViewControllerDelegate {
 extension VoteViewController: UIScrollViewDelegate {
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         makeVoteButton.isScrolled = scrollView.contentOffset.y > 0
-        
+
         let pullDistance = min(max(-scrollView.contentOffset.y, 1), 60)
         let progress = pullDistance / 60
         lottie.alpha = progress
+
+        let contentHeight = scrollView.contentSize.height
+        let visibleHeight = scrollView.bounds.height
+        let offsetY = scrollView.contentOffset.y
+
+        guard contentHeight > 0 else { return }
+        guard hasNext == true else { return }
+        guard reactor?.currentState.isLoading == false else { return }
+
+        let threshold = contentHeight * 0.8
+
+        if offsetY + visibleHeight >= threshold {
+            fetchVotes(
+                category: topic,
+                isClosed: isClosed,
+                isMine: isMine,
+                sortLatest: sortLatest,
+                cursor: cursor,
+                size: 10,
+                scrollToTop: false
+            )
+        }
     }
     
     func scrollViewDidEndDragging(
@@ -362,7 +424,7 @@ extension VoteViewController: UIScrollViewDelegate {
             if !isRefreshing {
                 isRefreshing = true
                 refreshControl.beginRefreshing()
-                refresh()
+                fetchVotes(category: topic, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: nil, size: 10)
             }
         } else {
             if isRefreshing {

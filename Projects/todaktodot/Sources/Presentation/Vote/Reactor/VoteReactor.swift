@@ -20,7 +20,7 @@ final class VoteReactor: Reactor {
     }
     
     enum Action {
-        case fetchVotes(category: CardSubject?, status: Bool?, isMine: Bool?, sortLatest: Bool, cursor: Int?, size: Int?)
+        case fetchVotes(category: CardSubject?, isClosed: Bool?, isMine: Bool?, sortLatest: Bool?, cursor: String?, size: Int?)
         case tapOption(voteId: Int, optionId: Int, isWithdrawal: Bool)
         case isLoading(Bool)
     }
@@ -49,8 +49,8 @@ final class VoteReactor: Reactor {
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
-        case .fetchVotes(category: let category, status: let status, isMine: let isMine, sortLatest: let sortLatest, cursor: let cursor, size: let size):
-            useCase.fetchVotes(category: category, status: status, isMine: isMine, sortLatest: sortLatest, cursor: cursor, size: size)
+        case .fetchVotes(category: let category, isClosed: let isClosed, isMine: let isMine, sortLatest: let sortLatest, cursor: let cursor, size: let size):
+            useCase.fetchVotes(category: category, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: cursor, size: size)
                 .flatMap { voteList in
                     Observable.from([
                         .setVoteList(voteList),

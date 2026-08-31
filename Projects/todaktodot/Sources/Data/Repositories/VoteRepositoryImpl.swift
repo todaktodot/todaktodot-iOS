@@ -39,26 +39,30 @@ final class VoteRepositoryImpl: VoteRepository {
             .map { $0 }
     }
     
-    func fetchVoteList(category: CardSubject?, status: Bool?, isMine: Bool?, sortLatest: Bool, cursor: Int?, size: Int?) -> Observable<VoteList> {
+    func fetchVoteList(category: CardSubject?, isClosed: Bool?, isMine: Bool?, sortLatest: Bool?, cursor: String?, size: Int?) -> Observable<VoteList> {
         
-        var parameters: [String: Any] = [
-            "sortBy": sortLatest ? "LATEST" : "POPULAR"
-        ]
+        var parameters: [String: Any] = ["": ""]
+        
+        if let sortLatest {
+            parameters["sortBy"] = sortLatest ? "LATEST" : "POPULAR"
+        } else {
+            parameters["sortBy"] = "LATEST"
+        }
         
         if let category {
             parameters["category"] = category.rawValue
         }
         
-        if let status {
-            parameters["status"] = status ? "ACTIVE" : "CLOSED"
+        if let isClosed {
+            parameters["status"] = isClosed ? "CLOSED" : "ACTIVE"
         }
         
-        if let isMine {
-            parameters["isMine"] = isMine
+        if let isMine, isMine {
+            parameters["isMine"] = "Y"
         }
         
         if let cursor {
-            parameters["cursor"] = String(cursor)
+            parameters["cursor"] = cursor
         }
         
         if let size {

@@ -14,6 +14,7 @@ final class VoteCoordinator: Coordinator {
         case filter, menu, report, complete
     }
     
+    var onFilter: ((CardSubject?, Bool?, Bool?) -> Void)?
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
     weak var tabBarCoordinator: TabBarCoordinator?
@@ -35,12 +36,12 @@ final class VoteCoordinator: Coordinator {
         navigationController.pushViewController(vc, animated: true)
     }
     
-    func showModal(type: ModalType) {
+    func showModal(type: ModalType, topic: CardSubject? = nil, isClosed: Bool? = nil, isMine: Bool? = nil) {
         let viewController: UIViewController
 
         switch type {
         case .filter:
-            let vc = VoteFilterModalViewController()
+            let vc = VoteFilterModalViewController(category: topic, isClosed: isClosed, isMine: isMine)
             vc.coordinator = self
             vc.reactor = container.makeVoteReactor()
             viewController = vc
@@ -69,7 +70,10 @@ final class VoteCoordinator: Coordinator {
         navigationController.present(viewController, animated: true)
     }
     
-    func dismissModal(topic: CardSubject? = nil, isClosed: Bool? = nil, onlyMine: Bool = false) {
+    func dismissModal(topic: CardSubject? = nil, isClosed: Bool? = nil, onlyMine: Bool = false, updateFilter: Bool = false) {
+        if updateFilter {
+            onFilter?(topic, isClosed, onlyMine)
+        }
         navigationController.dismiss(animated: true)
     }
 }
