@@ -23,6 +23,7 @@ final class VoteReactor: Reactor {
         case fetchVotes(category: CardSubject?, status: Bool?, isMine: Bool?, sortLatest: Bool, cursor: Int?, size: Int?)
         case tapOption(voteId: Int, optionId: Int, isWithdrawal: Bool)
         case isLoading(Bool)
+        case removeVoteLocally(voteId: Int)
     }
     
     enum Mutation {
@@ -31,6 +32,7 @@ final class VoteReactor: Reactor {
         case setClosedVote
         case isLoading(Bool)
         case setError(Error)
+        case removeVote(voteId: Int)
     }
     
     enum Error {
@@ -63,7 +65,7 @@ final class VoteReactor: Reactor {
             useCase.voteSelect(voteId: voteId, optionId: optionId, isWithdrawal: isWithdrawal)
                 .map { .setVote($0) }
                 .catch {
-                    if let afError = $0.asCustomAFError, afError.isClosedVote {
+                    if let afError = $0.asCustomAFError, afError.apiErrorCode == .closedVote {
                         return .just(.setClosedVote)
                     }
                     return .empty()
@@ -72,6 +74,9 @@ final class VoteReactor: Reactor {
             
         case .isLoading(let isLoading):
             .just(.isLoading(isLoading))
+            
+        case .removeVoteLocally(let voteId):
+            .just(.removeVote(voteId: voteId))
         }
     }
     
@@ -89,6 +94,16 @@ final class VoteReactor: Reactor {
             newState.isLoading = isLoading
         case .setError(let error):
             newState.isError = error
+        case .removeVote(let voteId):
+            if let list = newState.voteList {
+                let filtered = list.data.filter { $0.voteId != voteId }
+                newState.voteList = VoteList(
+                    data: filtered,
+                    createVoteCnt: list.createVoteCnt,
+                    nextCursor: list.nextCursor,
+                    hasNext: list.hasNext
+                )
+            }
         }
         
         return newState

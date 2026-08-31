@@ -46,11 +46,13 @@ final class MakeVoteViewController: BaseViewController, View {
     private let questionTextView = UITextView().then {
         $0.font = .pretenMedium(16)
         $0.textColor = .grayScale900
+        $0.tintColor = .grayScale400
         $0.backgroundColor = .white
         $0.layer.cornerRadius = 6
         $0.layer.borderWidth = 1
         $0.layer.borderColor = UIColor(hex: "E6E6E6").cgColor
         $0.textContainerInset = UIEdgeInsets(top: 14, left: 12, bottom: 14, right: 12)
+        $0.textContainer.lineFragmentPadding = 0
         $0.isScrollEnabled = true
         $0.returnKeyType = .done
     }
@@ -77,9 +79,19 @@ final class MakeVoteViewController: BaseViewController, View {
     private let answerContainer = UIView()
     
     private let addAnswerButton = UIButton(type: .system).then {
-        $0.setTitle("+ 답변 항목 추가", for: .normal)
+        $0.setTitle("답변 항목 추가", for: .normal)
         $0.setTitleColor(.grayScale800, for: .normal)
         $0.titleLabel?.font = .pretenSemiBold(15)
+        $0.setImage(
+            UIImage(named: "plus_dark")?
+                .resized(to: CGSize(width: 14.3, height: 14.3))?
+                .withRenderingMode(.alwaysOriginal),
+            for: .normal
+        )
+        $0.imageView?.contentMode = .scaleAspectFit
+        $0.semanticContentAttribute = .forceRightToLeft
+        $0.imageEdgeInsets = UIEdgeInsets(top: 0, left: 4, bottom: 0, right: -4)
+        $0.titleEdgeInsets = UIEdgeInsets(top: 0, left: -4, bottom: 0, right: 4)
         $0.backgroundColor = .grayScale100
         $0.layer.cornerRadius = 10
     }
@@ -238,7 +250,7 @@ final class MakeVoteViewController: BaseViewController, View {
             flex.addItem(questionTitleLabel).marginBottom(8)
             flex.addItem().define { flex in
                 flex.addItem(questionTextView).height(143)
-                flex.addItem(questionPlaceholder).position(.absolute).top(14).left(16)
+                flex.addItem(questionPlaceholder).position(.absolute).top(14).left(12)
             }.marginBottom(4)
             flex.addItem(questionCountLabel).alignSelf(.end).marginBottom(16)
             
@@ -284,7 +296,7 @@ final class MakeVoteViewController: BaseViewController, View {
         // 포커스된 뷰를 키보드 위 8px로 스크롤
         if let activeView = view.findFirstResponder() {
             let rect = activeView.convert(activeView.bounds, to: scrollView)
-            let visibleRect = CGRect(x: rect.origin.x, y: rect.maxY + 8, width: rect.width, height: 1)
+            let visibleRect = CGRect(x: rect.origin.x, y: rect.maxY + 40, width: rect.width, height: 1)
             
             UIView.animate(withDuration: duration) {
                 self.scrollView.scrollRectToVisible(visibleRect, animated: false)
@@ -401,7 +413,6 @@ final class MakeVoteViewController: BaseViewController, View {
         reactor.state.map(\.isValid)
             .distinctUntilChanged()
             .subscribe(onNext: { [weak self] isValid in
-                print("[DEBUG] isValid: \(isValid), topic: \(reactor.currentState.selectedTopic != nil), question: \(reactor.currentState.question.count), answers: \(reactor.currentState.answers.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }.count)")
                 self?.submitButton.isEnabled = isValid
                 self?.submitButton.setTitleColor(isValid ? .mainPurple : .grayScale400, for: .normal)
             })
@@ -412,18 +423,93 @@ final class MakeVoteViewController: BaseViewController, View {
             .distinctUntilChanged()
             .subscribe(onNext: { [weak self] canAdd in
                 self?.addAnswerButton.flex.display(canAdd ? .flex : .none)
+                self?.addAnswerButton.isHidden = !canAdd
                 self?.maxAnswerLabel.flex.display(canAdd ? .none : .flex)
+                self?.maxAnswerLabel.isHidden = canAdd
                 self?.contentContainer.flex.layout(mode: .adjustHeight)
                 self?.scrollView.contentSize = self?.contentContainer.frame.size ?? .zero
             })
             .disposed(by: disposeBag)
         
-        // 완료
+        // 완료 → 피드로 이동 + 토스트
         reactor.state.map(\.isCompleted)
             .distinctUntilChanged()
             .filter { $0 }
             .subscribe(onNext: { [weak self] _ in
-                self?.dismiss(animated: true)
+                let isEdit: Bool
+                if case .edit = reactor.currentState.mode { isEdit = true } else { isEdit = false }
+                let message = isEdit ? "투표가 수정되었어요" : "투표가 게시되었어요"
+                self?.dismiss(animated: true) {
+                    self?.coordinator?.didFinishMakeVote(message: message)
+                }
+            })
+            .disposed(by: disposeBag)
+        
+        // 참여자가 있어 수정 불가 (V1002)
+        reactor.state.map(\.showParticipantAlert)
+            .distinctUntilChanged()
+            .filter { $0 }
+            .subscribe(onNext: { [weak self] _ in
+                self?.showAlert(
+                    icon: UIImage(named: "Warning"),
+                    title: "투표 참여자가 생기면 수정이 제한돼요",
+                    description: "방금 참여자가 생겨 수정할 수 없어요\n이전 화면으로 돌아갈까요?",
+                    primaryButtonTitle: "확인",
+                    primaryButtonAction: { [weak self] in
+                        self?.dismiss(animated: true)
+                    }
+                )
+            })
+            .disposed(by: disposeBag)
+        
+        // 게시/수정 실패 (1~3회차) - 재시도 가능
+        reactor.state.map(\.showRetryableAlert)
+            .distinctUntilChanged()
+            .filter { $0 }
+            .subscribe(onNext: { [weak self] _ in
+                self?.showAlert(
+                    icon: UIImage(named: "Warning"),
+                    title: "게시하지 못했어요",
+                    description: "잠시 후 다시 시도해주세요",
+                    primaryButtonTitle: "확인",
+                    primaryButtonAction: { [weak self] in
+                        self?.reactor?.action.onNext(.clearAlerts)
+                    }
+                )
+            })
+            .disposed(by: disposeBag)
+        
+        // 게시/수정 실패 (4회차 이상) - 최종 실패, 화면 이탈
+        reactor.state.map(\.showFinalAlert)
+            .distinctUntilChanged()
+            .filter { $0 }
+            .subscribe(onNext: { [weak self] _ in
+                self?.showAlert(
+                    icon: UIImage(named: "Warning"),
+                    title: "지금은 게시할 수 없어요",
+                    description: "일시적인 오류로 투표를 올릴 수 없어요. 작성한 내용은 저장되지 않아요. 불편을 드려 죄송해요.",
+                    primaryButtonTitle: "확인",
+                    primaryButtonAction: { [weak self] in
+                        self?.dismiss(animated: true)
+                    }
+                )
+            })
+            .disposed(by: disposeBag)
+        
+        // 네트워크 미연결
+        reactor.state.map(\.showNetworkAlert)
+            .distinctUntilChanged()
+            .filter { $0 }
+            .subscribe(onNext: { [weak self] _ in
+                self?.showAlert(
+                    icon: UIImage(named: "Warning"),
+                    title: "네트워크 연결을 확인해주세요",
+                    description: "인터넷에 연결되어 있지 않아요",
+                    primaryButtonTitle: "확인",
+                    primaryButtonAction: { [weak self] in
+                        self?.reactor?.action.onNext(.clearAlerts)
+                    }
+                )
             })
             .disposed(by: disposeBag)
     }
@@ -458,8 +544,9 @@ final class MakeVoteViewController: BaseViewController, View {
                     let textView = UITextView().then {
                         $0.font = .pretenMedium(15)
                         $0.textColor = isPlaceholder ? .grayScale400 : .grayScale900
+                        $0.tintColor = .grayScale400
                         $0.backgroundColor = .clear
-                        $0.textContainerInset = UIEdgeInsets(top: 18, left: 12, bottom: 18, right: 40)
+                        $0.textContainerInset = UIEdgeInsets(top: 18, left: 16, bottom: 18, right: 40)
                         $0.textContainer.lineFragmentPadding = 0
                         $0.isScrollEnabled = false
                         $0.returnKeyType = .done
@@ -471,7 +558,7 @@ final class MakeVoteViewController: BaseViewController, View {
                     let actionButton = UIButton(type: .system).then {
                         $0.tintColor = .grayScale400
                         if canRemove {
-                            $0.setImage(UIImage(systemName: "minus.circle.fill"), for: .normal)
+                            $0.setImage(UIImage(named: "circle_minus"), for: .normal)
                             $0.isHidden = false
                         } else {
                             $0.isHidden = true
@@ -500,7 +587,7 @@ final class MakeVoteViewController: BaseViewController, View {
                     
                     // 포커스 시: 클리어(x) 아이콘
                     textView.rx.didBeginEditing
-                        .subscribe(onNext: { [weak textView, weak actionButton, weak containerView] in
+                        .subscribe(onNext: { [weak self, weak textView, weak actionButton, weak containerView] in
                             guard let tv = textView else { return }
                             isFocused = true
                             if tv.text == "답변을 입력해주세요" && tv.textColor == .grayScale400 {
@@ -511,6 +598,13 @@ final class MakeVoteViewController: BaseViewController, View {
                             actionButton?.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
                             actionButton?.tintColor = .grayScale300
                             actionButton?.isHidden = tv.text.isEmpty
+                            
+                            // 포커스된 답변 셀을 키보드 위로 스크롤
+                            if let self, let container = containerView {
+                                let rect = container.convert(container.bounds, to: self.scrollView)
+                                let target = CGRect(x: rect.origin.x, y: rect.maxY + 100, width: rect.width, height: 1)
+                                self.scrollView.scrollRectToVisible(target, animated: true)
+                            }
                         })
                         .disposed(by: disposeBag)
                     
@@ -525,7 +619,7 @@ final class MakeVoteViewController: BaseViewController, View {
                             }
                             containerView?.layer.borderColor = UIColor.grayScale200.cgColor
                             if canRemove {
-                                actionButton?.setImage(UIImage(systemName: "minus.circle.fill"), for: .normal)
+                                actionButton?.setImage(UIImage(named: "circle_minus"), for: .normal)
                                 actionButton?.tintColor = .grayScale400
                                 actionButton?.isHidden = false
                             } else {
