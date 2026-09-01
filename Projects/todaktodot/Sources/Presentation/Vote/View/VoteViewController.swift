@@ -132,6 +132,18 @@ final class VoteViewController: BaseViewController, View {
         reactor?.action.onNext(.fetchVotes(category: nil, status: true, isMine: false, sortLatest: true, cursor: nil, size: 10))
     }
     
+    /// 투표 게시/수정 완료 후 리스트 새로고침 + 토스트
+    func reloadAndToast(message: String) {
+        refresh()
+        showToast(message: message, bottomOffset: 70)
+    }
+    
+    /// 투표 삭제 완료 후 프론트 즉시 제거 + 토스트
+    func removeVoteAndToast(voteId: Int, message: String) {
+        reactor?.action.onNext(.removeVoteLocally(voteId: voteId))
+        showToast(message: message, bottomOffset: 70)
+    }
+    
     private func showCloseAlert() {
         showAlert(icon: UIImage(resource: .warning), title: "방금 마감된 투표예요", description: "결과만 확인할 수 있어요", primaryButtonTitle: "확인", primaryButtonAction: {
         })
@@ -193,10 +205,10 @@ final class VoteViewController: BaseViewController, View {
                         )
                     }
                     
-                    cell.onTapMore = { [weak self] voteId in
+                    cell.onTapMore = { [weak self] info in
                         guard let self else { return }
                         
-                        self.coordinator?.showModal(type: .menu)
+                        self.coordinator?.showModal(type: .menu(vote: info))
                     }
                     
                     return cell

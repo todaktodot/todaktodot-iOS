@@ -15,13 +15,15 @@ final class VoteTableCell: UITableViewCell {
 
     var disposeBag = DisposeBag()
     var onTapOption: ((Int, Int, Bool) -> Void)?
-    var onTapMore: ((Int) -> Void)?
+    var onTapMore: ((VoteInfo) -> Void)?
     static let identifier = "VoteTableCell"
     
     private var heartCount = 0
     private var heartSelected = false
     private var optionViews: [VoteOptionView] = []
     private var voteId: Int?
+    private var isMine: Bool = false
+    private var currentInfo: VoteInfo?
 
     // MARK: - Skeleton
     private let skeletonContainer = UIView().then {
@@ -392,8 +394,8 @@ final class VoteTableCell: UITableViewCell {
     private func bindAction() {
         moreButton.rx.tap
             .subscribe { [weak self] _ in
-                guard let self, let voteId else { return }
-                onTapMore?(voteId)
+                guard let self, let currentInfo else { return }
+                onTapMore?(currentInfo)
             }
             .disposed(by: disposeBag)
     }
@@ -427,6 +429,7 @@ final class VoteTableCell: UITableViewCell {
             voteContainer.isHidden = true
         }
         divider.isHidden = isFirst
+        self.isMine = info.isMine
         if info.isMine {
             dotView.removeFromSuperview()
             isMineLabel.removeFromSuperview()
@@ -467,6 +470,7 @@ final class VoteTableCell: UITableViewCell {
     }
     
     private func setData(info: VoteInfo) {
+        currentInfo = info
         voteId = info.voteId
         nicknameLabel.text = info.nickname
         questionLabel.text = info.title

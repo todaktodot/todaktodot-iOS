@@ -33,6 +33,19 @@ struct VoteInfo: Codable, Equatable {
         }
     }
     
+    var cardSubject: CardSubject? {
+        switch category {
+        case "LOVE": return .love
+        case "LIFESTYLE", "LIFESYCLE": return .lifestyle
+        case "ECONOMY": return .economy
+        default: return nil
+        }
+    }
+    
+    var isClosed: Bool {
+        status == "CLOSED"
+    }
+    
     var time: String {
         remainingTime == "마감" ? "마감" : "\(remainingTime)시간 남음"
     }
