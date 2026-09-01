@@ -18,6 +18,7 @@ final class VoteReactor: Reactor {
         var isLoading: Bool?
         var isError: Error?
         var isLikeLoading: Bool = false
+        var reportingVoteId: Int?
     }
     
     enum Action {
@@ -25,6 +26,7 @@ final class VoteReactor: Reactor {
         case fetchVotes(category: CardSubject?, isClosed: Bool?, isMine: Bool?, sortLatest: Bool?, cursor: String?, size: Int?)
         case tapOption(voteId: Int, optionId: Int, isWithdrawal: Bool)
         case tapLike(voteId: Int, isLike: Bool)
+        case tapReport(voteId: Int, reason: ReportType)
     }
     
     enum Mutation {
@@ -34,6 +36,7 @@ final class VoteReactor: Reactor {
         case setClosedVote
         case setError(Error)
         case setIsLikeLoading(Bool)
+        case setReport(Int)
     }
     
     enum Error {
@@ -83,6 +86,10 @@ final class VoteReactor: Reactor {
                     .map { .setIsLikeLoading(false) }
                     .catchAndReturn(.setIsLikeLoading(false))
             )
+            
+        case .tapReport(let id, let reason):
+            useCase.reportVote(voteId: id, reason: reason)
+                .map { .setReport(id) }
         }
     }
     
@@ -102,6 +109,8 @@ final class VoteReactor: Reactor {
             newState.isError = error
         case .setIsLikeLoading(let isLikeLoading):
             newState.isLikeLoading = isLikeLoading
+        case .setReport(let id):
+            newState.reportingVoteId = id
         }
         
         return newState

@@ -26,4 +26,8 @@ final class VoteUseCase {
     func likeVote(voteId: Int, isLike: Bool) -> Observable<Void> {
         repository.likeVote(voteId: voteId, isLike: isLike)
     }
+    
+    func reportVote(voteId: Int, reason: ReportType) -> Observable<Void> {
+        repository.reportVote(voteId: voteId, reason: reason)
+    }
 }
