@@ -22,4 +22,8 @@ final class VoteUseCase {
     func fetchVotes(category: CardSubject?, isClosed: Bool?, isMine: Bool?, sortLatest: Bool?, cursor: String?, size: Int?) -> Observable<VoteList> {
         repository.fetchVoteList(category: category, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: cursor, size: size)
     }
+    
+    func likeVote(voteId: Int, isLike: Bool) -> Observable<Void> {
+        repository.likeVote(voteId: voteId, isLike: isLike)
+    }
 }

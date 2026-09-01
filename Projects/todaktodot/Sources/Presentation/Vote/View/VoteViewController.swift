@@ -162,9 +162,16 @@ final class VoteViewController: BaseViewController, View {
                     }
                     
                     cell.onTapMore = { [weak self] voteId in
-                        guard let self else { return }
-                        
-                        self.coordinator?.showModal(type: .menu)
+                        self?.coordinator?.showModal(type: .menu)
+                    }
+                    
+                    cell.onTapLike = { [weak self] voteId, isLike in
+                        guard let self,
+                              self.reactor?.currentState.isLikeLoading == false
+                        else {
+                            return
+                        }
+                        reactor.action.onNext(.tapLike(voteId: voteId, isLike: isLike))
                     }
                     
                     return cell

@@ -17,20 +17,23 @@ final class VoteReactor: Reactor {
         var isClosedVote: Bool?
         var isLoading: Bool?
         var isError: Error?
+        var isLikeLoading: Bool = false
     }
     
     enum Action {
+        case isLoading(Bool)
         case fetchVotes(category: CardSubject?, isClosed: Bool?, isMine: Bool?, sortLatest: Bool?, cursor: String?, size: Int?)
         case tapOption(voteId: Int, optionId: Int, isWithdrawal: Bool)
-        case isLoading(Bool)
+        case tapLike(voteId: Int, isLike: Bool)
     }
     
     enum Mutation {
+        case isLoading(Bool)
         case setVote(VoteInfo)
         case setVoteList(VoteList)
         case setClosedVote
-        case isLoading(Bool)
         case setError(Error)
+        case setIsLikeLoading(Bool)
     }
     
     enum Error {
@@ -72,6 +75,14 @@ final class VoteReactor: Reactor {
             
         case .isLoading(let isLoading):
             .just(.isLoading(isLoading))
+            
+        case .tapLike(let id, let isLike):
+            .just(.setIsLikeLoading(true))
+            .concat(
+                self.useCase.likeVote(voteId: id, isLike: isLike)
+                    .map { .setIsLikeLoading(false) }
+                    .catchAndReturn(.setIsLikeLoading(false))
+            )
         }
     }
     
@@ -89,6 +100,8 @@ final class VoteReactor: Reactor {
             newState.isLoading = isLoading
         case .setError(let error):
             newState.isError = error
+        case .setIsLikeLoading(let isLikeLoading):
+            newState.isLikeLoading = isLikeLoading
         }
         
         return newState

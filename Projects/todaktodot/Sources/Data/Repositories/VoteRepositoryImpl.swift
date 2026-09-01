@@ -79,4 +79,20 @@ final class VoteRepositoryImpl: VoteRepository {
         return networkManager.request(with: endpoint)
             .map { $0 }
     }
+    
+    func likeVote(voteId: Int, isLike: Bool) -> Observable<Void> {
+        let parameters: [String: Any] = [
+            "voteId": voteId
+        ]
+        
+        let endpoint = Endpoint<Empty>(
+            baseURL: .todaktodotAPI,
+            path: "/api/votes/like",
+            method: isLike ? .post : .delete,
+            parameters: parameters
+        )
+
+        return networkManager.requestOptional(with: endpoint)
+            .map { _ in }
+    }
 }

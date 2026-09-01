@@ -16,10 +16,11 @@ final class VoteTableCell: UITableViewCell {
     var disposeBag = DisposeBag()
     var onTapOption: ((Int, Int, Bool) -> Void)?
     var onTapMore: ((Int) -> Void)?
+    var onTapLike: ((Int, Bool) -> Void)?
     static let identifier = "VoteTableCell"
     
-    private var heartCount = 0
-    private var heartSelected = false
+    private var likeCount = 0
+    private var isLike = false
     private var optionViews: [VoteOptionView] = []
     private var voteId: Int?
 
@@ -188,7 +189,7 @@ final class VoteTableCell: UITableViewCell {
         
         setData(info: info)
         
-        likeButton.addTarget(self, action: #selector(didTapHeart), for: .touchUpInside)
+        likeButton.addTarget(self, action: #selector(didTapLike), for: .touchUpInside)
         
         optionsContainer.subviews.forEach { $0.removeFromSuperview() }
         optionViews.removeAll()
@@ -477,9 +478,9 @@ final class VoteTableCell: UITableViewCell {
         timeLabel.text = info.time
         participantLabel.text = "\(info.participantCnt)명 참여"
         
-        heartCount = info.likeCnt
-        heartSelected = info.hasLiked
-        updateHeart()
+        likeCount = info.likeCnt
+        isLike = info.hasLiked
+        setLike()
         
         nicknameLabel.flex.markDirty()
         questionLabel.flex.markDirty()
@@ -489,18 +490,34 @@ final class VoteTableCell: UITableViewCell {
         contentView.flex.layout()
     }
     
-    private func updateHeart() {
-        likeButton.customImage.image = heartSelected ? UIImage(resource: .voteHeartClicked) : UIImage(resource: .voteHeartNomal)
-        likeButton.customText.text = heartSelected ? "\(heartCount + 1)" : "\(heartCount)"
-        likeButton.customText.textColor = heartSelected ? .redErrorColor : .grayScale400
+    private func setLike() {
+        likeButton.customImage.image = isLike ? UIImage(resource: .voteHeartClicked) : UIImage(resource: .voteHeartNomal)
+        likeButton.customText.textColor = isLike ? .redErrorColor : .grayScale400
+        likeButton.customText.text = "\(likeCount)"
     }
     
-    @objc func didTapHeart() {
-        heartSelected.toggle()
-        updateHeart()
+    private func updateLike() {
+        if isLike {
+            likeCount -= 1
+        } else {
+            likeCount += 1
+        }
+        isLike.toggle()
+        
+        likeButton.customText.text = "\(likeCount)"
+        likeButton.customImage.image = isLike ? UIImage(resource: .voteHeartClicked) : UIImage(resource: .voteHeartNomal)
+        likeButton.customText.textColor = isLike ? .redErrorColor : .grayScale400
+        
+        if let voteId {
+            onTapLike?(voteId, isLike)
+        }
     }
 
     private func selectOption(voteId: Int, optionId: Int, isSelected: Bool) {
         onTapOption?(voteId, optionId, isSelected)
+    }
+    
+    @objc private func didTapLike() {
+        updateLike()
     }
 }
