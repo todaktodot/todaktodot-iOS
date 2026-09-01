@@ -15,14 +15,16 @@ final class VoteTableCell: UITableViewCell {
 
     var disposeBag = DisposeBag()
     var onTapOption: ((Int, Int, Bool) -> Void)?
-    var onTapMore: ((Int) -> Void)?
     var onTapLike: ((Int, Bool) -> Void)?
+    var onTapMore: ((VoteInfo) -> Void)?
     static let identifier = "VoteTableCell"
     
     private var likeCount = 0
     private var isLike = false
     private var optionViews: [VoteOptionView] = []
     private var voteId: Int?
+    private var isMine: Bool = false
+    private var currentInfo: VoteInfo?
 
     // MARK: - Skeleton
     private let skeletonContainer = UIView().then {
@@ -184,6 +186,7 @@ final class VoteTableCell: UITableViewCell {
         divider.isHidden = isFirst
         divider.flex.display(isFirst ? .none : .flex)
         
+        isMine = info.isMine
         dotView.isHidden = !info.isMine
         isMineLabel.isHidden = !info.isMine
         
@@ -217,8 +220,6 @@ final class VoteTableCell: UITableViewCell {
         
         voteContainer.flex.markDirty()
         contentView.flex.markDirty()
-        setNeedsLayout()
-        layoutIfNeeded()
     }
     
     func updateOption(info: VoteInfo) {
@@ -252,8 +253,6 @@ final class VoteTableCell: UITableViewCell {
         skeletonContainer.flex.display(.flex)
         
         contentView.flex.markDirty()
-        setNeedsLayout()
-        layoutIfNeeded()
         startSkeletonAnimation()
     }
 
@@ -273,8 +272,6 @@ final class VoteTableCell: UITableViewCell {
 //        voteContainer.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
         
         contentView.flex.markDirty()
-        setNeedsLayout()
-        layoutIfNeeded()
         
 //        UIView.animate(withDuration: 0.2, delay: 0, options: .curveEaseOut) {
 //            self.voteContainer.alpha = 1.0
@@ -445,8 +442,8 @@ final class VoteTableCell: UITableViewCell {
     private func bindAction() {
         moreButton.rx.tap
             .subscribe { [weak self] _ in
-                guard let self, let voteId else { return }
-                onTapMore?(voteId)
+                guard let self, let currentInfo else { return }
+                onTapMore?(currentInfo)
             }
             .disposed(by: disposeBag)
     }
@@ -471,6 +468,7 @@ final class VoteTableCell: UITableViewCell {
     }
     
     private func setData(info: VoteInfo) {
+        currentInfo = info
         voteId = info.voteId
         nicknameLabel.text = info.nickname
         questionLabel.text = info.title

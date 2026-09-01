@@ -108,8 +108,72 @@ final class VoteRepositoryImpl: VoteRepository {
             method: .post,
             parameters: parameters
         )
-
+        
         return networkManager.requestOptional(with: endpoint)
             .map { _ in }
+    }
+        
+    func createVote(request: VoteCreateRequest) -> Observable<Result<VoteCreateResult, Error>> {
+        let parameters: [String: Any] = [
+            "category": request.category.rawValue,
+            "title": request.title,
+            "options": request.options.map { ["content": $0.content, "order": $0.order] }
+        ]
+        
+        let endpoint = Endpoint<VoteCreateResult>(
+            baseURL: .todaktodotAPI,
+            path: "/api/votes",
+            method: .post,
+            parameters: parameters
+        )
+        
+        return networkManager.request(with: endpoint)
+            .map { Result<VoteCreateResult, Error>.success($0) }
+            .catch { .just(.failure($0)) }
+    }
+    
+    func updateVote(request: VoteUpdateRequest) -> Observable<Result<Void, Error>> {
+        let parameters: [String: Any] = [
+            "voteId": request.voteId,
+            "category": request.category.rawValue,
+            "title": request.title,
+            "options": request.options.map { ["content": $0.content, "order": $0.order] }
+        ]
+        
+        let endpoint = Endpoint<Empty>(
+            baseURL: .todaktodotAPI,
+            path: "/api/votes",
+            method: .put,
+            parameters: parameters
+        )
+        
+        return networkManager.requestOptional(with: endpoint)
+            .map { _ in Result<Void, Error>.success(()) }
+            .catch { .just(.failure($0)) }
+    }
+    
+    func fetchVoteDetail(voteId: Int) -> Observable<Result<VoteInfo, Error>> {
+        let endpoint = Endpoint<VoteInfo>(
+            baseURL: .todaktodotAPI,
+            path: "/api/votes",
+            method: .get,
+            parameters: ["voteId": voteId]
+        )
+        
+        return networkManager.request(with: endpoint)
+            .map { Result<VoteInfo, Error>.success($0) }
+            .catch { .just(.failure($0)) }
+    }
+    
+    func deleteVote(voteId: Int) -> Observable<Result<Void, Error>> {
+        let endpoint = Endpoint<Empty>(
+            baseURL: .todaktodotAPI,
+            path: "/api/votes/\(voteId)",
+            method: .delete
+        )
+        
+        return networkManager.requestOptional(with: endpoint)
+            .map { _ in Result<Void, Error>.success(()) }
+            .catch { .just(.failure($0)) }
     }
 }

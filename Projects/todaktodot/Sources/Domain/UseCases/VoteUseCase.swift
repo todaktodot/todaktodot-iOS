@@ -30,4 +30,20 @@ final class VoteUseCase {
     func reportVote(voteId: Int, reason: ReportType) -> Observable<Void> {
         repository.reportVote(voteId: voteId, reason: reason)
     }
+    
+    func createVote(request: VoteCreateRequest) -> Observable<Result<VoteCreateResult, Error>> {
+        repository.createVote(request: request)
+    }
+    
+    func updateVote(request: VoteUpdateRequest) -> Observable<Result<Void, Error>> {
+        repository.updateVote(request: request)
+    }
+    
+    func fetchVoteDetail(voteId: Int) -> Observable<Result<VoteInfo, Error>> {
+        repository.fetchVoteDetail(voteId: voteId)
+    }
+    
+    func deleteVote(voteId: Int) -> Observable<Result<Void, Error>> {
+        repository.deleteVote(voteId: voteId)
+    }
 }

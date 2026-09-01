@@ -27,6 +27,7 @@ final class VoteReactor: Reactor {
         case tapOption(voteId: Int, optionId: Int, isWithdrawal: Bool)
         case tapLike(voteId: Int, isLike: Bool)
         case tapReport(voteId: Int, reason: ReportType)
+        case removeVoteLocally(voteId: Int)
     }
     
     enum Mutation {
@@ -37,6 +38,7 @@ final class VoteReactor: Reactor {
         case setError(Error)
         case setIsLikeLoading(Bool)
         case setReport(Int)
+        case removeVote(voteId: Int)
     }
     
     enum Error {
@@ -69,7 +71,7 @@ final class VoteReactor: Reactor {
             useCase.voteSelect(voteId: voteId, optionId: optionId, isWithdrawal: isWithdrawal)
                 .map { .setVote($0) }
                 .catch {
-                    if let afError = $0.asCustomAFError, afError.isClosedVote {
+                    if let afError = $0.asCustomAFError, afError.apiErrorCode == .closedVote {
                         return .just(.setClosedVote)
                     }
                     return .empty()
@@ -90,6 +92,9 @@ final class VoteReactor: Reactor {
         case .tapReport(let id, let reason):
             useCase.reportVote(voteId: id, reason: reason)
                 .map { .setReport(id) }
+            
+        case .removeVoteLocally(let voteId):
+            .just(.removeVote(voteId: voteId))
         }
     }
     
@@ -111,6 +116,16 @@ final class VoteReactor: Reactor {
             newState.isLikeLoading = isLikeLoading
         case .setReport(let id):
             newState.reportingVoteId = id
+        case .removeVote(let voteId):
+            if let list = newState.voteList {
+                let filtered = list.data?.filter { $0.voteId != voteId }
+                newState.voteList = VoteList(
+                    data: filtered,
+                    createVoteCnt: list.createVoteCnt,
+                    nextCursor: list.nextCursor,
+                    hasNext: list.hasNext
+                )
+            }
         }
         
         return newState
