@@ -13,11 +13,12 @@ final class VoteCoordinator: Coordinator {
     enum ModalType {
         case filter
         case menu(vote: VoteInfo)
-        case report
+        case report(voteId: Int)
         case complete
     }
     
-    var onFilter: ((CardSubject?, Bool?, Bool?) -> Void)?
+    var onFilter: (([CardSubject]?, Bool?, Bool?) -> Void)?
+    var onBlind: ((Int) -> Void)?
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
     weak var tabBarCoordinator: TabBarCoordinator?
@@ -73,7 +74,7 @@ final class VoteCoordinator: Coordinator {
         navigationController.present(nav, animated: true)
     }
     
-    func showModal(type: ModalType, topic: CardSubject? = nil, isClosed: Bool? = nil, isMine: Bool? = nil) {
+    func showModal(type: ModalType, topic: [CardSubject]? = nil, isClosed: Bool? = nil, isMine: Bool? = nil) {
         let viewController: UIViewController
 
         switch type {
@@ -89,10 +90,11 @@ final class VoteCoordinator: Coordinator {
             vc.reactor = MenuModalReactor(vote: vote, useCase: container.makeVoteUseCase())
             viewController = vc
 
-        case .report:
+        case .report(let voteId):
             navigationController.dismiss(animated: true)
-            let vc = ReportModalViewController()
+            let vc = ReportModalViewController(voteId: voteId)
             vc.coordinator = self
+            vc.reactor = container.makeVoteReactor()
             viewController = vc
             
         case .complete:
@@ -108,7 +110,7 @@ final class VoteCoordinator: Coordinator {
         navigationController.present(viewController, animated: true)
     }
     
-    func dismissModal(topic: CardSubject? = nil, isClosed: Bool? = nil, onlyMine: Bool = false, updateFilter: Bool = false) {
+    func dismissModal(topic: [CardSubject]? = nil, isClosed: Bool? = nil, onlyMine: Bool = false, updateFilter: Bool = false) {
         if updateFilter {
             onFilter?(topic, isClosed, onlyMine)
         }

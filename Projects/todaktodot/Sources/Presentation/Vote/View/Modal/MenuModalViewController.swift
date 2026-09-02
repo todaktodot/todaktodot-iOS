@@ -198,7 +198,9 @@ final class MenuModalViewController: UIViewController, View {
     }
     
     @objc private func didTapReport() {
-        coordinator?.showModal(type: .report)
+        if let id = reactor?.currentState.vote.voteId {
+            coordinator?.showModal(type: .report(voteId: id))
+        }
     }
     
     @objc private func didTapDelete() {

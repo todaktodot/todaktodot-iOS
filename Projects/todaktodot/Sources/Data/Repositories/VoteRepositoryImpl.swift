@@ -39,7 +39,7 @@ final class VoteRepositoryImpl: VoteRepository {
             .map { $0 }
     }
     
-    func fetchVoteList(category: CardSubject?, isClosed: Bool?, isMine: Bool?, sortLatest: Bool?, cursor: String?, size: Int?) -> Observable<VoteList> {
+    func fetchVoteList(category: [CardSubject]?, isClosed: Bool?, isMine: Bool?, sortLatest: Bool?, cursor: String?, size: Int?) -> Observable<VoteList> {
         
         var parameters: [String: Any] = ["": ""]
         
@@ -50,7 +50,11 @@ final class VoteRepositoryImpl: VoteRepository {
         }
         
         if let category {
-            parameters["category"] = category.rawValue
+            var value: [String] = []
+            category.forEach {
+                value.append($0.rawValue)
+            }
+            parameters["category"] = value
         }
         
         if let isClosed {
@@ -99,7 +103,7 @@ final class VoteRepositoryImpl: VoteRepository {
     func reportVote(voteId: Int, reason: ReportType) -> Observable<Void> {
         let parameters: [String: Any] = [
             "voteId": voteId,
-            "reason": reason.rawValue
+            "reason": reason.apiValue
         ]
         
         let endpoint = Endpoint<Empty>(

@@ -30,7 +30,7 @@ final class VoteViewController: BaseViewController, View {
     private var isLoading: Bool = false
     private var isPaginating = false
     private var isFetchingNextPage: Bool = false
-    private var topic: CardSubject?
+    private var topic: [CardSubject]?
     private var isClosed: Bool?
     private var isMine: Bool?
     private var sortLatest: Bool?
@@ -38,6 +38,7 @@ final class VoteViewController: BaseViewController, View {
     private var size: Int?
     private var hasNext: Bool?
     private var voteList: [VoteInfo]?
+    private var blindVoteIds: [Int] = []
     
     private let tableView = UITableView().then {
         $0.rowHeight = UITableView.automaticDimension
@@ -88,6 +89,7 @@ final class VoteViewController: BaseViewController, View {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         layoutViews()
+        hideDefaultRefreshSpinner(in: refreshControl)
     }
     
     func bind(reactor: VoteReactor) {
@@ -116,9 +118,7 @@ final class VoteViewController: BaseViewController, View {
                 self.hasNext = voteListResponse?.hasNext
                 
                 guard let voteList = self.voteList, !voteList.isEmpty else {
-
                     return [.empty]
-
                 }
                 
                 return voteList.map {
@@ -138,6 +138,14 @@ final class VoteViewController: BaseViewController, View {
                         for: indexPath
                     ) as! VoteEmptyCell
                     
+                    cell.selectionStyle = .none
+                    
+                    cell.onTapReset = { [weak self] in
+                        self?.resetFilter()
+                        self?.voteHeaderView.filterButton.updateFilter(count: 0)
+                        self?.fetchVotes(cursor: nil)
+                    }
+                    
                     return cell
                     
                 case .vote(let info):
@@ -148,7 +156,8 @@ final class VoteViewController: BaseViewController, View {
                     
                     cell.configure(
                         info: info,
-                        isFirst: index == 0
+                        isFirst: index == 0,
+                        isBlind: self?.blindVoteIds.contains(info.voteId) ?? false
                     )
                     
                     cell.onTapOption = { [weak self] voteId, optionId, isSelected in
@@ -173,12 +182,6 @@ final class VoteViewController: BaseViewController, View {
                         }
                         reactor.action.onNext(.tapLike(voteId: voteId, isLike: isLike))
                     }
-                        
-                    cell.onTapMore = { [weak self] info in
-                        guard let self else { return }
-                        
-                        self.coordinator?.showModal(type: .menu(vote: info))
-                    }
                     
                     return cell
                     
@@ -201,6 +204,7 @@ final class VoteViewController: BaseViewController, View {
         
         reactor.state
             .compactMap { $0.selectedVote }
+            .distinctUntilChanged()
             .subscribe(onNext: { [weak self] selectedVote in
                 guard let self else { return }
                 
@@ -279,13 +283,16 @@ final class VoteViewController: BaseViewController, View {
                     
                 case .voteFailure:
                     showToast(message: "잠시 후 다시 시도해주세요")
+                    
+                case .reportFailure:
+                    return
                 }
-                
             })
             .disposed(by: disposeBag)
         
         reactor.state
-            .compactMap { $0.isClosedVote }
+            .compactMap { $0.isClosedVoteId }
+            .distinctUntilChanged()
             .subscribe(onNext: { [weak self] _ in
                 guard let self else { return }
                 self.showCloseAlert()
@@ -329,12 +336,41 @@ final class VoteViewController: BaseViewController, View {
         
         coordinator?.onFilter = { [weak self] topic, isClosed, isMine in
             guard let self else { return }
-            
+            var count = 0
             self.topic = topic
             self.isClosed = isClosed
             self.isMine = isMine
             
+            if topic != nil { count += topic?.count ?? 0 }
+            if isClosed != nil { count += 1 }
+            if isMine == true { count += 1 }
+            
             fetchVotes(cursor: nil)
+            voteHeaderView.filterButton.updateFilter(count: count)
+        }
+        
+        coordinator?.onBlind = { [weak self] voteId in
+            guard let self else { return }
+            let voteList = self.voteList ?? []
+            
+            guard let row = voteList.firstIndex(where: {
+                $0.voteId == voteId
+            }) else {
+                return
+            }
+            
+            let indexPath = IndexPath(row: row, section: 0)
+            
+            guard let cell = self.tableView.cellForRow(
+                at: indexPath
+            ) as? VoteTableCell else {
+                return
+            }
+            
+            blindVoteIds.append(voteId)
+            cell.showBlind()
+            tableView.beginUpdates()
+            tableView.endUpdates()
         }
         
         fetchVotes(cursor: nil)
@@ -367,6 +403,7 @@ final class VoteViewController: BaseViewController, View {
         isMine = nil
         sortLatest = nil
         cursor = nil
+        blindVoteIds = []
     }
     
     private func showCloseAlert() {

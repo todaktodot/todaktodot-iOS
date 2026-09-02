@@ -14,7 +14,7 @@ final class VoteReactor: Reactor {
     struct State {
         var voteList: VoteList?
         var selectedVote: VoteInfo?
-        var isClosedVote: Bool?
+        var isClosedVoteId: Int?
         var isLoading: Bool?
         var isError: Error?
         var isLikeLoading: Bool = false
@@ -23,7 +23,7 @@ final class VoteReactor: Reactor {
     
     enum Action {
         case isLoading(Bool)
-        case fetchVotes(category: CardSubject?, isClosed: Bool?, isMine: Bool?, sortLatest: Bool?, cursor: String?, size: Int?)
+        case fetchVotes(category: [CardSubject]?, isClosed: Bool?, isMine: Bool?, sortLatest: Bool?, cursor: String?, size: Int?)
         case tapOption(voteId: Int, optionId: Int, isWithdrawal: Bool)
         case tapLike(voteId: Int, isLike: Bool)
         case tapReport(voteId: Int, reason: ReportType)
@@ -34,8 +34,8 @@ final class VoteReactor: Reactor {
         case isLoading(Bool)
         case setVote(VoteInfo)
         case setVoteList(VoteList)
-        case setClosedVote
-        case setError(Error)
+        case setClosedVoteId(Int)
+        case setError(Error?)
         case setIsLikeLoading(Bool)
         case setReport(Int)
         case removeVote(voteId: Int)
@@ -45,6 +45,7 @@ final class VoteReactor: Reactor {
         case empty
         case network
         case voteFailure
+        case reportFailure
     }
     
     let initialState = State()
@@ -65,18 +66,28 @@ final class VoteReactor: Reactor {
                         .isLoading(false)
                     ])
                 }
-                .catchAndReturn(.setError(.network))
+                .catch { _ in
+                    .concat([
+                        .just(.setError(.network)),
+                        .just(.setError(nil))
+                    ])
+                }
             
         case .tapOption(voteId: let voteId, optionId: let optionId, isWithdrawal: let isWithdrawal):
             useCase.voteSelect(voteId: voteId, optionId: optionId, isWithdrawal: isWithdrawal)
                 .map { .setVote($0) }
                 .catch {
                     if let afError = $0.asCustomAFError, afError.apiErrorCode == .closedVote {
-                        return .just(.setClosedVote)
+                        return .just(.setClosedVoteId(voteId))
                     }
                     return .empty()
                 }
-                .catchAndReturn(.setError(.voteFailure))
+                .catch { _ in
+                    .concat([
+                        .just(.setError(.voteFailure)),
+                        .just(.setError(nil))
+                    ])
+                }
             
         case .isLoading(let isLoading):
             .just(.isLoading(isLoading))
@@ -92,6 +103,12 @@ final class VoteReactor: Reactor {
         case .tapReport(let id, let reason):
             useCase.reportVote(voteId: id, reason: reason)
                 .map { .setReport(id) }
+                .catch { _ in
+                    .concat([
+                        .just(.setError(.reportFailure)),
+                        .just(.setError(nil))
+                    ])
+                }
             
         case .removeVoteLocally(let voteId):
             .just(.removeVote(voteId: voteId))
@@ -106,8 +123,8 @@ final class VoteReactor: Reactor {
             newState.selectedVote = vote
         case .setVoteList(let list):
             newState.voteList = list
-        case .setClosedVote:
-            newState.isClosedVote = true
+        case .setClosedVoteId(let id):
+            newState.isClosedVoteId = id
         case .isLoading(let isLoading):
             newState.isLoading = isLoading
         case .setError(let error):

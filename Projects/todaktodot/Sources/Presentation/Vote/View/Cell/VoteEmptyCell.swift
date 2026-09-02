@@ -45,6 +45,8 @@ final class VoteEmptyCell: UITableViewCell {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         
         setupFlexLayout()
+        
+        resetButton.addTarget(self, action: #selector(onTapResetButton), for: .touchUpInside)
     }
     
     override func layoutSubviews() {
@@ -80,8 +82,7 @@ final class VoteEmptyCell: UITableViewCell {
             }
     }
     
-    
-    @objc func didTapHeart() {
+    @objc private func onTapResetButton() {
         onTapReset?()
     }
 }

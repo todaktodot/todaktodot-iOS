@@ -12,18 +12,24 @@ import Then
 import RxSwift
 
 final class VoteTableCell: UITableViewCell {
-
+    
+    private enum CellState {
+        case normal
+        case blind
+        case skeleton
+    }
+    
+    static let identifier = "VoteTableCell"
+    
     var disposeBag = DisposeBag()
     var onTapOption: ((Int, Int, Bool) -> Void)?
     var onTapLike: ((Int, Bool) -> Void)?
     var onTapMore: ((VoteInfo) -> Void)?
-    static let identifier = "VoteTableCell"
     
     private var likeCount = 0
     private var isLike = false
     private var optionViews: [VoteOptionView] = []
     private var voteId: Int?
-    private var isMine: Bool = false
     private var currentInfo: VoteInfo?
 
     // MARK: - Skeleton
@@ -76,7 +82,32 @@ final class VoteTableCell: UITableViewCell {
     private let participantSkeleton = UIView().then {
         $0.backgroundColor = .grayScale200
     }
-
+    
+    // MARK: - ReportBlind
+    private let blindContainer = UIView().then {
+        $0.backgroundColor = .grayScale100
+        $0.layer.cornerRadius = 12
+    }
+    
+    private let moreButtonBlind = UIImageView().then {
+        $0.tintColor = .grayScale200
+        $0.image = UIImage(resource: .ellipsis)
+    }
+    
+    private func makeBlindStick() -> UIView {
+        let view = UIView().then {
+            $0.backgroundColor = .grayScale200
+            $0.layer.cornerRadius = 5
+        }
+        return view
+    }
+    
+    private let blindLabel = UILabel().then {
+        $0.text = "신고하여 숨김 처리된 게시물이예요"
+        $0.textColor = .grayScale600
+        $0.font = .pretenSemiBold(15)
+    }
+    
     // MARK: - UI
     private let voteContainer = UIView().then {
         $0.backgroundColor = .white
@@ -86,7 +117,7 @@ final class VoteTableCell: UITableViewCell {
         $0.textColor = .grayScale400
         $0.font = .pretenSemiBold(12)
     }
-
+    
     private let questionLabel = UILabel().then {
         $0.textColor = .grayScale900
         $0.font = .pretenSemiBold(16)
@@ -118,7 +149,7 @@ final class VoteTableCell: UITableViewCell {
         $0.textColor = .grayScale400
         $0.font = .pretenRegular(13)
     }
-
+    
     private let optionsContainer = UIView()
     
     private let divider = UIView().then {
@@ -128,7 +159,7 @@ final class VoteTableCell: UITableViewCell {
     private let moreButton = UIButton().then {
         $0.setImage(UIImage(resource: .ellipsis), for: .normal)
     }
-
+    
     private let likeButton = ImageTextButton(
         horizonPadding: 0,
         verticalPadding: 0,
@@ -136,18 +167,19 @@ final class VoteTableCell: UITableViewCell {
         spacing: 2,
         imageSize: 20,
         imageFirst: true).then {
-        $0.customText.font = .pretenRegular(13)
-        $0.customText.textColor = .grayScale400
-    }
+            $0.customText.font = .pretenRegular(13)
+            $0.customText.textColor = .grayScale400
+        }
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
-
+        
         setupUI()
+        setupBlind()
         setupSkeletonUI()
         bindAction()
     }
-
+    
     required init?(coder: NSCoder) {
         fatalError()
     }
@@ -162,7 +194,7 @@ final class VoteTableCell: UITableViewCell {
             skeletonContainer.flex.layout()
         }
     }
-
+    
     override func systemLayoutSizeFitting(
         _ targetSize: CGSize,
         withHorizontalFittingPriority horizontalFittingPriority: UILayoutPriority,
@@ -170,33 +202,28 @@ final class VoteTableCell: UITableViewCell {
     ) -> CGSize {
         contentView.frame.size.width = targetSize.width
         contentView.flex.layout(mode: .adjustHeight)
-
+        
         return CGSize(width: targetSize.width, height: contentView.frame.height)
     }
     
-    func configure(info: VoteInfo, isFirst: Bool) {
-        skeletonContainer.isHidden = true
-        skeletonContainer.flex.display(.none)
-        voteContainer.isHidden = false
-        voteContainer.flex.display(.flex)
-        
-        if info.title.isEmpty {
-            voteContainer.isHidden = true
+    func configure(info: VoteInfo, isFirst: Bool, isBlind: Bool = false) {
+        if isBlind {
+            showBlind()
+            return
         }
+        
+        setState(.normal)
+        
         divider.isHidden = isFirst
         divider.flex.display(isFirst ? .none : .flex)
-        
-        isMine = info.isMine
         dotView.isHidden = !info.isMine
         isMineLabel.isHidden = !info.isMine
-        
         setData(info: info)
         
-        likeButton.addTarget(self, action: #selector(didTapLike), for: .touchUpInside)
-        
+//        optionsContainer.flex.clea
         optionsContainer.subviews.forEach { $0.removeFromSuperview() }
         optionViews.removeAll()
-
+        
         optionsContainer.flex
             .direction(.column)
             .gap(8)
@@ -210,9 +237,9 @@ final class VoteTableCell: UITableViewCell {
                             self?.selectOption(voteId: voteId, optionId: optionId, isSelected: isSelected)
                         }
                     }
-
+                    
                     self.optionViews.append(view)
-
+                    
                     flex.addItem(view)
                         .height(44)
                 }
@@ -220,93 +247,82 @@ final class VoteTableCell: UITableViewCell {
         
         voteContainer.flex.markDirty()
         contentView.flex.markDirty()
+        setNeedsLayout()
     }
-    
+
     func updateOption(info: VoteInfo) {
-        setData(info: info)
-        
         optionViews.enumerated().forEach { index, optionView in
             guard index < info.options.count else { return }
             let option = info.options[index]
             let state: VoteOptionState
-
+            
             if info.hasVoted {
                 state = option.isSelected ? .selected : .unSelected
             } else {
                 state = .normal
             }
-
+            
             optionView.updateState(
                 state,
-                percent: option.voteRate ?? 0, count: option.voteCnt ?? 0
+                percent: option.voteRate ?? 0,
+                count: option.voteCnt ?? 0,
+                isConfig: false
             )
         }
+        setData(info: info)
+        setNeedsLayout()
+        layoutIfNeeded()
     }
+
     
+    func showBlind() {
+        stopSkeletonAnimation()
+        setState(.blind)
+    }
+
     func showSkeleton() {
-        isUserInteractionEnabled = false
-        
-        voteContainer.isHidden = true
-        voteContainer.flex.display(.none)
-        
-        skeletonContainer.isHidden = false
-        skeletonContainer.flex.display(.flex)
-        
-        contentView.flex.markDirty()
+        setState(.skeleton)
         startSkeletonAnimation()
     }
 
     func hideSkeleton() {
         guard !skeletonContainer.isHidden else { return }
-        isUserInteractionEnabled = true
+
         stopSkeletonAnimation()
-        
-        skeletonContainer.isHidden = true
-        skeletonContainer.flex.display(.none)
-        
-        voteContainer.isHidden = false
-        voteContainer.flex.display(.flex)
-        
-        //TODO: 페이드인 효과
-//        voteContainer.alpha = 0.0
-//        voteContainer.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
-        
-        contentView.flex.markDirty()
-        
-//        UIView.animate(withDuration: 0.2, delay: 0, options: .curveEaseOut) {
-//            self.voteContainer.alpha = 1.0
-//            self.voteContainer.transform = .identity
-//        }
+        setState(.normal)
     }
     
     private func setupUI() {
         selectionStyle = .none
         
         contentView.flex.define { flex in
-                flex.addItem(divider).height(1)
-                flex.addItem(voteContainer)
-            }
+            flex.addItem(divider).height(1)
+            flex.addItem(voteContainer)
+            flex.addItem(blindContainer)
+                .margin(20)
+                .display(.none)
+        }
         
         voteContainer.flex
             .direction(.column)
             .padding(20)
             .define { flex in
-
+                
                 flex.addItem()
                     .direction(.row)
                     .alignItems(.center)
                     .height(24)
                     .define { header in
-
+                        
                         header.addItem(nicknameLabel)
-
+                        
                         header.addItem()
                             .grow(1)
-
+                        
                         header.addItem(moreButton)
                             .size(24)
                     }
-
+                
                 flex.addItem(questionLabel)
                     .marginTop(4)
                 
@@ -323,31 +339,79 @@ final class VoteTableCell: UITableViewCell {
                             .size(2)
                         $0.addItem(isMineLabel)
                             .marginLeft(4)
-
+                        
                         $0.addItem()
                             .grow(1)
-
+                        
                         $0.addItem(timeLabel)
                     }
-
+                
                 flex.addItem(optionsContainer)
                     .marginTop(24)
-
+                
                 flex.addItem()
                     .direction(.row)
                     .alignItems(.center)
                     .marginTop(16)
                     .define { bottom in
-
+                        
                         bottom.addItem(likeButton)
                             .height(20)
                         
                         bottom.addItem()
                             .grow(1)
-
+                        
                         bottom.addItem(participantLabel)
                     }
             }
+    }
+    
+    private func setupBlind() {
+        blindContainer.flex
+            .height(130)
+            .padding(20)
+            .define {
+                $0.addItem()
+                    .height(23)
+                    .direction(.row)
+                    .alignItems(.center)
+                    .define {
+                        $0.addItem(makeBlindStick())
+                            .width(70)
+                            .height(10)
+                        
+                        $0.addItem().grow(1)
+                        
+                        $0.addItem(moreButtonBlind)
+                    }
+                
+                $0.addItem(blindLabel)
+                    .alignSelf(.center)
+                    .marginTop(17)
+                
+                $0.addItem(makeBlindStick())
+                    .width(183)
+                    .marginTop(14)
+                    .height(10)
+                
+                $0.addItem()
+                    .direction(.row)
+                    .alignItems(.center)
+                    .marginTop(5)
+                    .define {
+                        $0.addItem(makeBlindStick())
+                            .width(151)
+                            .height(10)
+                        
+                        $0.addItem().grow(1)
+                        
+                        $0.addItem(makeBlindStick())
+                            .width(27)
+                            .height(10)
+                    }
+            }
+        
+        blindContainer.flex.display(.none)
     }
     
     private func setupSkeletonUI() {
@@ -438,34 +502,60 @@ final class VoteTableCell: UITableViewCell {
             }
         skeletonContainer.flex.display(.none)
     }
+    
+    private func setState(_ state: CellState) {
+        switch state {
+        case .normal:
+            isUserInteractionEnabled = true
 
-    private func bindAction() {
-        moreButton.rx.tap
-            .subscribe { [weak self] _ in
-                guard let self, let currentInfo else { return }
-                onTapMore?(currentInfo)
-            }
-            .disposed(by: disposeBag)
-    }
-    
-    private func startSkeletonAnimation() {
-        skeletonContainer.alpha = 1.0
+            voteContainer.isHidden = false
+            voteContainer.flex.display(.flex)
+
+            blindContainer.isHidden = true
+            blindContainer.flex.display(.none)
+
+            skeletonContainer.isHidden = true
+            skeletonContainer.flex.display(.none)
+
+            //TODO: 페이드인 효과
+            voteContainer.alpha = 0.0
+            voteContainer.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
+
+        case .blind:
+            isUserInteractionEnabled = false
+
+            voteContainer.isHidden = true
+            voteContainer.flex.display(.none)
+
+            blindContainer.isHidden = false
+            blindContainer.flex.display(.flex)
+
+            skeletonContainer.isHidden = true
+            skeletonContainer.flex.display(.none)
+
+        case .skeleton:
+            isUserInteractionEnabled = false
+
+            voteContainer.isHidden = true
+            voteContainer.flex.display(.none)
+
+            blindContainer.isHidden = true
+            blindContainer.flex.display(.none)
+
+            skeletonContainer.isHidden = false
+            skeletonContainer.flex.display(.flex)
+        }
+
+        contentView.flex.markDirty()
         
-        UIView.animate(
-            withDuration: 0.6,
-            delay: 0,
-            options: [.autoreverse, .repeat, .allowUserInteraction, .curveEaseInOut],
-            animations: {
-                self.skeletonContainer.alpha = 0.4
-            },
-            completion: nil
-        )
+        if state == .normal {
+            UIView.animate(withDuration: 0.2, delay: 0, options: .curveEaseOut) {
+                self.voteContainer.alpha = 1.0
+                self.voteContainer.transform = .identity
+            }
+        }
     }
     
-    private func stopSkeletonAnimation() {
-        skeletonContainer.layer.removeAllAnimations()
-        skeletonContainer.alpha = 1.0
-    }
     
     private func setData(info: VoteInfo) {
         currentInfo = info
@@ -494,6 +584,40 @@ final class VoteTableCell: UITableViewCell {
         likeButton.customText.text = "\(likeCount)"
     }
     
+    private func bindAction() {
+        likeButton.rx.tap
+            .subscribe { [weak self] _ in
+                self?.updateLike()
+            }
+            .disposed(by: disposeBag)
+
+        moreButton.rx.tap
+            .subscribe { [weak self] _ in
+                guard let self, let currentInfo else { return }
+                onTapMore?(currentInfo)
+            }
+            .disposed(by: disposeBag)
+    }
+    
+    private func startSkeletonAnimation() {
+        skeletonContainer.alpha = 1.0
+        
+        UIView.animate(
+            withDuration: 0.6,
+            delay: 0,
+            options: [.autoreverse, .repeat, .allowUserInteraction, .curveEaseInOut],
+            animations: {
+                self.skeletonContainer.alpha = 0.4
+            },
+            completion: nil
+        )
+    }
+    
+    private func stopSkeletonAnimation() {
+        skeletonContainer.layer.removeAllAnimations()
+        skeletonContainer.alpha = 1.0
+    }
+    
     private func updateLike() {
         if isLike {
             likeCount -= 1
@@ -510,12 +634,8 @@ final class VoteTableCell: UITableViewCell {
             onTapLike?(voteId, isLike)
         }
     }
-
+    
     private func selectOption(voteId: Int, optionId: Int, isSelected: Bool) {
         onTapOption?(voteId, optionId, isSelected)
-    }
-    
-    @objc private func didTapLike() {
-        updateLike()
     }
 }

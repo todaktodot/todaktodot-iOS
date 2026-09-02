@@ -17,7 +17,7 @@ final class VoteFilterModalViewController: UIViewController, View {
     var disposeBag = DisposeBag()
     weak var coordinator: VoteCoordinator?
     
-    private var category: CardSubject?
+    private var category: [CardSubject]?
     private var isClosed: Bool?
     private var isMine: Bool?
     
@@ -96,7 +96,7 @@ final class VoteFilterModalViewController: UIViewController, View {
     }
 
     init(
-        category: CardSubject? = nil,
+        category: [CardSubject]? = nil,
         isClosed: Bool? = nil,
         isMine: Bool? = nil
     ) {
@@ -132,10 +132,23 @@ final class VoteFilterModalViewController: UIViewController, View {
                 button.rx.tap
                     .subscribe(onNext: { [weak self] in
                         guard let self else { return }
-                        topicButtons
-                            .forEach {
-                                $0.isSelected = ($0 == button)
+
+                        if button == self.topicAllButton {
+                            topicButtons.forEach {
+                                $0.isSelected = ($0 == self.topicAllButton)
                             }
+                        } else {
+                            button.isSelected.toggle()
+
+                            let categoryButtons = [
+                                self.economiButton,
+                                self.lifeButton,
+                                self.loveButton
+                            ]
+
+                            self.topicAllButton.isSelected =
+                                !categoryButtons.contains(where: { $0.isSelected })
+                        }
                     })
                     .disposed(by: disposeBag)
             }
@@ -167,19 +180,26 @@ final class VoteFilterModalViewController: UIViewController, View {
             .subscribe(onNext: { [weak self] in
                 guard let self else { return }
 
-                let topic: CardSubject? = {
-                    switch true {
-                    case self.topicAllButton.isSelected:
-                        return nil
-                    case self.economiButton.isSelected:
-                        return .economy
-                    case self.lifeButton.isSelected:
-                        return .lifestyle
-                    case self.loveButton.isSelected:
-                        return .love
-                    default:
+                let topic: [CardSubject]? = {
+                    if self.topicAllButton.isSelected {
                         return nil
                     }
+
+                    var categories: [CardSubject] = []
+
+                    if self.economiButton.isSelected {
+                        categories.append(.economy)
+                    }
+
+                    if self.lifeButton.isSelected {
+                        categories.append(.lifestyle)
+                    }
+
+                    if self.loveButton.isSelected {
+                        categories.append(.love)
+                    }
+
+                    return categories.isEmpty ? nil : categories
                 }()
 
                 let isClosed: Bool? = {
@@ -212,16 +232,15 @@ final class VoteFilterModalViewController: UIViewController, View {
     private func applyInitialFilter() {
         let topicButtons = [topicAllButton, economiButton, lifeButton, loveButton]
         let statusButtons = [statusAllButton, progressButton, closedButton]
+        let selectedCategories = category ?? []
 
-        switch category {
-        case .economy:
-            selectButton(economiButton, from: topicButtons)
-        case .lifestyle:
-            selectButton(lifeButton, from: topicButtons)
-        case .love:
-            selectButton(loveButton, from: topicButtons)
-        case nil:
+        if selectedCategories.isEmpty {
             selectButton(topicAllButton, from: topicButtons)
+        } else {
+            topicAllButton.isSelected = false
+            economiButton.isSelected = selectedCategories.contains(.economy)
+            lifeButton.isSelected = selectedCategories.contains(.lifestyle)
+            loveButton.isSelected = selectedCategories.contains(.love)
         }
 
         switch isClosed {

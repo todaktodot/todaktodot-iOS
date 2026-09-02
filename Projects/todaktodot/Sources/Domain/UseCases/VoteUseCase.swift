@@ -19,7 +19,7 @@ final class VoteUseCase {
         repository.voteSelect(voteId: voteId, optionId: optionId, isWithdrawal: isWithdrawal)
     }
     
-    func fetchVotes(category: CardSubject?, isClosed: Bool?, isMine: Bool?, sortLatest: Bool?, cursor: String?, size: Int?) -> Observable<VoteList> {
+    func fetchVotes(category: [CardSubject]?, isClosed: Bool?, isMine: Bool?, sortLatest: Bool?, cursor: String?, size: Int?) -> Observable<VoteList> {
         repository.fetchVoteList(category: category, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: cursor, size: size)
     }
     
