@@ -14,7 +14,7 @@ import RxSwift
 final class VoteTableCell: UITableViewCell {
     
     private enum CellState {
-        case normal
+        case normal(Bool)
         case blind
         case skeleton
     }
@@ -212,15 +212,12 @@ final class VoteTableCell: UITableViewCell {
             return
         }
         
-        setState(.normal)
-        
         divider.isHidden = isFirst
         divider.flex.display(isFirst ? .none : .flex)
         dotView.isHidden = !info.isMine
         isMineLabel.isHidden = !info.isMine
         setData(info: info)
         
-//        optionsContainer.flex.clea
         optionsContainer.subviews.forEach { $0.removeFromSuperview() }
         optionViews.removeAll()
         
@@ -230,7 +227,12 @@ final class VoteTableCell: UITableViewCell {
             .define { flex in
                 info.options.forEach { option in
                     let view = VoteOptionView()
-                    view.configure(voteOption: option, hasVoted: info.hasVoted, isClosed: info.time == "마감")
+                    view.configure(
+                        voteOption: option,
+                        hasVoted: info.hasVoted,
+                        isClosed: info.time == "마감",
+                        isHighest: findHighestVoteId(info) != nil ? option.optionId == findHighestVoteId(info) : nil
+                    )
                     
                     view.onTap = { [weak self] optionId, isSelected in
                         if let voteId = self?.voteId {
@@ -251,6 +253,7 @@ final class VoteTableCell: UITableViewCell {
     }
 
     func updateOption(info: VoteInfo) {
+        
         optionViews.enumerated().forEach { index, optionView in
             guard index < info.options.count else { return }
             let option = info.options[index]
@@ -266,7 +269,8 @@ final class VoteTableCell: UITableViewCell {
                 state,
                 percent: option.voteRate ?? 0,
                 count: option.voteCnt ?? 0,
-                isConfig: false
+                isConfig: false,
+                isHighest: findHighestVoteId(info) != nil ? option.optionId == findHighestVoteId(info) : nil
             )
         }
         setData(info: info)
@@ -285,11 +289,11 @@ final class VoteTableCell: UITableViewCell {
         startSkeletonAnimation()
     }
 
-    func hideSkeleton() {
+    func hideSkeleton(animate: Bool) {
         guard !skeletonContainer.isHidden else { return }
 
         stopSkeletonAnimation()
-        setState(.normal)
+        setState(.normal(animate))
     }
     
     private func setupUI() {
@@ -505,7 +509,7 @@ final class VoteTableCell: UITableViewCell {
     
     private func setState(_ state: CellState) {
         switch state {
-        case .normal:
+        case .normal(let animate):
             isUserInteractionEnabled = true
 
             voteContainer.isHidden = false
@@ -518,8 +522,10 @@ final class VoteTableCell: UITableViewCell {
             skeletonContainer.flex.display(.none)
 
             //TODO: 페이드인 효과
-            voteContainer.alpha = 0.0
-            voteContainer.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
+            if animate {
+                voteContainer.alpha = 0.0
+                voteContainer.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
+            }
 
         case .blind:
             isUserInteractionEnabled = false
@@ -548,11 +554,16 @@ final class VoteTableCell: UITableViewCell {
 
         contentView.flex.markDirty()
         
-        if state == .normal {
-            UIView.animate(withDuration: 0.2, delay: 0, options: .curveEaseOut) {
-                self.voteContainer.alpha = 1.0
-                self.voteContainer.transform = .identity
+        switch state {
+        case .normal(let animate):
+            if animate {
+                UIView.animate(withDuration: 0.2, delay: 0, options: .curveEaseOut) {
+                    self.voteContainer.alpha = 1.0
+                    self.voteContainer.transform = .identity
+                }
             }
+        case .blind, .skeleton:
+            return
         }
     }
     
@@ -564,7 +575,7 @@ final class VoteTableCell: UITableViewCell {
         questionLabel.text = info.title
         topicLabel.text = info.categoryName
         timeLabel.text = info.time
-        participantLabel.text = "\(info.participantCnt)명 참여"
+        participantLabel.text = info.isClosed && info.participantCnt == 0 ? "아무도 참여하지 않고 마감됐어요" : "\(info.participantCnt)명 참여"
         
         likeCount = info.likeCnt
         isLike = info.hasLiked
@@ -638,4 +649,19 @@ final class VoteTableCell: UITableViewCell {
     private func selectOption(voteId: Int, optionId: Int, isSelected: Bool) {
         onTapOption?(voteId, optionId, isSelected)
     }
+    
+    private func findHighestVoteId(_ info: VoteInfo) -> Int? {
+        let maxVoteCount = info.options
+            .map { $0.voteCnt ?? 0 }
+            .max() ?? 0
+        
+        if maxVoteCount == 0 { return nil }
+
+        let highestVoteIds = info.options
+            .filter { ($0.voteCnt ?? 0) == maxVoteCount }
+            .map(\.optionId)
+        
+        return highestVoteIds.count > 1 ? nil : highestVoteIds.first
+    }
+    
 }

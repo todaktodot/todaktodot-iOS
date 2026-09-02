@@ -208,7 +208,7 @@ final class VoteViewController: BaseViewController, View {
             .subscribe(onNext: { [weak self] selectedVote in
                 guard let self else { return }
                 
-                let voteList = self.reactor?.currentState.voteList?.data ?? []
+                let voteList = self.voteList ?? []
                 
                 guard let row = voteList.firstIndex(where: {
                     $0.voteId == selectedVote.voteId
@@ -235,6 +235,8 @@ final class VoteViewController: BaseViewController, View {
             .subscribe(onNext: { [weak self] isLoading in
                 guard let self else { return }
                 
+                let wasPaginating = self.isFetchingNextPage
+                
                 if !isLoading {
                     refreshControl.endRefreshing()
                     lottie.alpha = 0
@@ -245,21 +247,16 @@ final class VoteViewController: BaseViewController, View {
                 
                 tableView.isScrollEnabled = !isLoading
                 
-                let listCount = reactor.currentState.voteList?.data?.count ?? 0
-                
-                for i in 0..<listCount {
-                    let indexPath = IndexPath(row: i, section: 0)
-                    guard let cell = tableView.cellForRow(
-                        at: indexPath
-                    ) as? VoteTableCell else {
-                        return
+                tableView.visibleCells
+                    .compactMap { $0 as? VoteTableCell }
+                    .forEach { cell in
+                        if isLoading {
+                            cell.showSkeleton()
+                        } else {
+                            print("wasPaginating: \(wasPaginating)")
+                            cell.hideSkeleton(animate: !wasPaginating)
+                        }
                     }
-                    if isLoading {
-                        cell.showSkeleton()
-                    } else {
-                        cell.hideSkeleton()
-                    }
-                }
             })
             .disposed(by: disposeBag)
         

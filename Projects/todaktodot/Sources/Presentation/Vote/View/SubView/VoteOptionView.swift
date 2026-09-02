@@ -91,13 +91,13 @@ final class VoteOptionView: UIView {
         updateProgressFrame(animated: false)
     }
     
-    func configure(voteOption: VoteOption, hasVoted: Bool, isClosed: Bool) {
+    func configure(voteOption: VoteOption, hasVoted: Bool, isClosed: Bool, isHighest: Bool?) {
         self.optionId = voteOption.optionId
         self.isClosedOption = isClosed
         self.titleLabel.text = voteOption.content
         
         let targetState: VoteOptionState
-        if isClosed || hasVoted {
+        if hasVoted {
             targetState = voteOption.isSelected ? .selected : .unSelected
         } else {
             targetState = .normal
@@ -107,7 +107,8 @@ final class VoteOptionView: UIView {
             targetState,
             percent: voteOption.voteRate ?? 0,
             count: voteOption.voteCnt ?? 0,
-            isConfig: true
+            isConfig: true,
+            isHighest: isHighest
         )
     }
     
@@ -115,43 +116,55 @@ final class VoteOptionView: UIView {
         _ state: VoteOptionState,
         percent: CGFloat,
         count: Int,
-        isConfig: Bool = false
+        isConfig: Bool = false,
+        isHighest: Bool?,
     ) {
         self.state = state
         self.percent = percent
+        
+        percentLabel.text = "\(Int(percent))%"
+        voteCountLabel.text = "\(Int(count))표"
 
         switch state {
         case .normal:
             checkmarkView.flex.display(.none)
             percentLabel.flex.display(.none)
             voteCountLabel.flex.display(.none)
-            titleLabel.textColor = .grayScale800
 
         case .selected:
+            checkmarkView.image = UIImage(resource: isHighest == true ? .checkmark : .checkmarkGray)
+            
             checkmarkView.flex.display(.flex)
             percentLabel.flex.display(.flex)
             voteCountLabel.flex.display(.flex)
-
-            percentLabel.text = "\(Int(percent))%"
-            voteCountLabel.text = "\(Int(count))표"
-            titleLabel.textColor = .grayScale800
-            voteCountLabel.textColor = .grayScale800
-            percentLabel.textColor = .grayScale800
-            progressView.backgroundColor = .subPurple
 
         case .unSelected:
             checkmarkView.flex.display(.none)
             percentLabel.flex.display(.flex)
             voteCountLabel.flex.display(.flex)
-
-            percentLabel.text = "\(Int(percent))%"
-            voteCountLabel.text = "\(Int(count))표"
-            titleLabel.textColor = .grayScale500
-            voteCountLabel.textColor = .grayScale500
-            percentLabel.textColor = .grayScale500
-            progressView.backgroundColor = .grayScale200
         }
+        
+       if let isHighest {
+            progressView.backgroundColor = isHighest ? .subPurple : .grayScale200
+            titleLabel.textColor = isHighest ? .grayScale800 : .grayScale500
+            voteCountLabel.textColor = isHighest ? .grayScale800 : .grayScale500
+            percentLabel.textColor = isHighest ? .grayScale800 : .grayScale500
+        } else {
+            progressView.backgroundColor = .grayScale200
+            
+            switch state {
+            case .normal:
+                titleLabel.textColor = .grayScale800
+                voteCountLabel.textColor = .grayScale800
+                percentLabel.textColor = .grayScale800
 
+            case .unSelected, .selected:
+                titleLabel.textColor = .grayScale500
+                voteCountLabel.textColor = .grayScale500
+                percentLabel.textColor = .grayScale500
+            }
+        }
+        
         percentLabel.flex.markDirty()
         voteCountLabel.flex.markDirty()
         flex.markDirty()
