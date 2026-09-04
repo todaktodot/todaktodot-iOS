@@ -43,6 +43,7 @@ final class AlertViewController: UIViewController {
         let icon: UIImage?
         let title: String
         let description: String?
+        let subDescription: String?
         let tintedDescription: String?
         let primaryButtonTitle: String
         let primaryButtonAction: () -> Void
@@ -57,6 +58,7 @@ final class AlertViewController: UIViewController {
     private let iconImageView = UIImageView()
     private let titleLabel = TDLabel()
     private let descriptionLabel = TDLabel()
+    private let subDescriptionLabel = TDLabel()
     private let buttonContainer = UIView()
     private let primaryButton = UIButton()
     private let secondaryButton = UIButton()
@@ -177,6 +179,12 @@ final class AlertViewController: UIViewController {
         descriptionLabel.attributedText = finalAttributedString
         descriptionLabel.numberOfLines = 0
         
+        subDescriptionLabel.text = config.subDescription
+        subDescriptionLabel.font = .pretenRegular(14)
+        subDescriptionLabel.textColor = .grayScale500
+        subDescriptionLabel.numberOfLines = 0
+        subDescriptionLabel.textAlignment = .center
+        
         primaryButton.setTitle(config.primaryButtonTitle, for: .normal)
         primaryButton.setTitleColor(.white, for: .normal)
         primaryButton.titleLabel?.font = .pretenSemiBold(16)
@@ -202,6 +210,10 @@ final class AlertViewController: UIViewController {
             alertContainer.addSubview(descriptionLabel)
         }
         
+        if config.subDescription != nil {
+            alertContainer.addSubview(subDescriptionLabel)
+        }
+        
         alertContainer.addSubview(buttonContainer)
         buttonContainer.addSubview(primaryButton)
         if config.secondaryButtonTitle != nil {
@@ -217,6 +229,10 @@ final class AlertViewController: UIViewController {
                 
                 if config.description != nil || config.tintedDescription != nil {
                     flex.addItem(descriptionLabel).marginTop(8)
+                }
+
+                if config.subDescription != nil {
+                    flex.addItem(subDescriptionLabel).marginTop(8)
                 }
                 
                 flex.addItem(buttonContainer).marginTop(24).define { buttonFlex in
@@ -305,6 +321,7 @@ extension UIViewController {
         icon: UIImage?,
         title: String,
         description: String? = nil,
+        subDescription: String? = nil,
         tintedDescription: String? = nil,
         primaryButtonTitle: String,
         primaryButtonAction: @escaping () -> Void,
@@ -317,6 +334,7 @@ extension UIViewController {
             icon: icon,
             title: title,
             description: description,
+            subDescription: subDescription,
             tintedDescription: tintedDescription,
             primaryButtonTitle: primaryButtonTitle,
             primaryButtonAction: primaryButtonAction,

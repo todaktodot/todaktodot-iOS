@@ -43,6 +43,8 @@ final class VoteViewController: BaseViewController, View {
     private var isMypage: Bool
     private var filterCount = 0
     private var isEmptyVoteList = false
+    private var todayVoteMakeCount = 0
+    private var isSuspendedAccount = false
     
     private let tableView = UITableView().then {
         $0.rowHeight = UITableView.automaticDimension
@@ -133,6 +135,8 @@ final class VoteViewController: BaseViewController, View {
                 
                 self.cursor = voteListResponse.nextCursor
                 self.hasNext = voteListResponse.hasNext
+                self.todayVoteMakeCount = voteListResponse.createVoteCnt ?? 0
+                self.isSuspendedAccount = voteListResponse.isSuspended
                 
                 guard let voteList = self.voteList, !voteList.isEmpty else {
                     isEmptyVoteList = true
@@ -177,7 +181,7 @@ final class VoteViewController: BaseViewController, View {
                         cell.selectionStyle = .none
                         
                         cell.onTapMake = { [weak self] in
-                            self?.coordinator?.showMakeVote()
+                            self?.makeVote()
                         }
                         
                         return cell
@@ -289,7 +293,6 @@ final class VoteViewController: BaseViewController, View {
                         if isLoading {
                             cell.showSkeleton()
                         } else {
-                            print("wasPaginating: \(wasPaginating)")
                             cell.hideSkeleton(animate: !wasPaginating)
                         }
                     }
@@ -335,7 +338,7 @@ final class VoteViewController: BaseViewController, View {
         makeVoteButton.rx.tap
             .subscribe(onNext: { [weak self] in
                 guard let self else { return }
-                coordinator?.showMakeVote()
+                makeVote()
             })
             .disposed(by: disposeBag)
         
@@ -421,6 +424,18 @@ final class VoteViewController: BaseViewController, View {
     func removeVoteAndToast(voteId: Int, message: String) {
         reactor?.action.onNext(.removeVoteLocally(voteId: voteId))
         showToast(message: message, bottomOffset: 70)
+    }
+    
+    private func makeVote() {
+        if isSuspendedAccount {
+            showAlert(icon: UIImage(resource: .warning), title: "지금은 투표를 올릴 수 없어요", description: "신고 접수로 인해 작성이 정지되었어요", subDescription: "자세한 내용은 아래 메일로 문의해주세요\n✉️todaktodot26@gmail.com", primaryButtonTitle: "확인", primaryButtonAction: {})
+        } else {
+            if todayVoteMakeCount < 10 {
+                coordinator?.showMakeVote()
+            } else {
+                showAlert(icon: UIImage(resource: .warning), title: "하루에 작성할 수 있는 투표를\n모두 채웠어요", description: "투표는 하루 최대 10개까지 올릴 수 있어요\n내일 새로운 질문으로 만나요!", primaryButtonTitle: "확인", primaryButtonAction: {})
+            }
+        }
     }
     
     private func fetchVotes(cursor: String?, scrollToTop: Bool = true, paginating: Bool = false) {

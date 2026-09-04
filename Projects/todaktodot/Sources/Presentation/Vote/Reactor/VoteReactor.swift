@@ -156,7 +156,8 @@ final class VoteReactor: Reactor {
                     data: filtered,
                     createVoteCnt: list.createVoteCnt,
                     nextCursor: list.nextCursor,
-                    hasNext: list.hasNext
+                    hasNext: list.hasNext,
+                    isSuspended: list.isSuspended
                 )
             }
         }
