@@ -18,7 +18,7 @@ final class VoteCoordinator: Coordinator {
     }
     
     var onFilter: (([CardSubject]?, Bool?, Bool?) -> Void)?
-    var onBlind: ((Int) -> Void)?
+    var onHidden: ((Int) -> Void)?
     var childCoordinators: [Coordinator] = []
     var navigationController: UINavigationController
     weak var tabBarCoordinator: TabBarCoordinator?
@@ -30,6 +30,14 @@ final class VoteCoordinator: Coordinator {
     
     func start() {
         let vc = VoteViewController()
+        vc.coordinator = self
+        vc.reactor = container.makeVoteReactor()
+        navigationController.pushViewController(vc, animated: true)
+    }
+    
+    func showMyVotes() {
+        let vc = VoteViewController(fromMypage: true)
+        vc.title = "내가 작성한 투표"
         vc.coordinator = self
         vc.reactor = container.makeVoteReactor()
         navigationController.pushViewController(vc, animated: true)

@@ -29,33 +29,38 @@ final class VoteErrorView: UIView {
     
     init() {
         super.init(frame: .zero)
-        setupFlexLayout()
+        setupUI()
     }
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
+
     override func layoutSubviews() {
         super.layoutSubviews()
-        flex.layout()
+        
+        icon.pin
+            .hCenter()
+            .top()
+            .size(64)
+        
+        titleLabel.pin
+            .hCenter()
+            .top(68)
+            .height(25)
+            .sizeToFit()
+        
+        descriptionLabel.pin
+            .hCenter()
+            .top(97)
+            .height(20)
+            .sizeToFit()
     }
     
-    private func setupFlexLayout() {
-        self.flex
-            .alignItems(.center)
-            .define {
-                $0.addItem(icon)
-                    .size(64)
-                
-                $0.addItem(titleLabel)
-                    .marginTop(4)
-                    .height(25)
-                
-                $0.addItem(descriptionLabel)
-                    .marginTop(4)
-                    .height(20)
-            }
+    private func setupUI() {
+        addSubview(icon)
+        addSubview(titleLabel)
+        addSubview(descriptionLabel)
     }
 }
 

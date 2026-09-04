@@ -38,7 +38,11 @@ final class VoteViewController: BaseViewController, View {
     private var size: Int?
     private var hasNext: Bool?
     private var voteList: [VoteInfo]?
-    private var blindVoteIds: [Int] = []
+    private var hiddenVoteIds: [Int] = []
+    private var isSetupNavigation = true
+    private var isMypage: Bool
+    private var filterCount = 0
+    private var isEmptyVoteList = false
     
     private let tableView = UITableView().then {
         $0.rowHeight = UITableView.automaticDimension
@@ -52,6 +56,10 @@ final class VoteViewController: BaseViewController, View {
         $0.register(
             VoteEmptyCell.self,
             forCellReuseIdentifier: "VoteEmptyCell"
+        )
+        $0.register(
+            VoteFilterEmptyCell.self,
+            forCellReuseIdentifier: "VoteFilterEmptyCell"
         )
     }
     
@@ -70,13 +78,23 @@ final class VoteViewController: BaseViewController, View {
     private let voteHeaderView = VoteHeaderView()
     private let refreshControl = UIRefreshControl()
     
-    init() {
+    init(fromMypage: Bool = false) {
+        self.isSetupNavigation = !fromMypage
+        self.isMypage = fromMypage
+        if fromMypage {
+            voteHeaderView.filterButton.flex.display(.none)
+        }
+        
         super.init(nibName: nil, bundle: nil)
         isLoading = false
     }
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    override var shouldSetupNavigation: Bool {
+        isSetupNavigation
     }
     
     override func viewDidLoad() {
@@ -99,12 +117,11 @@ final class VoteViewController: BaseViewController, View {
             .distinctUntilChanged()
             .map { [weak self] voteListResponse -> [VoteListItem] in
                 guard let self = self else { return [] }
-                
                 let votes = voteListResponse?.data
                 
-                if votes == nil {
+                guard let voteListResponse else {
                     return (0..<10).map { _ in
-                            .skeleton(VoteInfo.dummy)
+                        .skeleton(VoteInfo.dummy)
                     }
                 }
                 
@@ -114,12 +131,15 @@ final class VoteViewController: BaseViewController, View {
                     self.voteList = votes
                 }
                 
-                self.cursor = voteListResponse?.nextCursor
-                self.hasNext = voteListResponse?.hasNext
+                self.cursor = voteListResponse.nextCursor
+                self.hasNext = voteListResponse.hasNext
                 
                 guard let voteList = self.voteList, !voteList.isEmpty else {
+                    isEmptyVoteList = true
                     return [.empty]
                 }
+                
+                isEmptyVoteList = false
                 
                 return voteList.map {
                     .vote($0)
@@ -133,20 +153,35 @@ final class VoteViewController: BaseViewController, View {
                 
                 switch item {
                 case .empty:
-                    let cell = tableView.dequeueReusableCell(
-                        withIdentifier: "VoteEmptyCell",
-                        for: indexPath
-                    ) as! VoteEmptyCell
-                    
-                    cell.selectionStyle = .none
-                    
-                    cell.onTapReset = { [weak self] in
-                        self?.resetFilter()
-                        self?.voteHeaderView.filterButton.updateFilter(count: 0)
-                        self?.fetchVotes(cursor: nil)
+                    if let count = self?.filterCount, count > 0 {
+                        let cell = tableView.dequeueReusableCell(
+                            withIdentifier: "VoteFilterEmptyCell",
+                            for: indexPath
+                        ) as! VoteFilterEmptyCell
+                        
+                        cell.selectionStyle = .none
+                        
+                        cell.onTapReset = { [weak self] in
+                            self?.resetFilter()
+                            self?.voteHeaderView.filterButton.updateFilter(count: 0)
+                            self?.fetchVotes(cursor: nil)
+                        }
+                        
+                        return cell
+                    } else {
+                        let cell = tableView.dequeueReusableCell(
+                            withIdentifier: "VoteEmptyCell",
+                            for: indexPath
+                        ) as! VoteEmptyCell
+                        
+                        cell.selectionStyle = .none
+                        
+                        cell.onTapMake = { [weak self] in
+                            self?.coordinator?.showMakeVote()
+                        }
+                        
+                        return cell
                     }
-                    
-                    return cell
                     
                 case .vote(let info):
                     let cell = tableView.dequeueReusableCell(
@@ -157,7 +192,8 @@ final class VoteViewController: BaseViewController, View {
                     cell.configure(
                         info: info,
                         isFirst: index == 0,
-                        isBlind: self?.blindVoteIds.contains(info.voteId) ?? false
+                        isHidden: self?.hiddenVoteIds.contains(info.voteId) ?? false,
+                        isBlind: info.displayStatus == "HIDDEN"
                     )
                     
                     cell.onTapOption = { [weak self] voteId, optionId, isSelected in
@@ -342,11 +378,12 @@ final class VoteViewController: BaseViewController, View {
             if isClosed != nil { count += 1 }
             if isMine == true { count += 1 }
             
+            self.filterCount = count
             fetchVotes(cursor: nil)
             voteHeaderView.filterButton.updateFilter(count: count)
         }
         
-        coordinator?.onBlind = { [weak self] voteId in
+        coordinator?.onHidden = { [weak self] voteId in
             guard let self else { return }
             let voteList = self.voteList ?? []
             
@@ -364,8 +401,8 @@ final class VoteViewController: BaseViewController, View {
                 return
             }
             
-            blindVoteIds.append(voteId)
-            cell.showBlind()
+            hiddenVoteIds.append(voteId)
+            cell.showHidden()
             tableView.beginUpdates()
             tableView.endUpdates()
         }
@@ -391,7 +428,11 @@ final class VoteViewController: BaseViewController, View {
         isPaginating = paginating
         
         reactor?.action.onNext(.isLoading(true))
-        reactor?.action.onNext(.fetchVotes(category: topic, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: cursor, size: size))
+        if isMypage {
+            reactor?.action.onNext(.fetchMyVoteList(sortLatest: sortLatest, cursor: cursor, size: size))
+        } else {
+            reactor?.action.onNext(.fetchVoteList(category: topic, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: cursor, size: size))
+        }
     }
     
     private func resetFilter() {
@@ -400,7 +441,7 @@ final class VoteViewController: BaseViewController, View {
         isMine = nil
         sortLatest = nil
         cursor = nil
-        blindVoteIds = []
+        hiddenVoteIds = []
     }
     
     private func showCloseAlert() {
@@ -429,7 +470,9 @@ final class VoteViewController: BaseViewController, View {
         tableView.refreshControl = refreshControl
         
         view.addSubview(tableView)
-        view.addSubview(makeVoteButton)
+        if !isMypage {
+            view.addSubview(makeVoteButton)
+        }
     }
     
     private func hideDefaultRefreshSpinner(in view: UIView) {
@@ -531,14 +574,19 @@ extension VoteViewController: UITableViewDelegate {
         _ tableView: UITableView,
         heightForRowAt indexPath: IndexPath
     ) -> CGFloat {
-        if reactor?.currentState.voteList?.data?.isEmpty == true {
-            return tableView.bounds.height - (54 + 72)
+
+        if isEmptyVoteList {
+            return tableView.bounds.height - 200
         }
-        
+
         return UITableView.automaticDimension
     }
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
-        voteHeaderView
+        if isEmptyVoteList && filterCount == 0 {
+            return nil
+        } else {
+            return voteHeaderView
+        }
     }
     
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {

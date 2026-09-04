@@ -484,6 +484,12 @@ final class MypageViewController: CustomBackViewController, View {
             })
             .disposed(by: disposeBag)
         
+        settingSectionView.myVotesButton.rx.tap
+            .subscribe(onNext: { [weak self] in
+                self?.coordinator?.showMyVotes()
+            })
+            .disposed(by: disposeBag)
+        
         settingSectionView.infoNotiSwitch.onTap = { [weak self] isOn in
             guard let self else { return }
             if isOn {

@@ -9,7 +9,7 @@ import Foundation
 
 struct VoteList: Decodable, Sequence, Equatable {
     let data: [VoteInfo]?
-    let createVoteCnt: Int
+    let createVoteCnt: Int?
     let nextCursor: String?
     let hasNext: Bool
     

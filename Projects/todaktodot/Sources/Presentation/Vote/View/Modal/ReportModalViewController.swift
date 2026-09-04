@@ -104,7 +104,7 @@ final class ReportModalViewController: UIViewController, View {
             .compactMap { $0.reportingVoteId }
             .distinctUntilChanged()
             .subscribe { id in
-                self.coordinator?.onBlind?(id)
+                self.coordinator?.onHidden?(id)
                 self.coordinator?.showModal(type: .complete)
             }
             .disposed(by: disposeBag)

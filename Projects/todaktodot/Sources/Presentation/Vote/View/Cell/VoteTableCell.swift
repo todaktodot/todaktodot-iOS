@@ -15,7 +15,7 @@ final class VoteTableCell: UITableViewCell {
     
     private enum CellState {
         case normal(Bool)
-        case blind
+        case hidden
         case skeleton
     }
     
@@ -31,6 +31,7 @@ final class VoteTableCell: UITableViewCell {
     private var optionViews: [VoteOptionView] = []
     private var voteId: Int?
     private var currentInfo: VoteInfo?
+    private var isBlind: Bool = false
 
     // MARK: - Skeleton
     private let skeletonContainer = UIView().then {
@@ -83,18 +84,18 @@ final class VoteTableCell: UITableViewCell {
         $0.backgroundColor = .grayScale200
     }
     
-    // MARK: - ReportBlind
-    private let blindContainer = UIView().then {
+    // MARK: - Hidden
+    private let hiddenContainer = UIView().then {
         $0.backgroundColor = .grayScale100
         $0.layer.cornerRadius = 12
     }
     
-    private let moreButtonBlind = UIImageView().then {
+    private let hiddenMoreButton = UIImageView().then {
         $0.tintColor = .grayScale200
         $0.image = UIImage(resource: .ellipsis)
     }
     
-    private func makeBlindStick() -> UIView {
+    private func makeHiddenStick() -> UIView {
         let view = UIView().then {
             $0.backgroundColor = .grayScale200
             $0.layer.cornerRadius = 5
@@ -102,10 +103,35 @@ final class VoteTableCell: UITableViewCell {
         return view
     }
     
-    private let blindLabel = UILabel().then {
+    private let hiddenLabel = UILabel().then {
         $0.text = "신고하여 숨김 처리된 게시물이예요"
         $0.textColor = .grayScale600
         $0.font = .pretenSemiBold(15)
+    }
+    
+    // MARK: - MypageBlind
+    private let blindContainer = UIView().then {
+        $0.backgroundColor = .grayScale700.withAlphaComponent(0.85)
+        $0.layer.cornerRadius = 8
+    }
+    
+    private let blindIcon = UIImageView().then {
+        $0.image = UIImage(resource: .warningGray)
+    }
+    
+    private let blindLabel = UILabel().then {
+        $0.text = "신고 누적으로 인해\n블라인드 처리 됐어요"
+        $0.textColor = .white
+        $0.font = .pretenBold(16)
+        $0.numberOfLines = 2
+        $0.textAlignment = .center
+    }
+    
+    private let blindDescriptionLabel = UILabel().then {
+        $0.text = "다른 유저의 피드에서는 더 이상 보이지 않아요"
+        $0.textColor = .white
+        $0.font = .pretenRegular(14)
+        $0.textAlignment = .center
     }
     
     // MARK: - UI
@@ -175,7 +201,8 @@ final class VoteTableCell: UITableViewCell {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         
         setupUI()
-        setupBlind()
+        setupHiddenUI()
+        setupBlindUI()
         setupSkeletonUI()
         bindAction()
     }
@@ -186,9 +213,15 @@ final class VoteTableCell: UITableViewCell {
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        
+
         contentView.flex.layout(mode: .adjustHeight)
         
+        if isBlind {
+            blindContainer.isHidden = false
+            setupBlindLayout()
+        } else {
+            blindContainer.isHidden = true
+        }
         if !skeletonContainer.isHidden {
             skeletonContainer.pin.all()
             skeletonContainer.flex.layout()
@@ -206,10 +239,16 @@ final class VoteTableCell: UITableViewCell {
         return CGSize(width: targetSize.width, height: contentView.frame.height)
     }
     
-    func configure(info: VoteInfo, isFirst: Bool, isBlind: Bool = false) {
-        if isBlind {
-            showBlind()
+    // MARK: - Config
+    func configure(info: VoteInfo, isFirst: Bool, isHidden: Bool = false, isBlind: Bool = false) {
+        self.isBlind = isBlind
+        
+        if isHidden {
+            showHidden()
             return
+        } else {
+            hiddenContainer.isHidden = true
+            hiddenContainer.flex.display(.none)
         }
         
         divider.isHidden = isFirst
@@ -279,9 +318,9 @@ final class VoteTableCell: UITableViewCell {
     }
 
     
-    func showBlind() {
+    func showHidden() {
         stopSkeletonAnimation()
-        setState(.blind)
+        setState(.hidden)
     }
 
     func showSkeleton() {
@@ -302,7 +341,7 @@ final class VoteTableCell: UITableViewCell {
         contentView.flex.define { flex in
             flex.addItem(divider).height(1)
             flex.addItem(voteContainer)
-            flex.addItem(blindContainer)
+            flex.addItem(hiddenContainer)
                 .margin(20)
                 .display(.none)
         }
@@ -370,8 +409,8 @@ final class VoteTableCell: UITableViewCell {
             }
     }
     
-    private func setupBlind() {
-        blindContainer.flex
+    private func setupHiddenUI() {
+        hiddenContainer.flex
             .height(130)
             .padding(20)
             .define {
@@ -380,20 +419,20 @@ final class VoteTableCell: UITableViewCell {
                     .direction(.row)
                     .alignItems(.center)
                     .define {
-                        $0.addItem(makeBlindStick())
+                        $0.addItem(makeHiddenStick())
                             .width(70)
                             .height(10)
                         
                         $0.addItem().grow(1)
                         
-                        $0.addItem(moreButtonBlind)
+                        $0.addItem(hiddenMoreButton)
                     }
                 
-                $0.addItem(blindLabel)
+                $0.addItem(hiddenLabel)
                     .alignSelf(.center)
                     .marginTop(17)
                 
-                $0.addItem(makeBlindStick())
+                $0.addItem(makeHiddenStick())
                     .width(183)
                     .marginTop(14)
                     .height(10)
@@ -403,19 +442,19 @@ final class VoteTableCell: UITableViewCell {
                     .alignItems(.center)
                     .marginTop(5)
                     .define {
-                        $0.addItem(makeBlindStick())
+                        $0.addItem(makeHiddenStick())
                             .width(151)
                             .height(10)
                         
                         $0.addItem().grow(1)
                         
-                        $0.addItem(makeBlindStick())
+                        $0.addItem(makeHiddenStick())
                             .width(27)
                             .height(10)
                     }
             }
         
-        blindContainer.flex.display(.none)
+        hiddenContainer.flex.display(.none)
     }
     
     private func setupSkeletonUI() {
@@ -507,6 +546,39 @@ final class VoteTableCell: UITableViewCell {
         skeletonContainer.flex.display(.none)
     }
     
+    private func setupBlindUI() {
+        contentView.addSubview(blindContainer)
+        blindContainer.addSubview(blindIcon)
+        blindContainer.addSubview(blindLabel)
+        blindContainer.addSubview(blindDescriptionLabel)
+    }
+    
+    private func setupBlindLayout() {
+        blindContainer.pin
+            .top(48)
+            .horizontally(20)
+            .bottom(20)
+
+        blindIcon.pin
+            .hCenter()
+            .vCenter(-50)
+            .size(48)
+
+        blindLabel.pin
+            .hCenter()
+            .below(of: blindIcon, aligned: .center)
+            .marginTop(8)
+            .width(255)
+            .sizeToFit()
+
+        blindDescriptionLabel.pin
+            .hCenter()
+            .below(of: blindLabel, aligned: .center)
+            .marginTop(12)
+            .width(255)
+            .sizeToFit()
+    }
+    
     private func setState(_ state: CellState) {
         switch state {
         case .normal(let animate):
@@ -515,8 +587,8 @@ final class VoteTableCell: UITableViewCell {
             voteContainer.isHidden = false
             voteContainer.flex.display(.flex)
 
-            blindContainer.isHidden = true
-            blindContainer.flex.display(.none)
+            hiddenContainer.isHidden = true
+            hiddenContainer.flex.display(.none)
 
             skeletonContainer.isHidden = true
             skeletonContainer.flex.display(.none)
@@ -527,14 +599,14 @@ final class VoteTableCell: UITableViewCell {
                 voteContainer.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
             }
 
-        case .blind:
+        case .hidden:
             isUserInteractionEnabled = false
 
             voteContainer.isHidden = true
             voteContainer.flex.display(.none)
 
-            blindContainer.isHidden = false
-            blindContainer.flex.display(.flex)
+            hiddenContainer.isHidden = false
+            hiddenContainer.flex.display(.flex)
 
             skeletonContainer.isHidden = true
             skeletonContainer.flex.display(.none)
@@ -545,13 +617,13 @@ final class VoteTableCell: UITableViewCell {
             voteContainer.isHidden = true
             voteContainer.flex.display(.none)
 
-            blindContainer.isHidden = true
-            blindContainer.flex.display(.none)
+            hiddenContainer.isHidden = true
+            hiddenContainer.flex.display(.none)
 
             skeletonContainer.isHidden = false
             skeletonContainer.flex.display(.flex)
         }
-
+        
         contentView.flex.markDirty()
         
         switch state {
@@ -562,7 +634,7 @@ final class VoteTableCell: UITableViewCell {
                     self.voteContainer.transform = .identity
                 }
             }
-        case .blind, .skeleton:
+        case .hidden, .skeleton:
             return
         }
     }

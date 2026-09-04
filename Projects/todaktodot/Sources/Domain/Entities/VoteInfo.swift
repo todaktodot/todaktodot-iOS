@@ -11,6 +11,7 @@ import Foundation
 struct VoteInfo: Codable, Equatable {
     let voteId: Int // 투표 ID
     let nickname: String // 투표를 만든 사람의 닉네임
+    let displayStatus: String?
     private let category: String // 카테고리명
     let status: String // 투표 상태
     let title: String // 투표 주제
@@ -54,6 +55,7 @@ struct VoteInfo: Codable, Equatable {
         return VoteInfo(
             voteId: -1,
             nickname: "",
+            displayStatus: nil,
             category: "",
             status: "",
             title: "",

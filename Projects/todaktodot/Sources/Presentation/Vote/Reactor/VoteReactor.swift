@@ -23,7 +23,8 @@ final class VoteReactor: Reactor {
     
     enum Action {
         case isLoading(Bool)
-        case fetchVotes(category: [CardSubject]?, isClosed: Bool?, isMine: Bool?, sortLatest: Bool?, cursor: String?, size: Int?)
+        case fetchVoteList(category: [CardSubject]?, isClosed: Bool?, isMine: Bool?, sortLatest: Bool?, cursor: String?, size: Int?)
+        case fetchMyVoteList(sortLatest: Bool?, cursor: String?, size: Int?)
         case tapOption(voteId: Int, optionId: Int, isWithdrawal: Bool)
         case tapLike(voteId: Int, isLike: Bool)
         case tapReport(voteId: Int, reason: ReportType)
@@ -58,8 +59,23 @@ final class VoteReactor: Reactor {
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
-        case .fetchVotes(category: let category, isClosed: let isClosed, isMine: let isMine, sortLatest: let sortLatest, cursor: let cursor, size: let size):
-            useCase.fetchVotes(category: category, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: cursor, size: size)
+        case .fetchVoteList(category: let category, isClosed: let isClosed, isMine: let isMine, sortLatest: let sortLatest, cursor: let cursor, size: let size):
+            useCase.fetchVoteList(category: category, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: cursor, size: size)
+                .flatMap { voteList in
+                    Observable.from([
+                        .setVoteList(voteList),
+                        .isLoading(false)
+                    ])
+                }
+                .catch { _ in
+                    .concat([
+                        .just(.setError(.network)),
+                        .just(.setError(nil))
+                    ])
+                }
+            
+        case .fetchMyVoteList(sortLatest: let sortLatest, cursor: let cursor, size: let size):
+            useCase.fetchMyVoteList(sortLatest: sortLatest, cursor: cursor, size: size)
                 .flatMap { voteList in
                     Observable.from([
                         .setVoteList(voteList),

@@ -84,6 +84,35 @@ final class VoteRepositoryImpl: VoteRepository {
             .map { $0 }
     }
     
+    func fetchMyVoteList(sortLatest: Bool?, cursor: String?, size: Int?) -> Observable<VoteList> {
+        
+        var parameters: [String: Any] = ["": ""]
+        
+        if let sortLatest {
+            parameters["sortBy"] = sortLatest ? "LATEST" : "POPULAR"
+        } else {
+            parameters["sortBy"] = "LATEST"
+        }
+        
+        if let cursor {
+            parameters["cursor"] = cursor
+        }
+        
+        if let size {
+            parameters["size"] = size
+        }
+        
+        let endpoint = Endpoint<VoteList>(
+            baseURL: .todaktodotAPI,
+            path: "/api/votes/list/my-page",
+            method: .get,
+            parameters: parameters
+        )
+
+        return networkManager.request(with: endpoint)
+            .map { $0 }
+    }
+    
     func likeVote(voteId: Int, isLike: Bool) -> Observable<Void> {
         let parameters: [String: Any] = [
             "voteId": voteId
@@ -108,7 +137,7 @@ final class VoteRepositoryImpl: VoteRepository {
         
         let endpoint = Endpoint<Empty>(
             baseURL: .todaktodotAPI,
-            path: "/api/votes/like",
+            path: "/api/votes/reports",
             method: .post,
             parameters: parameters
         )
