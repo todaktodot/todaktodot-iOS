@@ -146,22 +146,6 @@ final class VoteViewController: BaseViewController, View {
             .map { $0.voteList }
             .distinctUntilChanged()
             .map { [weak self] voteListResponse -> [VoteListItem] in
-                
-                print(
-
-                    "📋 voteList state:",
-
-                    voteListResponse != nil,
-
-                    "window:",
-
-                    self?.tableView.window != nil,
-
-                    "frame:",
-
-                    self?.tableView.frame ?? .zero
-
-                )
                 guard let self = self else { return [] }
                 let votes = voteListResponse?.data
                 
@@ -319,8 +303,6 @@ final class VoteViewController: BaseViewController, View {
             .subscribe(onNext: { [weak self] isLoading in
                 guard let self else { return }
                 
-                let wasPaginating = self.isFetchingNextPage
-                
                 if !isLoading {
                     refreshControl.endRefreshing()
                     lottie.alpha = 0
@@ -329,17 +311,19 @@ final class VoteViewController: BaseViewController, View {
                     scrollToTop()
                 }
                 
-                tableView.isScrollEnabled = !isLoading
-                
-                tableView.visibleCells
-                    .compactMap { $0 as? VoteTableCell }
-                    .forEach { cell in
-                        if isLoading {
-                            cell.showSkeleton()
-                        } else {
-                            cell.hideSkeleton(animate: !wasPaginating)
+                if !self.isPaginating {
+                    tableView.isScrollEnabled = !isLoading
+                    
+                    tableView.visibleCells
+                        .compactMap { $0 as? VoteTableCell }
+                        .forEach { cell in
+                            if isLoading {
+                                cell.showSkeleton()
+                            } else {
+                                cell.hideSkeleton(animate: true)
+                            }
                         }
-                    }
+                }
             })
             .disposed(by: disposeBag)
         
@@ -353,7 +337,6 @@ final class VoteViewController: BaseViewController, View {
                     return
                 case .network:
                     
-                    print("❌ network error 발생")
                     isFetchError = true
                     showNetworkError()
                     
@@ -479,8 +462,6 @@ final class VoteViewController: BaseViewController, View {
     }
     
     private func fetchVotes(cursor: String?, scrollToTop: Bool = true, paginating: Bool = false) {
-        
-        print("🚀 fetchVotes")
         shouldScrollToTop = scrollToTop
         isPaginating = paginating
         
