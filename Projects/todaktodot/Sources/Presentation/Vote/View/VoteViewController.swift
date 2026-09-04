@@ -479,6 +479,7 @@ final class VoteViewController: BaseViewController, View {
     private func setupViews() {
         
         tableView.delegate = self
+        tableView.contentInset.bottom = isMypage ? 0 : 120
         refreshControl.tintColor = .clear
         hideDefaultRefreshSpinner(in: refreshControl)
         refreshControl.addSubview(lottie)
