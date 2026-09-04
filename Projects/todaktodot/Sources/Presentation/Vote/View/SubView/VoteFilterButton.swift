@@ -28,9 +28,7 @@ final class VoteFilterButton: UIButton {
         $0.textAlignment = .center
         $0.backgroundColor = .mainPurple
         $0.clipsToBounds = true
-        $0.text = "\(2)"
     }
-    var temp = true
     
     init() {
         super.init(frame: .zero)
@@ -69,9 +67,8 @@ final class VoteFilterButton: UIButton {
         super.layoutSubviews()
     }
     
-    func updateFilter() {
-        temp.toggle()
-        if temp {
+    func updateFilter(count: Int) {
+        if count == 0 {
             backgroundColor = .white
             layer.borderColor = UIColor.grayScale200.cgColor
             nameLabel.textColor = .grayScale700
@@ -79,7 +76,7 @@ final class VoteFilterButton: UIButton {
             
             countLabel.flex.display(.none)
         } else {
-            countLabel.text = "\(2)"
+            countLabel.text = "\(count)"
             backgroundColor = .lightPurple
             layer.borderColor = UIColor.mainPurple.cgColor
             nameLabel.textColor = .mainPurple
@@ -87,5 +84,6 @@ final class VoteFilterButton: UIButton {
             
             countLabel.flex.display(.flex)
         }
+        self.flex.layout(mode: .adjustWidth)
     }
 }

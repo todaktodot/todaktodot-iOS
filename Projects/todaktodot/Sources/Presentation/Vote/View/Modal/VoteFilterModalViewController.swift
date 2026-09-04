@@ -17,6 +17,10 @@ final class VoteFilterModalViewController: UIViewController, View {
     var disposeBag = DisposeBag()
     weak var coordinator: VoteCoordinator?
     
+    private var category: [CardSubject]?
+    private var isClosed: Bool?
+    private var isMine: Bool?
+    
     private let dimView = UIView().then {
         $0.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.2)
     }
@@ -90,17 +94,164 @@ final class VoteFilterModalViewController: UIViewController, View {
         $0.layer.borderWidth = 1
         $0.layer.borderColor = UIColor.grayScale200.cgColor
     }
+
+    init(
+        category: [CardSubject]? = nil,
+        isClosed: Bool? = nil,
+        isMine: Bool? = nil
+    ) {
+        self.category = category
+        self.isClosed = isClosed
+        self.isMine = isMine
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         setupViews()
         setupFlexLayout()
+        applyInitialFilter()
     }
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         layoutViews()
+    }
+    
+    func bind(reactor: VoteReactor) {
+        let topicButtons = [topicAllButton, economiButton, lifeButton, loveButton]
+        let statusButtons = [statusAllButton, progressButton, closedButton]
+
+        topicButtons
+            .forEach { button in
+                button.rx.tap
+                    .subscribe(onNext: { [weak self] in
+                        guard let self else { return }
+
+                        if button == self.topicAllButton {
+                            topicButtons.forEach {
+                                $0.isSelected = ($0 == self.topicAllButton)
+                            }
+                        } else {
+                            button.isSelected.toggle()
+
+                            let categoryButtons = [
+                                self.economiButton,
+                                self.lifeButton,
+                                self.loveButton
+                            ]
+
+                            self.topicAllButton.isSelected =
+                                !categoryButtons.contains(where: { $0.isSelected })
+                        }
+                    })
+                    .disposed(by: disposeBag)
+            }
+        
+        statusButtons
+            .forEach { button in
+                button.rx.tap
+                    .subscribe(onNext: {
+                        statusButtons
+                            .forEach {
+                                $0.isSelected = ($0 == button)
+                            }
+                    })
+                    .disposed(by: disposeBag)
+            }
+        
+        resetButton.rx.tap
+            .subscribe(onNext: { [weak self] in
+                guard let self else { return }
+                (topicButtons + statusButtons)
+                    .forEach {
+                        $0.isSelected = $0 == self.topicAllButton || $0 == self.statusAllButton
+                    }
+            })
+            .disposed(by: disposeBag)
+        
+        configButton.rx.tap
+            .subscribe(onNext: { [weak self] in
+                guard let self else { return }
+
+                let topic: [CardSubject]? = {
+                    if self.topicAllButton.isSelected {
+                        return nil
+                    }
+
+                    var categories: [CardSubject] = []
+
+                    if self.economiButton.isSelected {
+                        categories.append(.economy)
+                    }
+
+                    if self.lifeButton.isSelected {
+                        categories.append(.lifestyle)
+                    }
+
+                    if self.loveButton.isSelected {
+                        categories.append(.love)
+                    }
+
+                    return categories.isEmpty ? nil : categories
+                }()
+
+                let isClosed: Bool? = {
+                    switch true {
+                    case self.statusAllButton.isSelected:
+                        return nil
+                    case self.progressButton.isSelected:
+                        return false
+                    case self.closedButton.isSelected:
+                        return true
+                    default:
+                        return nil
+                    }
+                }()
+
+                coordinator?.dismissModal(
+                    topic: topic,
+                    isClosed: isClosed,
+                    onlyMine: self.myVoteSwitch.isOn,
+                    updateFilter: true
+                )
+            })
+            .disposed(by: disposeBag)
+    }
+    
+    private func selectButton(_ selectedButton: UIButton, from buttons: [UIButton]) {
+        buttons.forEach { $0.isSelected = $0 == selectedButton }
+    }
+    
+    private func applyInitialFilter() {
+        let topicButtons = [topicAllButton, economiButton, lifeButton, loveButton]
+        let statusButtons = [statusAllButton, progressButton, closedButton]
+        let selectedCategories = category ?? []
+
+        if selectedCategories.isEmpty {
+            selectButton(topicAllButton, from: topicButtons)
+        } else {
+            topicAllButton.isSelected = false
+            economiButton.isSelected = selectedCategories.contains(.economy)
+            lifeButton.isSelected = selectedCategories.contains(.lifestyle)
+            loveButton.isSelected = selectedCategories.contains(.love)
+        }
+
+        switch isClosed {
+        case true:
+            selectButton(closedButton, from: statusButtons)
+        case false:
+            selectButton(progressButton, from: statusButtons)
+        case nil:
+            selectButton(statusAllButton, from: statusButtons)
+        }
+
+        myVoteSwitch.isOn = isMine ?? false
     }
     
     private func setupViews() {
@@ -212,84 +363,6 @@ final class VoteFilterModalViewController: UIViewController, View {
             .height(369)
         
         modalView.flex.layout()
-    }
-    
-    func bind(reactor: VoteReactor) {
-        [topicAllButton, economiButton, lifeButton, loveButton]
-            .forEach { button in
-                button.rx.tap
-                    .subscribe(onNext: { [weak self] in
-                        guard let self else { return }
-                        [topicAllButton, economiButton, lifeButton, loveButton]
-                            .forEach {
-                                $0.isSelected = ($0 == button)
-                            }
-                    })
-                    .disposed(by: disposeBag)
-            }
-        
-        [statusAllButton, progressButton, closedButton]
-            .forEach { button in
-                button.rx.tap
-                    .subscribe(onNext: { [weak self] in
-                        guard let self else { return }
-                        [statusAllButton,  progressButton, closedButton]
-                            .forEach {
-                                $0.isSelected = ($0 == button)
-                            }
-                    })
-                    .disposed(by: disposeBag)
-            }
-        
-        resetButton.rx.tap
-            .subscribe(onNext: { [weak self] in
-                guard let self else { return }
-                [topicAllButton, economiButton, lifeButton, loveButton, statusAllButton, progressButton, closedButton]
-                    .forEach {
-                        $0.isSelected = $0 == self.topicAllButton || $0 == self.statusAllButton
-                    }
-            })
-            .disposed(by: disposeBag)
-        
-        configButton.rx.tap
-            .subscribe(onNext: { [weak self] in
-                guard let self else { return }
-
-                let topic: CardSubject? = {
-                    switch true {
-                    case self.topicAllButton.isSelected:
-                        return nil
-                    case self.economiButton.isSelected:
-                        return .economy
-                    case self.lifeButton.isSelected:
-                        return .lifestyle
-                    case self.loveButton.isSelected:
-                        return .love
-                    default:
-                        return nil
-                    }
-                }()
-
-                let isClosed: Bool? = {
-                    switch true {
-                    case self.statusAllButton.isSelected:
-                        return nil
-                    case self.progressButton.isSelected:
-                        return false
-                    case self.closedButton.isSelected:
-                        return true
-                    default:
-                        return nil
-                    }
-                }()
-
-                coordinator?.dismissModal(
-                    topic: topic,
-                    isClosed: isClosed,
-                    onlyMine: self.myVoteSwitch.isOn
-                )
-            })
-            .disposed(by: disposeBag)
     }
     
     

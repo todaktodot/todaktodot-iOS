@@ -19,8 +19,20 @@ final class VoteUseCase {
         repository.voteSelect(voteId: voteId, optionId: optionId, isWithdrawal: isWithdrawal)
     }
     
-    func fetchVotes(category: CardSubject?, status: Bool?, isMine: Bool?, sortLatest: Bool, cursor: Int?, size: Int?) -> Observable<VoteList> {
-        repository.fetchVoteList(category: category, status: status, isMine: isMine, sortLatest: sortLatest, cursor: cursor, size: size)
+    func fetchVoteList(category: [CardSubject]?, isClosed: Bool?, isMine: Bool?, sortLatest: Bool?, cursor: String?, size: Int?) -> Observable<VoteList> {
+        repository.fetchVoteList(category: category, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: cursor, size: size)
+    }
+    
+    func fetchMyVoteList(sortLatest: Bool?, cursor: String?, size: Int?) -> Observable<VoteList> {
+        repository.fetchMyVoteList(sortLatest: sortLatest, cursor: cursor, size: size)
+    }
+    
+    func likeVote(voteId: Int, isLike: Bool) -> Observable<Void> {
+        repository.likeVote(voteId: voteId, isLike: isLike)
+    }
+    
+    func reportVote(voteId: Int, reason: ReportType) -> Observable<Void> {
+        repository.reportVote(voteId: voteId, reason: reason)
     }
     
     func createVote(request: VoteCreateRequest) -> Observable<Result<VoteCreateResult, Error>> {

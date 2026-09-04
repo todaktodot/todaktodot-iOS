@@ -39,26 +39,34 @@ final class VoteRepositoryImpl: VoteRepository {
             .map { $0 }
     }
     
-    func fetchVoteList(category: CardSubject?, status: Bool?, isMine: Bool?, sortLatest: Bool, cursor: Int?, size: Int?) -> Observable<VoteList> {
+    func fetchVoteList(category: [CardSubject]?, isClosed: Bool?, isMine: Bool?, sortLatest: Bool?, cursor: String?, size: Int?) -> Observable<VoteList> {
         
-        var parameters: [String: Any] = [
-            "sortBy": sortLatest ? "LATEST" : "POPULAR"
-        ]
+        var parameters: [String: Any] = ["": ""]
+        
+        if let sortLatest {
+            parameters["sortBy"] = sortLatest ? "LATEST" : "POPULAR"
+        } else {
+            parameters["sortBy"] = "LATEST"
+        }
         
         if let category {
-            parameters["category"] = category.rawValue
+            var value: [String] = []
+            category.forEach {
+                value.append($0.rawValue)
+            }
+            parameters["category"] = value
         }
         
-        if let status {
-            parameters["status"] = status ? "ACTIVE" : "CLOSED"
+        if let isClosed {
+            parameters["status"] = isClosed ? "CLOSED" : "ACTIVE"
         }
         
-        if let isMine {
-            parameters["isMine"] = isMine
+        if let isMine, isMine {
+            parameters["isMine"] = "Y"
         }
         
         if let cursor {
-            parameters["cursor"] = String(cursor)
+            parameters["cursor"] = cursor
         }
         
         if let size {
@@ -76,6 +84,68 @@ final class VoteRepositoryImpl: VoteRepository {
             .map { $0 }
     }
     
+    func fetchMyVoteList(sortLatest: Bool?, cursor: String?, size: Int?) -> Observable<VoteList> {
+        
+        var parameters: [String: Any] = ["": ""]
+        
+        if let sortLatest {
+            parameters["sortBy"] = sortLatest ? "LATEST" : "POPULAR"
+        } else {
+            parameters["sortBy"] = "LATEST"
+        }
+        
+        if let cursor {
+            parameters["cursor"] = cursor
+        }
+        
+        if let size {
+            parameters["size"] = size
+        }
+        
+        let endpoint = Endpoint<VoteList>(
+            baseURL: .todaktodotAPI,
+            path: "/api/votes/list/my-page",
+            method: .get,
+            parameters: parameters
+        )
+
+        return networkManager.request(with: endpoint)
+            .map { $0 }
+    }
+    
+    func likeVote(voteId: Int, isLike: Bool) -> Observable<Void> {
+        let parameters: [String: Any] = [
+            "voteId": voteId
+        ]
+        
+        let endpoint = Endpoint<Empty>(
+            baseURL: .todaktodotAPI,
+            path: "/api/votes/like",
+            method: isLike ? .post : .delete,
+            parameters: parameters
+        )
+
+        return networkManager.requestOptional(with: endpoint)
+            .map { _ in }
+    }
+    
+    func reportVote(voteId: Int, reason: ReportType) -> Observable<Void> {
+        let parameters: [String: Any] = [
+            "voteId": voteId,
+            "reason": reason.apiValue
+        ]
+        
+        let endpoint = Endpoint<Empty>(
+            baseURL: .todaktodotAPI,
+            path: "/api/votes/reports",
+            method: .post,
+            parameters: parameters
+        )
+        
+        return networkManager.requestOptional(with: endpoint)
+            .map { _ in }
+    }
+        
     func createVote(request: VoteCreateRequest) -> Observable<Result<VoteCreateResult, Error>> {
         let parameters: [String: Any] = [
             "category": request.category.rawValue,

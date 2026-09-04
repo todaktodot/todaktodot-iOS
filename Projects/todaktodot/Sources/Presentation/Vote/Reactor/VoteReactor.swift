@@ -14,24 +14,31 @@ final class VoteReactor: Reactor {
     struct State {
         var voteList: VoteList?
         var selectedVote: VoteInfo?
-        var isClosedVote: Bool?
+        var isClosedVoteId: Int?
         var isLoading: Bool?
         var isError: Error?
+        var isLikeLoading: Bool = false
+        var reportingVoteId: Int?
     }
     
     enum Action {
-        case fetchVotes(category: CardSubject?, status: Bool?, isMine: Bool?, sortLatest: Bool, cursor: Int?, size: Int?)
-        case tapOption(voteId: Int, optionId: Int, isWithdrawal: Bool)
         case isLoading(Bool)
+        case fetchVoteList(category: [CardSubject]?, isClosed: Bool?, isMine: Bool?, sortLatest: Bool?, cursor: String?, size: Int?)
+        case fetchMyVoteList(sortLatest: Bool?, cursor: String?, size: Int?)
+        case tapOption(voteId: Int, optionId: Int, isWithdrawal: Bool)
+        case tapLike(voteId: Int, isLike: Bool)
+        case tapReport(voteId: Int, reason: ReportType)
         case removeVoteLocally(voteId: Int)
     }
     
     enum Mutation {
+        case isLoading(Bool)
         case setVote(VoteInfo)
         case setVoteList(VoteList)
-        case setClosedVote
-        case isLoading(Bool)
-        case setError(Error)
+        case setClosedVoteId(Int)
+        case setError(Error?)
+        case setIsLikeLoading(Bool)
+        case setReport(Int)
         case removeVote(voteId: Int)
     }
     
@@ -39,6 +46,7 @@ final class VoteReactor: Reactor {
         case empty
         case network
         case voteFailure
+        case reportFailure
     }
     
     let initialState = State()
@@ -51,29 +59,72 @@ final class VoteReactor: Reactor {
     
     func mutate(action: Action) -> Observable<Mutation> {
         switch action {
-        case .fetchVotes(category: let category, status: let status, isMine: let isMine, sortLatest: let sortLatest, cursor: let cursor, size: let size):
-            useCase.fetchVotes(category: category, status: status, isMine: isMine, sortLatest: sortLatest, cursor: cursor, size: size)
+        case .fetchVoteList(category: let category, isClosed: let isClosed, isMine: let isMine, sortLatest: let sortLatest, cursor: let cursor, size: let size):
+            useCase.fetchVoteList(category: category, isClosed: isClosed, isMine: isMine, sortLatest: sortLatest, cursor: cursor, size: size)
                 .flatMap { voteList in
                     Observable.from([
                         .setVoteList(voteList),
                         .isLoading(false)
                     ])
                 }
-                .catchAndReturn(.setError(.network))
+                .catch { _ in
+                    .concat([
+                        .just(.setError(.network)),
+                        .just(.setError(nil))
+                    ])
+                }
+            
+        case .fetchMyVoteList(sortLatest: let sortLatest, cursor: let cursor, size: let size):
+            useCase.fetchMyVoteList(sortLatest: sortLatest, cursor: cursor, size: size)
+                .flatMap { voteList in
+                    Observable.from([
+                        .setVoteList(voteList),
+                        .isLoading(false)
+                    ])
+                }
+                .catch { _ in
+                    .concat([
+                        .just(.setError(.network)),
+                        .just(.setError(nil))
+                    ])
+                }
             
         case .tapOption(voteId: let voteId, optionId: let optionId, isWithdrawal: let isWithdrawal):
             useCase.voteSelect(voteId: voteId, optionId: optionId, isWithdrawal: isWithdrawal)
                 .map { .setVote($0) }
                 .catch {
                     if let afError = $0.asCustomAFError, afError.apiErrorCode == .closedVote {
-                        return .just(.setClosedVote)
+                        return .just(.setClosedVoteId(voteId))
                     }
                     return .empty()
                 }
-                .catchAndReturn(.setError(.voteFailure))
+                .catch { _ in
+                    .concat([
+                        .just(.setError(.voteFailure)),
+                        .just(.setError(nil))
+                    ])
+                }
             
         case .isLoading(let isLoading):
             .just(.isLoading(isLoading))
+            
+        case .tapLike(let id, let isLike):
+            .just(.setIsLikeLoading(true))
+            .concat(
+                self.useCase.likeVote(voteId: id, isLike: isLike)
+                    .map { .setIsLikeLoading(false) }
+                    .catchAndReturn(.setIsLikeLoading(false))
+            )
+            
+        case .tapReport(let id, let reason):
+            useCase.reportVote(voteId: id, reason: reason)
+                .map { .setReport(id) }
+                .catch { _ in
+                    .concat([
+                        .just(.setError(.reportFailure)),
+                        .just(.setError(nil))
+                    ])
+                }
             
         case .removeVoteLocally(let voteId):
             .just(.removeVote(voteId: voteId))
@@ -88,20 +139,25 @@ final class VoteReactor: Reactor {
             newState.selectedVote = vote
         case .setVoteList(let list):
             newState.voteList = list
-        case .setClosedVote:
-            newState.isClosedVote = true
+        case .setClosedVoteId(let id):
+            newState.isClosedVoteId = id
         case .isLoading(let isLoading):
             newState.isLoading = isLoading
         case .setError(let error):
             newState.isError = error
+        case .setIsLikeLoading(let isLikeLoading):
+            newState.isLikeLoading = isLikeLoading
+        case .setReport(let id):
+            newState.reportingVoteId = id
         case .removeVote(let voteId):
             if let list = newState.voteList {
-                let filtered = list.data.filter { $0.voteId != voteId }
+                let filtered = list.data?.filter { $0.voteId != voteId }
                 newState.voteList = VoteList(
                     data: filtered,
                     createVoteCnt: list.createVoteCnt,
                     nextCursor: list.nextCursor,
-                    hasNext: list.hasNext
+                    hasNext: list.hasNext,
+                    isSuspended: list.isSuspended
                 )
             }
         }

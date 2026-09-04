@@ -20,11 +20,11 @@ enum VoteOptionState: Codable, Equatable {
 final class VoteOptionView: UIView {
 
     var onTap: ((Int, Bool) -> Void)?
-    private var needsProgressLayout = true
-    private var shouldAnimateProgress = false
-    private var lastLaidOutSize = CGSize.zero
     var optionId: Int?
-    private var percent: CGFloat?
+    
+    private var percent: CGFloat = 0
+    private var isClosedOption = false
+    private var state: VoteOptionState = .normal
 
     private let checkmarkView = UIImageView().then {
         $0.image = UIImage(resource: .checkmark)
@@ -35,21 +35,21 @@ final class VoteOptionView: UIView {
     
     private let progressView = UIView().then {
         $0.backgroundColor = .subPurple
-        $0.frame = CGRect(x: 0, y: 0, width: 0, height: 44)
+        $0.frame = .zero
     }
     
     private let titleLabel = UILabel().then {
         $0.font = .pretenSemiBold(14)
     }
+    
     private let percentLabel = UILabel().then {
         $0.font = .pretenMedium(13)
         $0.text = ""
     }
+    
     private let voteCountLabel = UILabel().then {
         $0.font = .pretenMedium(13)
     }
-    
-    private var state: VoteOptionState = .normal
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -61,6 +61,8 @@ final class VoteOptionView: UIView {
         insertSubview(trackView, at: 0)
         trackView.addSubview(progressView)
 
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(didTap))
+        addGestureRecognizer(tapGesture)
 
         flex
             .direction(.row)
@@ -69,8 +71,7 @@ final class VoteOptionView: UIView {
             .paddingHorizontal(12)
             .paddingVertical(10)
             .define {
-                
-                $0.addItem(checkmarkView)
+                $0.addItem(checkmarkView).marginRight(4)
                 $0.addItem(titleLabel)
                 $0.addItem().grow(1)
                 $0.addItem(percentLabel)
@@ -87,124 +88,124 @@ final class VoteOptionView: UIView {
         super.layoutSubviews()
 
         trackView.pin.all()
-
-        guard needsProgressLayout || lastLaidOutSize != bounds.size else { return }
-
-        setProgress()
-        needsProgressLayout = false
-        shouldAnimateProgress = false
-        lastLaidOutSize = bounds.size
+        updateProgressFrame(animated: false)
     }
     
-    func configure(voteOption: VoteOption, hasVoted: Bool, isClosed: Bool) {
+    func configure(voteOption: VoteOption, hasVoted: Bool, isClosed: Bool, isHighest: Bool?) {
         self.optionId = voteOption.optionId
-        self.percent = voteOption.voteRate
+        self.isClosedOption = isClosed
+        self.titleLabel.text = voteOption.content
         
-        titleLabel.text = voteOption.content
-        
-        if !isClosed {
-            addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(didTap)))
+        let targetState: VoteOptionState
+        if hasVoted {
+            targetState = voteOption.isSelected ? .selected : .unSelected
+        } else {
+            targetState = .normal
         }
         
         updateState(
-            isClosed ? voteOption.isSelected ? .selected : .unSelected :
-            hasVoted ? voteOption.isSelected ? .selected : .unSelected : .normal,
-            percent: voteOption.voteRate ?? 0, count: voteOption.voteCnt ?? 0,
-            isConfig: true
+            targetState,
+            percent: voteOption.voteRate ?? 0,
+            count: voteOption.voteCnt ?? 0,
+            isConfig: true,
+            isHighest: isHighest
         )
-        
-        flex.markDirty()
-        setNeedsLayout()
     }
     
     func updateState(
         _ state: VoteOptionState,
         percent: CGFloat,
         count: Int,
-        isConfig: Bool = false
+        isConfig: Bool = false,
+        isHighest: Bool?,
     ) {
         self.state = state
         self.percent = percent
+        
+        percentLabel.text = "\(Int(percent))%"
+        voteCountLabel.text = "\(Int(count))표"
 
         switch state {
         case .normal:
             checkmarkView.flex.display(.none)
             percentLabel.flex.display(.none)
             voteCountLabel.flex.display(.none)
-            titleLabel.textColor = .grayScale800
 
         case .selected:
+            checkmarkView.image = UIImage(resource: isHighest == true ? .checkmark : .checkmarkGray)
+            
             checkmarkView.flex.display(.flex)
             percentLabel.flex.display(.flex)
             voteCountLabel.flex.display(.flex)
-
-            percentLabel.text = "\(Int(percent))%"
-            voteCountLabel.text = "\(Int(count))표"
-            titleLabel.textColor = .grayScale800
-            voteCountLabel.textColor = .grayScale800
-            percentLabel.textColor = .grayScale800
-            progressView.backgroundColor = .subPurple
 
         case .unSelected:
             checkmarkView.flex.display(.none)
             percentLabel.flex.display(.flex)
             voteCountLabel.flex.display(.flex)
-
-            percentLabel.text = "\(Int(percent))%"
-            voteCountLabel.text = "\(Int(count))표"
-            titleLabel.textColor = .grayScale500
-            voteCountLabel.textColor = .grayScale500
-            percentLabel.textColor = .grayScale500
-            progressView.backgroundColor = .grayScale200
         }
+        
+       if let isHighest {
+            progressView.backgroundColor = isHighest ? .subPurple : .grayScale200
+            titleLabel.textColor = isHighest ? .grayScale800 : .grayScale500
+            voteCountLabel.textColor = isHighest ? .grayScale800 : .grayScale500
+            percentLabel.textColor = isHighest ? .grayScale800 : .grayScale500
+        } else {
+            progressView.backgroundColor = .grayScale200
+            
+            switch state {
+            case .normal:
+                titleLabel.textColor = .grayScale800
+                voteCountLabel.textColor = .grayScale800
+                percentLabel.textColor = .grayScale800
 
+            case .unSelected, .selected:
+                titleLabel.textColor = .grayScale500
+                voteCountLabel.textColor = .grayScale500
+                percentLabel.textColor = .grayScale500
+            }
+        }
+        
         percentLabel.flex.markDirty()
         voteCountLabel.flex.markDirty()
         flex.markDirty()
         flex.layout()
 
-        if !isConfig {
-            let targetWidth = bounds.width * (percent / 100)
-            
+        progressView.layer.removeAllAnimations()
+
+        if isConfig {
+            setNeedsLayout()
+        } else {
+            updateProgressFrame(animated: true)
+        }
+    }
+
+    private func updateProgressFrame(animated: Bool) {
+        guard bounds.width > 0 else { return }
+
+        let targetWidth: CGFloat
+        if state == .normal {
+            targetWidth = 0
+        } else {
+            targetWidth = bounds.width * (min(max(percent, 0), 100) / 100)
+        }
+
+        let targetFrame = CGRect(x: 0, y: 0, width: targetWidth, height: bounds.height)
+
+        if animated {
             UIView.animate(
-                withDuration: 1,
+                withDuration: 0.3,
                 delay: 0,
                 options: [.curveEaseInOut, .beginFromCurrentState]
             ) {
-                self.progressView.frame = CGRect(
-                    x: 0,
-                    y: 0,
-                    width: targetWidth,
-                    height: self.bounds.height
-                )
+                self.progressView.frame = targetFrame
             }
+        } else {
+            progressView.frame = targetFrame
         }
-    }
-
-    private func setProgress() {
-        let progress = min(max(percent ?? 0, 0), 100) / 100
-        let progressWidth: CGFloat
-
-        switch state {
-        case .normal:
-            progressWidth = 0
-
-        case .selected, .unSelected:
-            progressWidth = bounds.width * progress
-        }
-
-        let frame = CGRect(
-            x: 0,
-            y: 0,
-            width: progressWidth,
-            height: bounds.height
-        )
-        progressView.frame = frame
     }
     
     @objc private func didTap() {
-        if let optionId {
-            onTap?(optionId, state == .selected)
-        }
+        guard !isClosedOption, let optionId else { return }
+        onTap?(optionId, state == .selected)
     }
 }

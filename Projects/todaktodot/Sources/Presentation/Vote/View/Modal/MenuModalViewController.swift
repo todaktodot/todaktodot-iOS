@@ -18,6 +18,7 @@ final class MenuModalViewController: UIViewController, View {
     weak var coordinator: VoteCoordinator?
     
     private var isMine: Bool { reactor?.currentState.isMine ?? false }
+    private var isClosed: Bool { reactor?.currentState.isClosed ?? false }
     private var hasParticipant: Bool { reactor?.currentState.hasParticipant ?? false }
     
     private let dimView = UIView().then {
@@ -150,7 +151,7 @@ final class MenuModalViewController: UIViewController, View {
                 .cornerRadius(3)
             
             if isMine {
-                if hasParticipant {
+                if hasParticipant || isClosed {
                     // 참여자 있음 → 수정 불가 표시
                     editDisabledRow.flex.direction(.row).justifyContent(.spaceBetween).alignItems(.center).define {
                         $0.addItem(editDisabledLabel)
@@ -160,6 +161,10 @@ final class MenuModalViewController: UIViewController, View {
                         .marginTop(20)
                         .height(40)
                         .width(view.bounds.width - 40)
+                    
+                    if !hasParticipant && isClosed {
+                        editDisabledHintLabel.text = "마감된 투표에요"
+                    }
                 } else {
                     $0.addItem(editButton)
                         .marginTop(20)
@@ -198,7 +203,9 @@ final class MenuModalViewController: UIViewController, View {
     }
     
     @objc private func didTapReport() {
-        coordinator?.showModal(type: .report)
+        if let id = reactor?.currentState.vote.voteId {
+            coordinator?.showModal(type: .report(voteId: id))
+        }
     }
     
     @objc private func didTapDelete() {
