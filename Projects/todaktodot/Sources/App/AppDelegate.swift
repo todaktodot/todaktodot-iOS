@@ -46,6 +46,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             }
         }
         NSTimeZone.default = TimeZone(identifier: "Asia/Seoul")!
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(showPendingVoteHiddenAlert),
+            name: .sceneWillEnterForeground,
+            object: nil
+        )
+        
         return true
     }
 }
@@ -78,6 +86,22 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
                 NotificationCenter.default.post(name: .connectionCompleteAndGoToNickname, object: nil)
             } else if type == "DISCONNECT_COUPLE" {
                 NotificationCenter.default.post(name: .coupleDisconnected, object: nil)
+            } else if type == "VOTE_HIDDEN" {
+                if application.applicationState == .active {
+                    DispatchQueue.main.async {
+                        self.showVoteHiddenAlert(isSendAdmin: true)
+                    }
+                } else {
+                    UserdefaultKey.pendingVoteHiddenAlertAdmin = true
+                }
+            } else if type == "VOTE_HIDDEN_BY_REPORT" {
+                if application.applicationState == .active {
+                    DispatchQueue.main.async {
+                        self.showVoteHiddenAlert(isSendAdmin: false)
+                    }
+                } else {
+                    UserdefaultKey.pendingVoteHiddenAlertUser = true
+                }
             }
         }
         
@@ -165,6 +189,72 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
                 } completion: { _ in
                     pushView.removeFromSuperview()
                 }
+            }
+        }
+    }
+    
+    private func findTopViewController(
+        from viewController: UIViewController
+    ) -> UIViewController {
+        
+        if let presentedViewController = viewController.presentedViewController {
+            return findTopViewController(
+                from: presentedViewController
+            )
+        }
+        
+        if let navigationController = viewController as? UINavigationController {
+            return findTopViewController(
+                from: navigationController.visibleViewController ?? navigationController
+            )
+        }
+        
+        if let tabBarController = viewController as? UITabBarController {
+            return findTopViewController(
+                from: tabBarController.selectedViewController ?? tabBarController
+            )
+        }
+        
+        return viewController
+    }
+    
+    private func showVoteHiddenAlert(isSendAdmin: Bool) {
+        guard let windowScene = UIApplication.shared.connectedScenes
+            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
+              let window = windowScene.keyWindow,
+              let rootViewController = window.rootViewController else {
+            return
+        }
+        
+        let topViewController = findTopViewController(
+            from: rootViewController
+        )
+        
+        let title = isSendAdmin ? "작성하신 투표가 가려졌어요" : "신고에 의해 투표가 가려졌어요"
+        let body = isSendAdmin ? "운영 정책 위반으로 인해 숨김 처리되었어요\nMY > 내가 작성한 투표에서 확인 가능해요" : "신고 접수로 작성 투표가 피드에서 가려졌어요\nMY > 내가 작성한 투표에서 확인 가능해요"
+        
+        topViewController.showAlert(
+            icon: UIImage(resource: .warning),
+            title: title,
+            description: body,
+            primaryButtonTitle: "확인",
+            primaryButtonAction: {}
+        )
+    }
+    
+    @objc private func showPendingVoteHiddenAlert() {
+        let admin = UserdefaultKey.pendingVoteHiddenAlertAdmin
+        let user = UserdefaultKey.pendingVoteHiddenAlertUser
+        guard user || admin else { return }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            if admin {
+                UserdefaultKey.pendingVoteHiddenAlertAdmin = false
+                self.showVoteHiddenAlert(isSendAdmin: true)
+            }
+            if user {
+                UserdefaultKey.pendingVoteHiddenAlertUser = false
+                self.showVoteHiddenAlert(isSendAdmin: false)
             }
         }
     }
