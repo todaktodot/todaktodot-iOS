@@ -156,8 +156,7 @@ final class VoteFilterModalViewController: UIViewController, View {
         statusButtons
             .forEach { button in
                 button.rx.tap
-                    .subscribe(onNext: { [weak self] in
-                        guard let self else { return }
+                    .subscribe(onNext: {
                         statusButtons
                             .forEach {
                                 $0.isSelected = ($0 == button)

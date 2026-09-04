@@ -27,25 +27,29 @@ final class VoteViewController: BaseViewController, View {
     var disposeBag = DisposeBag()
     weak var coordinator: VoteCoordinator?
     
-    private var shouldScrollToTop = false
-    private var isLoading: Bool = false
+    private var isLoading = false
+    private var isFetchError = false
     private var isPaginating = false
-    private var isFetchingNextPage: Bool = false
-    private var topic: [CardSubject]?
+    private var isEmptyVoteList = false
+    private var isSetupNavigation = true
+    private var isSuspendedAccount = false
+    private var isFetchingNextPage = false
+    private var shouldScrollToTop = false
+    private var hasAppearedOnce = false
+    
+    private var isMypage: Bool
     private var isClosed: Bool?
     private var isMine: Bool?
-    private var sortLatest: Bool?
-    private var cursor: String?
-    private var size: Int?
     private var hasNext: Bool?
+    private var sortLatest: Bool?
+    
+    private var size: Int?
+    private var cursor: String?
     private var voteList: [VoteInfo]?
+    private var topic: [CardSubject]?
     private var hiddenVoteIds: [Int] = []
-    private var isSetupNavigation = true
-    private var isMypage: Bool
     private var filterCount = 0
-    private var isEmptyVoteList = false
     private var todayVoteMakeCount = 0
-    private var isSuspendedAccount = false
     private let networkMonitor = NWPathMonitor()
     private let networkQueue = DispatchQueue(label: "NetworkMonitor")
     
@@ -114,6 +118,22 @@ final class VoteViewController: BaseViewController, View {
         observeNetworkStatus()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        if !hasAppearedOnce {
+            hasAppearedOnce = true
+            fetchVotes(cursor: nil)
+            return
+        }
+
+        if isFetchError {
+            isFetchError = false
+            showTableView()
+            fetchVotes(cursor: nil)
+        }
+    }
+    
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         layoutViews()
@@ -126,6 +146,22 @@ final class VoteViewController: BaseViewController, View {
             .map { $0.voteList }
             .distinctUntilChanged()
             .map { [weak self] voteListResponse -> [VoteListItem] in
+                
+                print(
+
+                    "📋 voteList state:",
+
+                    voteListResponse != nil,
+
+                    "window:",
+
+                    self?.tableView.window != nil,
+
+                    "frame:",
+
+                    self?.tableView.frame ?? .zero
+
+                )
                 guard let self = self else { return [] }
                 let votes = voteListResponse?.data
                 
@@ -316,13 +352,16 @@ final class VoteViewController: BaseViewController, View {
                 case .empty:
                     return
                 case .network:
+                    
+                    print("❌ network error 발생")
+                    isFetchError = true
                     showNetworkError()
                     
                 case .voteFailure:
                     showToast(message: "잠시 후 다시 시도해주세요")
                     
                 case .reportFailure:
-                    return
+                    showToast(message: "신고 접수에 실패했어요")
                 }
             })
             .disposed(by: disposeBag)
@@ -411,7 +450,7 @@ final class VoteViewController: BaseViewController, View {
             tableView.endUpdates()
         }
         
-        fetchVotes(cursor: nil)
+//        fetchVotes(cursor: nil)
     }
     
     /// 투표 게시/수정 완료 후 리스트 새로고침 + 토스트
@@ -440,6 +479,8 @@ final class VoteViewController: BaseViewController, View {
     }
     
     private func fetchVotes(cursor: String?, scrollToTop: Bool = true, paginating: Bool = false) {
+        
+        print("🚀 fetchVotes")
         shouldScrollToTop = scrollToTop
         isPaginating = paginating
         
@@ -535,11 +576,11 @@ final class VoteViewController: BaseViewController, View {
                 guard let self else { return }
                 
                 if path.status == .satisfied {
-                    self.tableView.isHidden = false
-                    self.errorView.isHidden = true
-                    
-                    if !self.isMypage {
-                        self.makeVoteButton.isHidden = false
+                    if !self.isFetchError {
+                        self.showTableView()
+                        if self.voteList == nil {
+                            self.fetchVotes(cursor: nil)
+                        }
                     }
                 } else {
                     self.showNetworkError()
@@ -548,6 +589,15 @@ final class VoteViewController: BaseViewController, View {
         }
         
         networkMonitor.start(queue: networkQueue)
+    }
+    
+    private func showTableView() {
+        self.tableView.isHidden = false
+        self.errorView.isHidden = true
+        
+        if !self.isMypage {
+            self.makeVoteButton.isHidden = false
+        }
     }
     
     private func showNetworkError() {

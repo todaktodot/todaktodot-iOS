@@ -22,16 +22,16 @@ final class VoteTableCell: UITableViewCell {
     static let identifier = "VoteTableCell"
     
     var disposeBag = DisposeBag()
-    var onTapOption: ((Int, Int, Bool) -> Void)?
-    var onTapLike: ((Int, Bool) -> Void)?
     var onTapMore: ((VoteInfo) -> Void)?
+    var onTapLike: ((Int, Bool) -> Void)?
+    var onTapOption: ((Int, Int, Bool) -> Void)?
     
+    private var voteId: Int?
     private var likeCount = 0
     private var isLike = false
-    private var optionViews: [VoteOptionView] = []
-    private var voteId: Int?
-    private var currentInfo: VoteInfo?
     private var isBlind: Bool = false
+    private var currentInfo: VoteInfo?
+    private var optionViews: [VoteOptionView] = []
 
     // MARK: - Skeleton
     private let skeletonContainer = UIView().then {
@@ -593,7 +593,6 @@ final class VoteTableCell: UITableViewCell {
             skeletonContainer.isHidden = true
             skeletonContainer.flex.display(.none)
 
-            //TODO: 페이드인 효과
             if animate {
                 voteContainer.alpha = 0.0
                 voteContainer.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
