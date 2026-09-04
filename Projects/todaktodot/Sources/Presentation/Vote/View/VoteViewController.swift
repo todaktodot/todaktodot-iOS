@@ -14,6 +14,7 @@ import Then
 import ReactorKit
 import RxRelay
 import Lottie
+import Network
 
 final class VoteViewController: BaseViewController, View {
     
@@ -45,6 +46,8 @@ final class VoteViewController: BaseViewController, View {
     private var isEmptyVoteList = false
     private var todayVoteMakeCount = 0
     private var isSuspendedAccount = false
+    private let networkMonitor = NWPathMonitor()
+    private let networkQueue = DispatchQueue(label: "NetworkMonitor")
     
     private let tableView = UITableView().then {
         $0.rowHeight = UITableView.automaticDimension
@@ -95,6 +98,10 @@ final class VoteViewController: BaseViewController, View {
         fatalError("init(coder:) has not been implemented")
     }
     
+    deinit {
+        networkMonitor.cancel()
+    }
+    
     override var shouldSetupNavigation: Bool {
         isSetupNavigation
     }
@@ -104,6 +111,7 @@ final class VoteViewController: BaseViewController, View {
         self.delegate = self
         
         setupViews()
+        observeNetworkStatus()
     }
     
     override func viewDidLayoutSubviews() {
@@ -136,7 +144,7 @@ final class VoteViewController: BaseViewController, View {
                 self.cursor = voteListResponse.nextCursor
                 self.hasNext = voteListResponse.hasNext
                 self.todayVoteMakeCount = voteListResponse.createVoteCnt ?? 0
-                self.isSuspendedAccount = voteListResponse.isSuspended
+                self.isSuspendedAccount = voteListResponse.isSuspended ?? false
                 
                 guard let voteList = self.voteList, !voteList.isEmpty else {
                     isEmptyVoteList = true
@@ -308,14 +316,7 @@ final class VoteViewController: BaseViewController, View {
                 case .empty:
                     return
                 case .network:
-                    tableView.isHidden = true
-                    errorView.isHidden = false
-                    
-                    view.addSubview(errorView)
-                    errorView.pin
-                        .width(248)
-                        .height(117)
-                        .center()
+                    showNetworkError()
                     
                 case .voteFailure:
                     showToast(message: "잠시 후 다시 시도해주세요")
@@ -485,6 +486,8 @@ final class VoteViewController: BaseViewController, View {
         tableView.refreshControl = refreshControl
         
         view.addSubview(tableView)
+        view.addSubview(errorView)
+        
         if !isMypage {
             view.addSubview(makeVoteButton)
         }
@@ -517,7 +520,42 @@ final class VoteViewController: BaseViewController, View {
             .height(75)
             .center()
         
+        errorView.pin
+            .width(248)
+            .height(117)
+            .center()
+        
         view.flex.layout()
+    }
+    
+    private func observeNetworkStatus() {
+        networkMonitor.pathUpdateHandler = { [weak self] path in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                
+                if path.status == .satisfied {
+                    self.tableView.isHidden = false
+                    self.errorView.isHidden = true
+                    
+                    if !self.isMypage {
+                        self.makeVoteButton.isHidden = false
+                    }
+                } else {
+                    self.showNetworkError()
+                }
+            }
+        }
+        
+        networkMonitor.start(queue: networkQueue)
+    }
+    
+    private func showNetworkError() {
+        tableView.isHidden = true
+        errorView.isHidden = false
+        
+        if !isMypage {
+            makeVoteButton.isHidden = true
+        }
     }
 }
 

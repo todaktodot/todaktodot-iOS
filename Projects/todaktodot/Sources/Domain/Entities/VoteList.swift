@@ -12,7 +12,7 @@ struct VoteList: Decodable, Sequence, Equatable {
     let createVoteCnt: Int?
     let nextCursor: String?
     let hasNext: Bool
-    let isSuspended: Bool
+    let isSuspended: Bool?
     
     func makeIterator() -> [VoteInfo].Iterator {
         (data ?? []).makeIterator()
