@@ -46,6 +46,13 @@ final class TabBarCoordinator: Coordinator {
         homeCoordinator.start()
         viewControllers.append(homeNavController)
         
+        let voteNavController = UINavigationController()
+        let voteCoordinator = VoteCoordinator(navigationController: voteNavController)
+        voteCoordinator.tabBarCoordinator = self
+        addChild(voteCoordinator)
+        voteCoordinator.start()
+        viewControllers.append(voteNavController)
+        
         let aiReportNavController = UINavigationController()
         let aiReportCoordinator = AIReportCoordinator(navigationController: aiReportNavController)
         aiReportCoordinator.tabBarCoordinator = self

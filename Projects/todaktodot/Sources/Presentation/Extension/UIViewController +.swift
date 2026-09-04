@@ -21,7 +21,7 @@ extension UIViewController {
         view.endEditing(true)
     }
     
-    func showToast(message: String, duration: TimeInterval = 2.0) {
+    func showToast(message: String, duration: TimeInterval = 2.0, bottomOffset: CGFloat = 16) {
         guard let windowScene = UIApplication.shared.connectedScenes
                .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
                  let window = windowScene.windows.first(where: { $0.isKeyWindow }) else { return }
@@ -45,7 +45,7 @@ extension UIViewController {
         backgroundView.pin
             .left(16)
             .right(16)
-            .bottom(window.safeAreaInsets.bottom + 16)
+            .bottom(window.safeAreaInsets.bottom + bottomOffset)
             .height(48)
         
         backgroundView.flex.direction(.row).alignItems(.center).define {

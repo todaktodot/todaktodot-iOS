@@ -43,6 +43,10 @@ final class AppDIContainer {
         networkManager: networkManager
     )
     
+    private lazy var voteRepository: VoteRepository = VoteRepositoryImpl(
+        networkManager: networkManager
+    )
+    
     // MARK: - Use Cases
     private lazy var signinUseCase = SigninUseCase(repository: authRepository)
     private lazy var cardUseCase = CardUseCase(repository: cardRepository)
@@ -51,6 +55,7 @@ final class AppDIContainer {
     private lazy var aiReportUseCase = AIReportUseCase(repository: aiReportRepository)
     private lazy var onboardingUseCase = OnboardingUseCase(repository: mypageRepository)
     private lazy var shareLinkUseCase = ShareLinkUseCase(repository: shareLinkRepository)
+    private lazy var voteUseCase = VoteUseCase(repository: voteRepository)
 }
 
 // MARK: - Network Access
@@ -100,6 +105,14 @@ extension AppDIContainer {
     
     func makeMypageUseCase() -> MypageUseCase {
         mypageUseCase
+    }
+    
+    func makeVoteReactor() -> VoteReactor {
+        VoteReactor(useCase: voteUseCase)
+    }
+    
+    func makeVoteUseCase() -> VoteUseCase {
+        voteUseCase
     }
 }
 

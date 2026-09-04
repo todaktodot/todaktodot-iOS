@@ -56,7 +56,7 @@ public final class NetworkManager: Network {
                         if let data = response.data {
                             do {
                                 let errorResponse = try JSONDecoder().decode(APIErrorResponse.self, from: data)
-                                let customError = CustomAFError(underlyingError: error, message: errorResponse.message, statusCode: response.response?.statusCode)
+                                let customError = CustomAFError(underlyingError: error, message: errorResponse.message, errorCode: errorResponse.code, statusCode: response.response?.statusCode)
                                 observer.onError(customError)
                             } catch {
                                 observer.onError(error)
@@ -90,7 +90,17 @@ public final class NetworkManager: Network {
                         observer.onNext(data)
                         observer.onCompleted()
                     case .failure(let error):
-                        observer.onError(error)
+                        if let data = response.data {
+                            do {
+                                let errorResponse = try JSONDecoder().decode(APIErrorResponse.self, from: data)
+                                let customError = CustomAFError(underlyingError: error, message: errorResponse.message, errorCode: errorResponse.code, statusCode: response.response?.statusCode)
+                                observer.onError(customError)
+                            } catch {
+                                observer.onError(error)
+                            }
+                        } else {
+                            observer.onError(error)
+                        }
                     }
                 }
             
