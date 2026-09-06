@@ -90,11 +90,6 @@ final class VoteTableCell: UITableViewCell {
         $0.layer.cornerRadius = 12
     }
     
-    private let hiddenMoreButton = UIImageView().then {
-        $0.image = UIImage(resource: .ellipsis).withRenderingMode(.alwaysTemplate)
-        $0.tintColor = .grayScale200
-    }
-    
     private func makeHiddenStick() -> UIView {
         let view = UIView().then {
             $0.backgroundColor = .grayScale200
@@ -415,8 +410,8 @@ final class VoteTableCell: UITableViewCell {
     
     private func setupHiddenUI() {
         hiddenContainer.flex
-            .height(130)
-            .padding(20)
+            .paddingHorizontal(24)
+            .paddingVertical(20)
             .define {
                 $0.addItem()
                     .height(23)
@@ -428,8 +423,6 @@ final class VoteTableCell: UITableViewCell {
                             .height(10)
                         
                         $0.addItem().grow(1)
-                        
-                        $0.addItem(hiddenMoreButton)
                     }
                 
                 $0.addItem(hiddenLabel)
