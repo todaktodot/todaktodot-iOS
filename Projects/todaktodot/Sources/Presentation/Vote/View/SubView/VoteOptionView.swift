@@ -131,34 +131,32 @@ final class VoteOptionView: UIView {
             percentLabel.flex.display(.none)
             voteCountLabel.flex.display(.none)
 
-        case .selected:
-            checkmarkView.image = UIImage(resource: isHighest == true ? .checkmark : .checkmarkGray)
-            
-            checkmarkView.flex.display(.flex)
+            titleLabel.textColor = .grayScale800
+            voteCountLabel.textColor = .grayScale800
+            percentLabel.textColor = .grayScale800
+
+        case .selected, .unSelected:
+            let isSelected = state == .selected
+
+            checkmarkView.flex.display(isSelected ? .flex : .none)
             percentLabel.flex.display(.flex)
             voteCountLabel.flex.display(.flex)
 
-        case .unSelected:
-            checkmarkView.flex.display(.none)
-            percentLabel.flex.display(.flex)
-            voteCountLabel.flex.display(.flex)
-        }
-        
-       if let isHighest {
-            progressView.backgroundColor = isHighest ? .subPurple : .grayScale200
-            titleLabel.textColor = isHighest ? .grayScale800 : .grayScale500
-            voteCountLabel.textColor = isHighest ? .grayScale800 : .grayScale500
-            percentLabel.textColor = isHighest ? .grayScale800 : .grayScale500
-        } else {
-            progressView.backgroundColor = .grayScale200
-            
-            switch state {
-            case .normal:
-                titleLabel.textColor = .grayScale800
-                voteCountLabel.textColor = .grayScale800
-                percentLabel.textColor = .grayScale800
+            if isSelected {
+                checkmarkView.image = UIImage(
+                    resource: isHighest == true ? .checkmark : .checkmarkGray
+                )
+            }
 
-            case .unSelected, .selected:
+            if let isHighest {
+                progressView.backgroundColor = isHighest ? .subPurple : .grayScale200
+
+                let textColor: UIColor = isHighest ? .grayScale800 : .grayScale500
+                titleLabel.textColor = textColor
+                voteCountLabel.textColor = textColor
+                percentLabel.textColor = textColor
+            } else {
+                progressView.backgroundColor = .grayScale200
                 titleLabel.textColor = .grayScale500
                 voteCountLabel.textColor = .grayScale500
                 percentLabel.textColor = .grayScale500

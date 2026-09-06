@@ -28,7 +28,7 @@ struct VoteInfo: Codable, Equatable {
     var categoryName: String {
         switch category {
         case "LOVE": "연애관"
-        case "LIFESYCLE": "생활관"
+        case "LIFESTYLE": "생활관"
         case "ECONOMY": "경제관"
         default: category
         }

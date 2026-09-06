@@ -76,7 +76,7 @@ final class VoteFilterModalViewController: UIViewController, View {
         $0.isSelected = true
     }
     private let economiButton = ChipButton("💸 경제관")
-    private let lifeButton = ChipButton("🏡 생환관")
+    private let lifeButton = ChipButton("🏡 생활관")
     private let loveButton = ChipButton("🧑‍❤️‍🧑 연애관")
     private let statusAllButton = ChipButton("전체").then {
         $0.isSelected = true
@@ -172,6 +172,7 @@ final class VoteFilterModalViewController: UIViewController, View {
                     .forEach {
                         $0.isSelected = $0 == self.topicAllButton || $0 == self.statusAllButton
                     }
+                myVoteSwitch.isOn = false
             })
             .disposed(by: disposeBag)
         

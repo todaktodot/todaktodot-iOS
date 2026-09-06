@@ -91,8 +91,8 @@ final class VoteTableCell: UITableViewCell {
     }
     
     private let hiddenMoreButton = UIImageView().then {
+        $0.image = UIImage(resource: .ellipsis).withRenderingMode(.alwaysTemplate)
         $0.tintColor = .grayScale200
-        $0.image = UIImage(resource: .ellipsis)
     }
     
     private func makeHiddenStick() -> UIView {
@@ -242,6 +242,10 @@ final class VoteTableCell: UITableViewCell {
     // MARK: - Config
     func configure(info: VoteInfo, isFirst: Bool, isHidden: Bool = false, isBlind: Bool = false) {
         self.isBlind = isBlind
+        
+        stopSkeletonAnimation()
+        skeletonContainer.isHidden = true
+        skeletonContainer.flex.display(.none)
         
         if isHidden {
             showHidden()
