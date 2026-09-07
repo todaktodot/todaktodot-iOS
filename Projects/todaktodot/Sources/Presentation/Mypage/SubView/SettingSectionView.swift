@@ -31,12 +31,17 @@ final class SettingSectionView: UIView {
         $0.setTitle(title: "피드백 보내기")
     }
     
-    let infoNotiSwitch = CustomSwitch(title: "정보성 알림")
-    let advertiesmentNotiSwitch = CustomSwitch(title: "광고성 알림 수신 동의")
-    let marketingNotiSwitch = CustomSwitch(title: "마케팅 수신 동의")
     let serviceTermButton = ModalButton().then {
         $0.setTitle(title: "서비스 이용 약관")
     }
+    
+    let myVotesButton = ModalButton().then {
+        $0.setTitle(title: "내가 작성한 투표")
+    }
+    
+    let infoNotiSwitch = CustomSwitch(title: "정보성 알림")
+    let advertiesmentNotiSwitch = CustomSwitch(title: "광고성 알림 수신 동의")
+    let marketingNotiSwitch = CustomSwitch(title: "마케팅 수신 동의")
 
     private func divider() -> UIView {
         UIView().then {
@@ -67,6 +72,12 @@ final class SettingSectionView: UIView {
 
         flex.paddingHorizontal(20)
             .define {
+                $0.addItem(myVotesButton)
+                    .height(rowHeight)
+                
+                $0.addItem(divider())
+                    .height(1)
+                    .marginHorizontal(-20)
                 
                 $0.addItem(serviceTermButton)
                     .height(rowHeight)

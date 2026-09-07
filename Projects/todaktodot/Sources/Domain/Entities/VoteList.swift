@@ -8,12 +8,13 @@
 import Foundation
 
 struct VoteList: Decodable, Sequence, Equatable {
-    let data: [VoteInfo]
-    let createVoteCnt: Int
+    let data: [VoteInfo]?
+    let createVoteCnt: Int?
     let nextCursor: String?
     let hasNext: Bool
+    let isSuspended: Bool?
     
     func makeIterator() -> [VoteInfo].Iterator {
-        data.makeIterator()
+        (data ?? []).makeIterator()
     }
 }

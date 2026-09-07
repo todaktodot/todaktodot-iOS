@@ -17,9 +17,16 @@ protocol BaseViewControllerDelegate: AnyObject {
 class BaseViewController: UIViewController {
     weak var delegate: BaseViewControllerDelegate?
     
+    var shouldSetupNavigation: Bool {
+        true
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        setup()
+        
+        if shouldSetupNavigation {
+            setup()
+        }
     }
     
     private func setup() {

@@ -1,5 +1,5 @@
 //
-//  VoteEmptyCell.swift
+//  VoteFilterEmptyCell.swift
 //  todaktodot
 //
 //  Created by 임대진 on 8/30/26.
@@ -11,30 +11,30 @@ import PinLayout
 import Then
 import RxSwift
 
-final class VoteEmptyCell: UITableViewCell {
+final class VoteFilterEmptyCell: UITableViewCell {
     
     var disposeBag = DisposeBag()
-    var onTapMake: (() -> Void)?
-    static let identifier = "VoteEmptyCell"
+    var onTapReset: (() -> Void)?
+    static let identifier = "VoteFilterEmptyCell"
     
     private let icon = UIImageView().then {
-        $0.image = UIImage(resource: .voteEmpty)
+        $0.image = UIImage(resource: .lightWarning)
     }
     
     private let titleLabel = UILabel().then {
-        $0.text = "아직 올린 투표가 없어요"
+        $0.text = "조건에 맞는 투표가 없어요"
         $0.textColor = .grayScale900
         $0.font = .pretenSemiBold(18)
     }
     
     private let descriptionLabel = UILabel().then {
-        $0.text = "궁금했던걸 다른 커플들에게 물어보세요"
+        $0.text = "필터를 바꾸거나 초기화해보세요"
         $0.textColor = .grayScale600
         $0.font = .pretenRegular(14)
     }
     
-    private let makeButton = UIButton().then {
-        $0.setTitle("투표 만들기", for: .normal)
+    private let resetButton = UIButton().then {
+        $0.setTitle("필터 초기화", for: .normal)
         $0.setTitleColor(.mainPurple, for: .normal)
         $0.layer.cornerRadius = 6
         $0.layer.borderColor = UIColor.mainPurple.cgColor
@@ -46,7 +46,7 @@ final class VoteEmptyCell: UITableViewCell {
         
         setupFlexLayout()
         
-        makeButton.addTarget(self, action: #selector(onTapButton), for: .touchUpInside)
+        resetButton.addTarget(self, action: #selector(onTapResetButton), for: .touchUpInside)
     }
     
     override func layoutSubviews() {
@@ -75,14 +75,14 @@ final class VoteEmptyCell: UITableViewCell {
                     .marginTop(4)
                     .height(20)
                 
-                $0.addItem(makeButton)
+                $0.addItem(resetButton)
                     .margin(16)
                     .width(128)
                     .height(44)
             }
     }
     
-    @objc private func onTapButton() {
-        onTapMake?()
+    @objc private func onTapResetButton() {
+        onTapReset?()
     }
 }
