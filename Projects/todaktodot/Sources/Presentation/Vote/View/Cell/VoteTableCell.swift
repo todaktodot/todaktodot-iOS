@@ -643,7 +643,7 @@ final class VoteTableCell: UITableViewCell {
         questionLabel.text = info.title
         topicLabel.text = info.categoryName
         timeLabel.text = info.time
-        participantLabel.text = info.isClosed && info.participantCnt == 0 ? "아무도 참여하지 않고 마감됐어요" : "\(info.participantCnt)명 참여"
+        participantLabel.text = info.isClosed && info.participantCnt == 0 ? "아무도 참여하지 않고 마감됐어요" : info.participantCnt == 0 ? "아직 참여한 사람이 없어요"  : "\(info.participantCnt)명 참여"
         
         likeCount = info.likeCnt
         isLike = info.hasLiked
