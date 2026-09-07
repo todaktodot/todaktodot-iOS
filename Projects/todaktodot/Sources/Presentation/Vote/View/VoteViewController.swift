@@ -304,7 +304,9 @@ final class VoteViewController: BaseViewController, View {
                 guard let self else { return }
                 
                 if !isLoading {
-                    refreshControl.endRefreshing()
+                    if refreshControl.isRefreshing {
+                        refreshControl.endRefreshing()
+                    }
                     lottie.alpha = 0
                     self.isLoading = false
                     self.isFetchingNextPage = false
