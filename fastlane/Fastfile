@@ -176,7 +176,8 @@ platform :ios do
     	"PENDING_APPLE_RELEASE",
     	"READY_FOR_SALE"
   	]
-	app_versions = app.get_app_store_versions(platform: "IOS")
+	app_versions = app.get_app_store_versions
+
 	should_skip_review = app_versions.any? do |app_version|
     	skip_review_states.include?(app_version.app_version_state)
   end
