@@ -697,20 +697,16 @@ final class VoteTableCell: UITableViewCell {
         skeletonContainer.alpha = 1.0
     }
     
+    func updateLike(info: VoteInfo) {
+        currentInfo = info
+        likeCount = info.likeCnt
+        isLike = info.hasLiked
+        setLike()
+    }
+
     private func updateLike() {
-        if isLike {
-            likeCount -= 1
-        } else {
-            likeCount += 1
-        }
-        isLike.toggle()
-        
-        likeButton.customText.text = "\(likeCount)"
-        likeButton.customImage.image = isLike ? UIImage(resource: .voteHeartClicked) : UIImage(resource: .voteHeartNomal)
-        likeButton.customText.textColor = isLike ? .redErrorColor : .grayScale400
-        
         if let voteId {
-            onTapLike?(voteId, isLike)
+            onTapLike?(voteId, !isLike)
         }
     }
     

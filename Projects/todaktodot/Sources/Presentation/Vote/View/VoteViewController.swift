@@ -250,6 +250,17 @@ final class VoteViewController: BaseViewController, View {
                         else {
                             return
                         }
+
+                        guard let row = self.voteList?.firstIndex(where: { $0.voteId == voteId }),
+                              var info = self.voteList?[row] else { return }
+
+                        info.updateLike(isLiked: isLike)
+                        self.voteList?[row] = info
+
+                        let indexPath = IndexPath(row: row, section: 0)
+                        let cell = self.tableView.cellForRow(at: indexPath) as? VoteTableCell
+                        cell?.updateLike(info: info)
+
                         reactor.action.onNext(.tapLike(voteId: voteId, isLike: isLike))
                     }
                     

@@ -16,14 +16,20 @@ struct VoteInfo: Codable, Equatable {
     let status: String // 투표 상태
     let title: String // 투표 주제
     let options: [VoteOption] // 답변 목록
-    let likeCnt: Int // 좋아요 수
+    private(set) var likeCnt: Int // 좋아요 수
     let participantCnt: Int // 참여자 수
     let reportCnt: Int // 신고 누적 수
     private let remainingTime: String // 남은 시간
     let isMine: Bool // 내가 만든 투표인지 여부
     let hasVoted: Bool // 내가 투표했는지 여부
-    let hasLiked: Bool // 내가 좋아요를 눌렀는지 여부
+    private(set) var hasLiked: Bool // 내가 좋아요를 눌렀는지 여부
     let createdAt: String // 투표 등록 시간
+
+    mutating func updateLike(isLiked: Bool) {
+        guard hasLiked != isLiked else { return }
+        likeCnt = max(0, likeCnt + (isLiked ? 1 : -1))
+        hasLiked = isLiked
+    }
     
     var categoryName: String {
         switch category {
