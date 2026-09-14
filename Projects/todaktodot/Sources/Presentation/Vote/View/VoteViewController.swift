@@ -36,6 +36,7 @@ final class VoteViewController: BaseViewController, View {
     private var isFetchingNextPage = false
     private var shouldScrollToTop = false
     private var hasAppearedOnce = false
+    private var shouldRefreshAfterPagination = false
     
     private var isMypage: Bool
     private var isClosed: Bool?
@@ -150,6 +151,10 @@ final class VoteViewController: BaseViewController, View {
                 let votes = voteListResponse?.data
                 
                 guard let voteListResponse else {
+                    if let voteList = self.voteList, !voteList.isEmpty {
+                        return voteList.map { .vote($0) }
+                    }
+
                     return (0..<10).map { _ in
                         .skeleton(VoteInfo.dummy)
                     }
@@ -221,11 +226,13 @@ final class VoteViewController: BaseViewController, View {
                         for: indexPath
                     ) as! VoteTableCell
                     
+                    let currentInfo = self?.voteList?.first(where: { $0.voteId == info.voteId }) ?? info
+                    
                     cell.configure(
-                        info: info,
+                        info: currentInfo,
                         isFirst: index == 0,
-                        isHidden: self?.hiddenVoteIds.contains(info.voteId) ?? false,
-                        isBlind: info.displayStatus == "HIDDEN"
+                        isHidden: self?.hiddenVoteIds.contains(currentInfo.voteId) ?? false,
+                        isBlind: currentInfo.displayStatus == "HIDDEN"
                     )
                     
                     cell.onTapOption = { [weak self] voteId, optionId, isSelected in
@@ -248,6 +255,17 @@ final class VoteViewController: BaseViewController, View {
                         else {
                             return
                         }
+
+                        guard let row = self.voteList?.firstIndex(where: { $0.voteId == voteId }),
+                              var info = self.voteList?[row] else { return }
+
+                        info.updateLike(isLiked: isLike)
+                        self.voteList?[row] = info
+
+                        let indexPath = IndexPath(row: row, section: 0)
+                        let cell = self.tableView.cellForRow(at: indexPath) as? VoteTableCell
+                        cell?.updateLike(info: info)
+
                         reactor.action.onNext(.tapLike(voteId: voteId, isLike: isLike))
                     }
                     
@@ -283,6 +301,8 @@ final class VoteViewController: BaseViewController, View {
                 }) else {
                     return
                 }
+
+                self.voteList?[row] = selectedVote
                 
                 let indexPath = IndexPath(row: row, section: 0)
                 
@@ -310,7 +330,16 @@ final class VoteViewController: BaseViewController, View {
                     lottie.alpha = 0
                     self.isLoading = false
                     self.isFetchingNextPage = false
+                    
+                    let wasPaginating = self.isPaginating
+                    self.isPaginating = false
+                    
                     scrollToTop()
+                    
+                    if self.shouldRefreshAfterPagination && wasPaginating {
+                        self.shouldRefreshAfterPagination = false
+                        self.refreshFromTabSelection()
+                    }
                 }
                 
                 if !self.isPaginating {
@@ -434,10 +463,25 @@ final class VoteViewController: BaseViewController, View {
             tableView.beginUpdates()
             tableView.endUpdates()
         }
-        
-//        fetchVotes(cursor: nil)
     }
     
+    func refreshFromTabSelection() {
+        loadViewIfNeeded()
+        hasAppearedOnce = true
+        isFetchError = false
+        showTableView()
+
+        shouldScrollToTop = true
+        scrollToTop(animated: true)
+
+        guard reactor?.currentState.isLoading != true else {
+            shouldRefreshAfterPagination = isPaginating
+            return
+        }
+
+        fetchVotes(cursor: nil)
+    }
+
     /// 투표 게시/수정 완료 후 리스트 새로고침 + 토스트
     func reloadAndToast(message: String) {
         resetFilter()
@@ -492,9 +536,8 @@ final class VoteViewController: BaseViewController, View {
     private func scrollToTop(animated: Bool = true) {
         guard shouldScrollToTop else { return }
         
-        tableView.scrollToRow(
-            at: IndexPath(row: 0, section: 0),
-            at: .top,
+        tableView.setContentOffset(
+            CGPoint(x: 0, y: -tableView.adjustedContentInset.top),
             animated: animated
         )
         shouldScrollToTop = false
