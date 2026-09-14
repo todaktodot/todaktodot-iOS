@@ -10,7 +10,7 @@ import UIKit
 final class TDLabel: UILabel {
     var headIndent: CGFloat?
     
-    var lineHeightMultiplier: CGFloat = 1.26 {
+    var lineHeightMultiplier: CGFloat = 1.5 { // 피그마 높이 %
         didSet { applyLineHeight() }
     }
 
@@ -41,7 +41,7 @@ final class TDLabel: UILabel {
         guard let text = self.text, !text.isEmpty else { return }
         guard let font = self.font else { return }
 
-        let size = font.lineHeight * lineHeightMultiplier
+        let size = font.pointSize * lineHeightMultiplier
 
         let style = NSMutableParagraphStyle()
         if let indent = headIndent {

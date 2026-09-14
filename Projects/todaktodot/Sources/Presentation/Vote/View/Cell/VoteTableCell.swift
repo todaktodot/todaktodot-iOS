@@ -139,10 +139,11 @@ final class VoteTableCell: UITableViewCell {
         $0.font = .pretenSemiBold(12)
     }
     
-    private let questionLabel = UILabel().then {
+    private let questionLabel = TDLabel().then {
         $0.textColor = .grayScale900
         $0.font = .pretenSemiBold(16)
         $0.numberOfLines = 0
+        $0.lineHeightMultiplier = 1.4
     }
     
     private let topicLabel = UILabel().then {
