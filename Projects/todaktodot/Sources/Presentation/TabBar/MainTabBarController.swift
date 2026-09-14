@@ -82,6 +82,11 @@ extension MainTabBarController {
     private func setupBindings() {
         customTabBar.selectedTabIndex
             .subscribe(onNext: { [weak self] index in
+                if let navigationController = self?.viewController(at: index) as? UINavigationController,
+                   self?.currentViewController === navigationController,
+                   let voteViewController = navigationController.viewControllers.first as? VoteViewController {
+                    voteViewController.refreshFromTabSelection()
+                }
                 self?.showViewController(at: index)
                 self?.customTabBar.setSelectedIndex(index, animated: true)
             })
@@ -111,6 +116,7 @@ extension MainTabBarController {
         guard index >= 0 && index < viewControllers.count else { return }
         
         let newViewController = viewControllers[index]
+        guard currentViewController !== newViewController else { return }
         
         currentViewController?.view.removeFromSuperview()
         currentViewController?.removeFromParent()

@@ -9,7 +9,11 @@ import RxSwift
 
 protocol VoteRepository {
     func voteSelect(voteId: Int, optionId: Int?, isWithdrawal: Bool) -> Observable<VoteInfo>
-    func fetchVoteList(category: CardSubject?, status: Bool?, isMine: Bool?, sortLatest: Bool, cursor: Int?, size: Int?) -> Observable<VoteList>
+    func fetchVoteList(category: [CardSubject]?, isClosed: Bool?, isMine: Bool?, sortLatest: Bool?, cursor: String?, size: Int?) -> Observable<VoteList>
+    func fetchMyVoteList(sortLatest: Bool?, cursor: String?, size: Int?) -> Observable<VoteList>
+    func likeVote(voteId: Int, isLike: Bool) -> Observable<Void>
+    func reportVote(voteId: Int, reason: ReportType) -> Observable<Void>
+    
     func createVote(request: VoteCreateRequest) -> Observable<Result<VoteCreateResult, Error>>
     func updateVote(request: VoteUpdateRequest) -> Observable<Result<Void, Error>>
     func fetchVoteDetail(voteId: Int) -> Observable<Result<VoteInfo, Error>>

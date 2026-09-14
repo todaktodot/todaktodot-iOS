@@ -21,14 +21,21 @@ enum ReportType: String, CaseIterable {
     case PRIVACY = "개인정보 노출"
     case ILLEGAL = "불법 정보"
     case DISLIKE = "마음에 들지 않음"
+    
+    var apiValue: String {
+        String(describing: self)
+    }
 }
 
-final class ReportModalViewController: UIViewController {
+final class ReportModalViewController: UIViewController, View {
     var disposeBag = DisposeBag()
     weak var coordinator: VoteCoordinator?
     
     private var radioButtons: [RadioButton] = []
+    private var selectedReason: ReportType?
+    private var reportTryCount = 0
     
+    private let voteId: Int
     private let dimView = UIView().then {
         $0.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.2)
     }
@@ -71,6 +78,15 @@ final class ReportModalViewController: UIViewController {
         $0.isEnabled = false
     }
     
+    init(voteId: Int) {
+        self.voteId = voteId
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -81,6 +97,32 @@ final class ReportModalViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         layoutViews()
+    }
+    
+    func bind(reactor: VoteReactor) {
+        reactor.state
+            .compactMap { $0.reportingVoteId }
+            .distinctUntilChanged()
+            .subscribe { id in
+                self.coordinator?.onHidden?(id)
+                self.coordinator?.showModal(type: .complete)
+            }
+            .disposed(by: disposeBag)
+        
+        reactor.state
+            .compactMap { $0.isError }
+            .subscribe { error in
+                if error == .reportFailure {
+                    if self.reportTryCount < 3 {
+                        self.reportTryCount += 1
+                        self.showToast(message: "신고 접수에 실패했어요", bottomOffset: 70)
+                    } else {
+                        self.showToast(message: "잠시 후 다시 시도해주세요", bottomOffset: 70)
+                        self.coordinator?.dismissModal()
+                    }
+                }
+            }
+            .disposed(by: disposeBag)
     }
     
     private func makeRadioButton(type: ReportType) -> RadioButton {
@@ -186,8 +228,9 @@ final class ReportModalViewController: UIViewController {
     }
     
     @objc func reportVote() {
-        print("a")
-        coordinator?.showModal(type: .complete)
+        if let selectedReason {
+            reactor?.action.onNext(.tapReport(voteId: voteId, reason: selectedReason))
+        }
     }
     
     @objc private func didTapRadioButton(_ sender: RadioButton) {
@@ -196,6 +239,7 @@ final class ReportModalViewController: UIViewController {
         }
         reportButton.backgroundColor = .mainPurple
         reportButton.isEnabled = true
+        selectedReason = sender.type
     }
 }
 

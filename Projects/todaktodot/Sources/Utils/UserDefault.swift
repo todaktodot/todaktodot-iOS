@@ -82,6 +82,12 @@ enum UserdefaultKey {
     @UserDefault(key: "pendingCoupleDisconnect", defaultValue: false)
     static var pendingCoupleDisconnect: Bool
     
+    @UserDefault(key: "pendingVoteHiddenAlertAdmin", defaultValue: false)
+    static var pendingVoteHiddenAlertAdmin: Bool
+    
+    @UserDefault(key: "pendingVoteHiddenAlertUser", defaultValue: false)
+    static var pendingVoteHiddenAlertUser: Bool
+    
     // MARK: - AI 피드백 폴링/재생성 이력
     // key: dailyweek_{lastWeeklyCardDate}, value: { "2026-04-05": ["polled", "regenerated"] }
     @UserDefault(key: "feedbackActionHistory", defaultValue: [:])

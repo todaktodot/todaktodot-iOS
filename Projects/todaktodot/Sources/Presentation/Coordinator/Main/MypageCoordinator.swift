@@ -87,6 +87,12 @@ final class MypageCoordinator: Coordinator {
         signinCoordinator.showCoupleConnect()
     }
     
+    func showMyVotes() {
+        let voteCoordinator = VoteCoordinator(navigationController: navigationController)
+        addChild(voteCoordinator)
+        voteCoordinator.showMyVotes()
+    }
+    
     func navigateBack() {
         navigationController.popViewController(animated: true)
     }

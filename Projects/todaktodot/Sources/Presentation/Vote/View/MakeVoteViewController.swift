@@ -639,9 +639,9 @@ final class MakeVoteViewController: BaseViewController, View {
                                 tv.resignFirstResponder()
                                 return
                             }
-                            // 21자 제한
-                            if text.count > 21, let tv = textView {
-                                tv.text = String(text.prefix(21))
+                            // 20자 제한
+                            if text.count > 20, let tv = textView {
+                                tv.text = String(text.prefix(20))
                                 return
                             }
                             if isFocused {
