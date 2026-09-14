@@ -221,11 +221,13 @@ final class VoteViewController: BaseViewController, View {
                         for: indexPath
                     ) as! VoteTableCell
                     
+                    let currentInfo = self?.voteList?.first(where: { $0.voteId == info.voteId }) ?? info
+                    
                     cell.configure(
-                        info: info,
+                        info: currentInfo,
                         isFirst: index == 0,
-                        isHidden: self?.hiddenVoteIds.contains(info.voteId) ?? false,
-                        isBlind: info.displayStatus == "HIDDEN"
+                        isHidden: self?.hiddenVoteIds.contains(currentInfo.voteId) ?? false,
+                        isBlind: currentInfo.displayStatus == "HIDDEN"
                     )
                     
                     cell.onTapOption = { [weak self] voteId, optionId, isSelected in
@@ -283,6 +285,8 @@ final class VoteViewController: BaseViewController, View {
                 }) else {
                     return
                 }
+
+                self.voteList?[row] = selectedVote
                 
                 let indexPath = IndexPath(row: row, section: 0)
                 
