@@ -97,7 +97,7 @@ final class VoteOptionView: UIView {
         self.titleLabel.text = voteOption.content
         
         let targetState: VoteOptionState
-        if hasVoted {
+        if hasVoted || isClosed {
             targetState = voteOption.isSelected ? .selected : .unSelected
         } else {
             targetState = .normal
