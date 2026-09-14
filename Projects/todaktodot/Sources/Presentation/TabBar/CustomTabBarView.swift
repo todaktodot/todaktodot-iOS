@@ -98,9 +98,9 @@ final class CustomTabBarView: UIView {
     }
     
     private func selectTab(at index: Int) {
-        guard index != currentSelectedIndex else { return }
-        
-        updateSelection(at: index, animated: true)
+        if index != currentSelectedIndex {
+            updateSelection(at: index, animated: true)
+        }
         selectedTabIndex.accept(index)
     }
     
